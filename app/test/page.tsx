@@ -1,22 +1,42 @@
-import { SparklesCore } from "@/components/aceternity/sparkles";
+import Search from "@/components/Search";
+import TuitionPost from "@/components/TuitionPost";
 
 export default function PricingPage() {
+  const data = {
+    postId: "P-25112500",
+    userId: "691c292a4711f0e693f09043",
+    name: "Soumyadip",
+    email: "soumyadip.superadmin@aotf.in",
+    subject: "Science",
+    className: "8",
+    board: "ICSE",
+    preferredTime: "6 PM",
+    preferredDays: ["Mon", "Wed", "Fri"],
+    frequencyPerWeek: "twice",
+    classType: "in-person",
+    location: "Dhakuria near Metro Station",
+    monthlyBudget: 2000,
+    notes: "Only Female Teacher Required",
+    status: "open",
+    applicants: [
+      {
+        $oid: "69254be157f77cfb98de0d6e",
+      },
+      {
+        $oid: "69258aa32ef2dd07ebaae681",
+      },
+    ],
+    createdAt: {
+      $date: "2025-11-25T06:10:16.434Z",
+    },
+    updatedAt: {
+      $date: "2025-11-25T10:55:23.704Z",
+    }
+  };
   return (
-    <div className="flex flex-col items-center justify-center overflow-hidden rounded-md">
-      <h1 className="md:text-7xl text-3xl lg:text-9xl font-bold text-center relative z-20">
-        Aceternity
-      </h1>
-      <div className="relative">
-        {/* Core component */}
-        <SparklesCore
-          background="transparent"
-          minSize={0.4}
-          maxSize={1}
-          particleDensity={1200}
-          className="w-full h-full"
-          particleColor="#000"
-        />
-      </div>
+    <div className="w-full flex flex-col items-center justify-center gap-4">
+      <Search />
+      <TuitionPost />
     </div>
   );
 }

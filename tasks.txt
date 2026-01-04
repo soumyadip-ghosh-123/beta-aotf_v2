@@ -1,0 +1,20 @@
+1. Landing Page - 
+    a. Hero Section - done
+    b. Login / Sign Up compoennt - done
+2. posts page 
+3. jobs page
+4. search page
+
+
+5. about Page
+6. Contact
+7. Privacy-policy
+8. refund-policy
+9. terms
+
+
+
+Components
+
+1. tuition post component done
+2. 
