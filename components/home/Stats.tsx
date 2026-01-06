@@ -3,7 +3,7 @@ import React from "react";
 
 const Stats = () => {
   return (
-    <Card className="p-4 max-w-md  mx-auto flex flex-row items-center justify-evenly">
+    <Card className="p-4 max-w-md  mx-auto flex flex-row gap-8 items-center justify-evenly">
       <div className="h-full flex flex-col items-center justify-center">
         <span className="text-2xl font-bold text-slate-900 dark:text-white">
           10k+

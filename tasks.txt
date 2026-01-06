@@ -1,9 +1,20 @@
 1. Landing Page - 
     a. Hero Section - done
-    b. Login / Sign Up compoennt - done
+    b. Login / Sign Up component - done
+    c. top navbar - done
 2. posts page 
 3. jobs page
 4. search page
+5. Teacher/Candidate page
+    a. Dashboard
+        a. Applied
+        b. Confirmed
+        c. Rejected
+    b. Profile
+        a. Avatar (Cloudinary)
+        b. name
+        c. 
+
 
 
 5. about Page
@@ -11,6 +22,7 @@
 7. Privacy-policy
 8. refund-policy
 9. terms
+10. Define schemas with zod.
 
 
 
@@ -18,3 +30,43 @@ Components
 
 1. tuition post component done
 2. 
+
+
+
+
+Database Modification
+
+1. adanalytics
+2. adminnotifications
+3. admins
+4. admintrackings
+5. ads
+6. applications
+7. clients
+8. declinedapplications
+9. feedbacks
+10. freelancers
+11. guardians
+12. invoices
+13. jobapplications
+14. jobs
+15. posts - 
+    a. guardianId -> Enquiry id
+    b. userId -> adminName
+    c. remove "name", "email", "phone", "editedBy" field
+    d. className -> class
+    e. frequencyPerWeek --> 'once' | 'twice' | 'thrice' | 'four' | 'five' --> 1 | 2 | 3 | 4 | 5 | 6 | 7 ;
+    f. classType --> 'in-person' | 'online' | 'both' --> 1 | 2 | 3
+    g. board --> 'CBSE' | 'ICSE' | 'ISC' | 'IB' | 'WB-Bengali version' | 'WB-English Version' --> 1 | 2 | 3 | 4 | 5 | 6;
+    h. status --> 'open' | 'matched' | 'closed' | 'cancelled' --> 1 | 2 | 3 | 4 
+    i.
+
+
+
+16. projectapplications
+17. projects
+18. settings
+19. teachers
+20. users - done
+    a. emailVerification - whole dict delete
+    b. role - changed to "1 | 2 | null" from "'teacher' | 'guardian' | 'freelancer' | 'client' | null"

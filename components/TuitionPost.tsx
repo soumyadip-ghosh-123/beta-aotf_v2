@@ -13,6 +13,7 @@ import { MdDoneAll } from "react-icons/md";
 import { FaShareFromSquare } from "react-icons/fa6";
 import { SlCalender } from "react-icons/sl";
 import { FaBookOpen } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 interface TuitionPostProps {
   postId: string;
@@ -80,9 +81,10 @@ const getTimeAgo = (date: Date): string => {
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffDays > 0) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
-  if (diffHours > 0) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  if (diffHours > 0)
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
   if (diffMins > 0) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
   return "Just now";
 };
@@ -112,16 +114,17 @@ const TuitionPost = ({
   editedByName,
 }: TuitionPostProps) => {
   const [isApplied, setIsApplied] = useState(false);
-  
+
   const boardName = getBoardName(board);
   const chips = [className, boardName, subject].filter(Boolean);
-
+  const router = useRouter();
   return (
-    <Card className="max-w-115 w-full mx-auto pt-3">
+    <Card className="max-w-115 w-full mx-auto pt-3 mb-4">
       <CardHeader className="justify-between">
         <User
           avatarProps={{
-            src: `${createdByUserId.avatar}`,
+            src: `${createdByUserId.avatar || ""}`,
+            alt: "Creator Avatar",
           }}
           description={`Admin • Posted ${getTimeAgo(createdAt)}`}
           name={createdByUserId.name || "Admin"}
@@ -224,7 +227,11 @@ const TuitionPost = ({
       {/* <Divider /> */}
       <CardFooter className="gap-3">
         <div className="grid grid-cols-3 gap-2 justify-between w-full">
-          <Button size="sm" className="bg-default-200">
+          <Button
+            size="sm"
+            className="bg-default-200"
+            onClick={() => router.push(`/posts/${postId}`)}
+          >
             View Details
             <FaEye />
           </Button>

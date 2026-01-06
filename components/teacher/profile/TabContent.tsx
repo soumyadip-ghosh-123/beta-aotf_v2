@@ -1,8 +1,8 @@
-import Search from "@/components/Search";
 import TuitionPost from "@/components/TuitionPost";
+import React from "react";
 
-export default function PricingPage() {
-  const data = {
+const TabContent = () => {
+    const Mockdata = {
     postId: "P-25112500",
     subject: "Science",
     className: "8",
@@ -20,11 +20,11 @@ export default function PricingPage() {
     updatedAt: new Date("2025-11-25T10:55:23.704Z"),
     createdByUserId: { name: "Soumyadip", avatar: "" },
   };
-
   return (
-    <div className="w-full flex flex-col items-center justify-center gap-4">
-      <Search />
-      <TuitionPost {...data} />
+    <div className="flex flex-col gap-4 p-2">
+      <TuitionPost {...Mockdata} />
     </div>
   );
-}
+};
+
+export default TabContent;

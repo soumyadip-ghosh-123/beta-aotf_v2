@@ -2,7 +2,7 @@ import React from "react";
 import { IoSchool } from "react-icons/io5";
 const CTA = () => {
   return (
-    <section className="px-4 pb-20">
+    <section className="p-4">
       <div className="rounded-xl bg-gradient-to-r from-primary to-blue-500 p-5 text-white shadow-lg">
         <div className="flex items-start gap-4">
           <div className="flex-1">

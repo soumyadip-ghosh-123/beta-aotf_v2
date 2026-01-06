@@ -13,7 +13,7 @@ import { FaAngleDown } from "react-icons/fa";
 
 const Search = () => {
   return (
-    <div className="w-full flex flex-col justify-center">
+    <div className="max-w-md w-full flex flex-col justify-center">
       <div className="flex w-full max-w-2xl items-center gap-2">
         <Input
           type="text"
@@ -27,10 +27,10 @@ const Search = () => {
           <IoMdSearch className="text-xl" />
         </Button>
       </div>
-      <div className="grid grid-cols-3 w-full max-w-2xl items-center gap-2 mt-2">
+      <div className="grid grid-cols-4 w-full max-w-2xl items-center gap-2 mt-2">
         <Dropdown>
           <DropdownTrigger>
-            <Button variant="bordered">
+            <Button size="sm" variant="bordered">
               Class <FaAngleDown className="inline" />
             </Button>
           </DropdownTrigger>
@@ -43,7 +43,7 @@ const Search = () => {
         </Dropdown>
         <Dropdown>
           <DropdownTrigger>
-            <Button variant="bordered">
+            <Button size="sm" variant="bordered">
               Board <FaAngleDown className="inline" />
             </Button>
           </DropdownTrigger>
@@ -56,7 +56,20 @@ const Search = () => {
         </Dropdown>
         <Dropdown>
           <DropdownTrigger>
-            <Button variant="bordered">
+            <Button size="sm" variant="bordered">
+              Type <FaAngleDown className="inline" />
+            </Button>
+          </DropdownTrigger>
+
+          <DropdownMenu aria-label="Search Filters">
+            <DropdownItem key="all">All</DropdownItem>
+            <DropdownItem key="files">Files</DropdownItem>
+            <DropdownItem key="links">Links</DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+        <Dropdown>
+          <DropdownTrigger>
+            <Button size="sm" variant="bordered">
               Type <FaAngleDown className="inline" />
             </Button>
           </DropdownTrigger>
