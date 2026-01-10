@@ -32,6 +32,7 @@
 8. refund-policy
 9. terms
 10. Define schemas with zod.
+11. forgot pw, add public links to profile.
 
 
 
@@ -46,20 +47,25 @@ Components
 Database Modification
 
 1. adanalytics
-2. adminnotifications
-3. admins
+3. admins - 
+    a. calender: boolean; // newly added field.
+    b. posts --> tuitions
+    c. jobs: boolean; // newly added field.
+    d. enquiries : boolean; // newly added field.
+    e. users: boolean; --> admin can create 2 types of users w/o payment .
+    f. remove "applications", "notifications", "settings"
 4. admintrackings
-5. ads
+5. ads - done
+    a. Admin will have ability to show diff ads based on diff type of user feeds.
+    b. customise after how many posts the ad is shown.
 6. applications
-7. clients
 8. declinedapplications
 9. feedbacks
 10. freelancers
-11. guardians
 12. invoices
 13. jobapplications
 14. jobs
-15. posts - 
+15. posts - done
     a. guardianId -> Enquiry id
     b. userId -> adminName
     c. remove "name", "email", "phone", "editedBy" field
@@ -74,7 +80,6 @@ Database Modification
 
 16. projectapplications
 17. projects
-18. settings
 19. teachers
 20. users - done
     a. emailVerification - whole dict delete

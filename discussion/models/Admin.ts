@@ -8,15 +8,14 @@ export interface IAdmin extends Document {
   role: 'super_admin' | 'support_admin';
   permissions: {
     dashboard: boolean;
-    posts: boolean;
+    calender: boolean;
+    tuitions: boolean;
+    jobs: boolean;
+    users: boolean;
+    enquiries : boolean;
     payments: boolean;
-    applications: boolean;
-    guardians: boolean;
-    teachers: boolean;
     ads: boolean;
     invoices: boolean;
-    notifications: boolean;
-    settings: boolean;
   };
   isActive: boolean;
   sessionVersion: number;

@@ -4,6 +4,8 @@ export interface IAd extends Document {
   title: string;
   imageUrl: string;
   link: string;
+  audience: "teacher" | "candidate" | "both";
+  occurence: number;
   status: 'active' | 'inactive' | 'expired' | 'scheduled';
   startDate?: Date;
   endDate?: Date;
@@ -23,6 +25,8 @@ const AdSchema: Schema = new Schema(
     title: { type: String, required: true },
     imageUrl: { type: String, required: true },
     link: { type: String, required: true },
+    audience: { type: String, enum: ["teacher", "candidate", "both"], required: true },
+    occurence: { type: Number, required: true },
     status: { type: String, enum: ['active', 'inactive', 'expired', 'scheduled'], default: 'active' },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
