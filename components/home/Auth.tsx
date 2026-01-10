@@ -23,7 +23,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="flex h-full min-w-80 items-center justify-center">
+    <div className="flex h-full min-w-90 items-center justify-center">
       <div className="rounded-large flex w-full max-w-sm flex-col gap-4">
         <Card className="max-w-full">
           <CardBody className="overflow-hidden">

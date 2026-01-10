@@ -2,7 +2,7 @@ import React from "react";
 
 const HeroSection = () => {
   return (
-    <section className="p-4">
+    <section className="w-full">
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 text-white shadow-lg">
         <div className="absolute inset-0 z-0">
           <div
@@ -29,7 +29,7 @@ const HeroSection = () => {
             learning or finding work today.
           </p>
           <button className="mt-2 flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-bold text-white shadow-sm hover:bg-blue-600 transition-colors">
-            Enquiry
+            Join Now
           </button>
         </div>
       </div>

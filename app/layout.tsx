@@ -5,16 +5,18 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 
-import { siteConfig } from "@/config/site";
+import { navConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
+import Footer from "@/components/Footer";
+import FloatingButton from "@/components/FloatingButton";
 
 export const metadata: Metadata = {
   title: {
-    default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
+    default: navConfig.name,
+    template: `%s - ${navConfig.name}`,
   },
-  description: siteConfig.description,
+  description: navConfig.description,
   icons: {
     icon: "/favicon.ico",
   },
@@ -38,26 +40,15 @@ export default function RootLayout({
       <body
         className={clsx(
           "text-foreground bg-background font-sans antialiased",
-          fontSans.variable,
+          fontSans.variable
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
           <div className="relative flex flex-col">
+            <FloatingButton />
             <Navbar />
-            <main className="container mx-auto grow px-2">
-              {children}
-            </main>
-            <footer className="w-full flex items-center justify-center py-3">
-              <Link
-                isExternal
-                className="flex items-center gap-1 text-current"
-                href="https://heroui.com?utm_source=next-app-template"
-                title="heroui.com homepage"
-              >
-                <span className="text-default-600">Powered by</span>
-                <p className="text-primary">HeroUI</p>
-              </Link>
-            </footer>
+            <main className="container mx-auto grow px-2">{children}</main>
+            <Footer />
           </div>
         </Providers>
       </body>

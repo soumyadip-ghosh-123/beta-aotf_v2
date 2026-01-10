@@ -2,13 +2,13 @@
     a. Hero Section - done
     b. Login / Sign Up component - done
     c. top navbar - done
-    d. What do you need? - done
+    d. Have an Enquiry or Question? - done
     e. counter - done
-    f. Become an Instructor
+    f. Our Motto - done
     g. associated with - sulekha, justdial.
     h. short links buttons (privacy policy, refund, about us , contact us, terms and conditions) - done
     i. social media links - meta, insta, linkedin
-    j. our teachers, our motto
+    j. our teachers
 
 
 2. posts page 
