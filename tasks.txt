@@ -2,6 +2,15 @@
     a. Hero Section - done
     b. Login / Sign Up component - done
     c. top navbar - done
+    d. What do you need? - done
+    e. counter - done
+    f. Become an Instructor
+    g. associated with - sulekha, justdial.
+    h. short links buttons (privacy policy, refund, about us , contact us, terms and conditions) - done
+    i. social media links - meta, insta, linkedin
+    j. our teachers, our motto
+
+
 2. posts page 
 3. jobs page
 4. search page
@@ -70,3 +79,8 @@ Database Modification
 20. users - done
     a. emailVerification - whole dict delete
     b. role - changed to "1 | 2 | null" from "'teacher' | 'guardian' | 'freelancer' | 'client' | null"
+
+
+
+
+
