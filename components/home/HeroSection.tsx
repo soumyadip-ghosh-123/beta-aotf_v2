@@ -1,3 +1,4 @@
+import { Button } from "@heroui/button";
 import React from "react";
 
 const HeroSection = () => {
@@ -28,9 +29,9 @@ const HeroSection = () => {
             The all-in-one platform for your professional journey. Start
             learning or finding work today.
           </p>
-          <button className="mt-2 flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-bold text-white shadow-sm hover:bg-blue-600 transition-colors">
+          <Button className="mt-2 flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-bold text-white shadow-sm hover:bg-blue-600 transition-colors">
             Join Now
-          </button>
+          </Button>
         </div>
       </div>
     </section>

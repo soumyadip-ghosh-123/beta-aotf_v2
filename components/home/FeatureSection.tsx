@@ -14,20 +14,19 @@ const FeatureSection = () => {
           </span>
         </h3>
       </div>
-      <div className="grid grid-cols-2 gap-3 h-15">
-        <Button variant="bordered" color="primary" className="h-full flex items-center justify-center gap-2 bg-white dark:bg-black">
-          <div className="flex items-center justify-center rounded-full text-primary">
+      <div className="grid grid-cols-1 gap-3 h-15">
+        <Button
+          variant="shadow"
+          color="primary"
+          className="h-full flex items-center justify-center gap-2"
+        >
+          <div className="flex items-center justify-center rounded-full">
             <IoSchool size={30} />
           </div>
-
-          <span className="font-semibold text-slate-600 leading-tight text-center">
-            Find
-            <br />
-            Tutors
-          </span>
+          <span className="text-xl font-semibold text-center">Enquiry</span>
         </Button>
 
-        <Button variant="bordered" color="secondary" className="h-full flex items-center justify-center gap-2 bg-white dark:bg-black">
+        {/* <Button variant="bordered" color="secondary" className="h-full flex items-center justify-center gap-2 bg-white dark:bg-black">
           <div className="flex items-center justify-center">
             <FaIdCard size={30} className="text-slate-600 dark:text-slate-400" />
           </div>
@@ -37,7 +36,7 @@ const FeatureSection = () => {
             <br />
             Talents
           </span>
-        </Button>
+        </Button> */}
 
         {/* search button */}
         {/* <Button className="group flex flex-col items-center justify-center gap-2 rounded-xl bg-white dark:bg-[#151e2b] p-3 py-5 text-center shadow-sm border border-slate-100 dark:border-slate-800 transition-transform active:scale-95">
