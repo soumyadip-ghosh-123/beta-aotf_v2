@@ -1,7 +1,7 @@
 // use zod for validation
 
-import mongoose, { Schema, Document } from 'mongoose';
-import crypto from 'crypto';
+import mongoose, { Schema, Document } from "mongoose";
+import crypto from "node:crypto";
 
 export interface IUser extends Document {
   email: string;
@@ -27,45 +27,48 @@ function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-const UserSchema: Schema = new Schema({
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    validate: {
-      validator: validateEmail,
-      message: 'Please provide a valid email address'
-    }
+const UserSchema: Schema = new Schema(
+  {
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      validate: {
+        validator: validateEmail,
+        message: "Please provide a valid email address",
+      },
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters long"],
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    role: {
+      type: Number,
+      enum: [1, 2, null],
+      default: null,
+    },
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    passwordReset: {
+      otpHash: { type: String, default: undefined },
+      otpExpiresAt: { type: Date, default: undefined },
+    },
   },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters long']
-  },
-  name: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-  role: {
-    type: Number,
-    enum: [1, 2, null],
-    default: null
-  },
-  onboardingCompleted: {
-    type: Boolean,
-    default: false
-  },
-  passwordReset: {
-    otpHash: { type: String, default: undefined },
-    otpExpiresAt: { type: Date, default: undefined }
+  {
+    timestamps: true,
+    versionKey: "__v",
   }
-}, {
-  timestamps: true,
-  versionKey: '__v'
-});
+);
 
 // Index is already created by unique: true, no need for explicit index
 
@@ -84,12 +87,17 @@ const UserSchema: Schema = new Schema({
 // });
 
 // Instance method to compare password
-UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+UserSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
   try {
-    const hashedInput = crypto.createHash('sha256').update(String(candidatePassword)).digest('hex');
+    const hashedInput = crypto
+      .createHash("sha256")
+      .update(String(candidatePassword))
+      .digest("hex");
     return hashedInput === this.password;
   } catch (error) {
-    console.error('Error comparing passwords:', error);
+    console.error("Error comparing passwords:", error);
     return false;
   }
 };
@@ -109,4 +117,5 @@ UserSchema.methods.toJSON = function () {
   return userObject;
 };
 
-export default (mongoose.models.User as IUserModel) || mongoose.model<IUser, IUserModel>('User', UserSchema);
+export default (mongoose.models.User as IUserModel) ||
+  mongoose.model<IUser, IUserModel>("User", UserSchema);

@@ -55,7 +55,6 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "clsx": "2.1.1",
-    "crypto": "^1.0.1",
     "framer-motion": "12.23.26",
     "intl-messageformat": "11.0.8",
     "lucide-react": "^0.562.0",
