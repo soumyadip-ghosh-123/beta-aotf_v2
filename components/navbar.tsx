@@ -37,6 +37,7 @@ import { Avatar } from "@heroui/avatar";
 import { FaUserAlt } from "react-icons/fa";
 import { RiDashboardHorizontalFill } from "react-icons/ri";
 import { RiLogoutBoxRLine } from "react-icons/ri";
+import Image from "next/image";
 
 export const Navbar = () => {
   const isLoggedIn = false;
@@ -63,12 +64,17 @@ export const Navbar = () => {
   const router = useRouter();
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
+    <HeroUINavbar maxWidth="xl" position="sticky" className="z-50">
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">AOTF</p>
+            <Image
+              src="/AOTF.svg"
+              alt="Logo"
+              width={50}
+              height={50}
+              className="h-16 w-16"
+            />
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
@@ -126,6 +132,7 @@ export const Navbar = () => {
           <Button
             variant="shadow"
             color="primary"
+            className="bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
             onPress={() => router.push("/login")}
           >
             Log In

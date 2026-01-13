@@ -11,7 +11,7 @@ const Underline = ({ title, className, color, size }: UnderlineProps) => {
   return (
     <div className={`w-full ${className}`}>
       <span
-        className={`font-bold ${size === "small" ? "text-xl" : size === "large" ? "text-4xl" : "text-3xl"} relative inline-block stroke-current text-${color}`}
+        className={`font-bold ${size === "small" ? "text-xl" : size === "large" ? "text-3xl" : "text-3xl"} relative inline-block stroke-current text-${color}`}
       >
         {title}
         <svg

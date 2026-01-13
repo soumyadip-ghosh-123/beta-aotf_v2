@@ -101,7 +101,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
                     <Button
                       variant="shadow"
                       color="primary"
-                      className="mt-2"
+                      className="mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
                       onPress={() => {
                         router.push(slide.link || "/");
                       }}

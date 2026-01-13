@@ -6,8 +6,8 @@ import TextType from "./reactbits/ui/TextType";
 
 const HeroDescription = () => {
   return (
-    <section className="w-full my-10 flex flex-col lg:flex-row gap-5 max-md:gap-10 items-left justify-between">
-      <div className="flex flex-col md:flex-col md:items-start justify-between">
+    <section className="w-full my-5 md:my-10 flex flex-col lg:flex-row gap-5 max-md:gap-10 items-left justify-between">
+      <div className="flex flex-col md:flex-col md:items-start justify-between px-4">
         {/* <div className="flex flex-wrap items-center justify-center p-1.5 rounded-full border border-slate-400 text-gray-500 text-xs">
           <div className="flex items-center">
             <img
@@ -62,7 +62,7 @@ const HeroDescription = () => {
       </div>
       <div className="flex-1 flex items-center justify-center">
         <img
-          src="./academy.png"
+          src="./connect.png"
           alt="hero"
           className="h-auto w-auto transition-all duration-300 hover:scale-102 rounded-xl"
         />

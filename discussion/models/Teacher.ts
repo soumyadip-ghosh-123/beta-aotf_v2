@@ -227,8 +227,8 @@ TeacherSchema.index({ registrationFeeStatus: 1, createdAt: -1 });
 TeacherSchema.index({ termsAgreed: 1, termsAgreedAt: -1 });
 
 // Pre-save middleware for additional validation
-TeacherSchema.pre('save', function (next) {
-  next();
+TeacherSchema.pre('save', function () {
+  // Add any additional validation logic here
 });
 
 // Static methods for common queries

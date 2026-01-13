@@ -71,11 +71,11 @@ const testimonials = [
 
 const ReknownedSection = () => {
   return (
-    <div className="w-full max-w-7xl flex flex-col my-10 ">
+    <div className="w-full max-w-7xl flex flex-col my-5 md:my-10">
       <Underline
         title="Reknowned Teachers"
         className="text-center"
-        size="small"
+        size="large"
       />
       <ScrollShadow
         orientation="horizontal"

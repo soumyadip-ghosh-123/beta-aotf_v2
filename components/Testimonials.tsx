@@ -85,12 +85,12 @@ const Testimonials = () => {
                 animation-direction: reverse;
             }
         `}</style>
-      <div className="my-10 w-full">
+      <div className="my-5 md:my-10 w-full">
         <Underline
           title="Reviews"
           className="text-center"
           color="green"
-          size="small"
+          size="large"
         />
         <div className="w-full">
           <div className="marquee-row w-full mx-auto max-w-5xl overflow-hidden relative">

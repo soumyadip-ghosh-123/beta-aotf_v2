@@ -113,163 +113,76 @@ export default function EnquiryPage() {
             </p>
           </CardHeader>
           <CardBody>
-            <Tabs
-              fullWidth
-              aria-label="Enquiry form tabs"
-              selectedKey={selected}
-              size="md"
-              onSelectionChange={(key) => setSelected(key as string)}
-              className="mb-4"
-            >
-              <Tab key="guardian" title="Guardian">
-                <div className="mb-4">
-                  <p className="text-sm text-default-600">
-                    Looking for a tutor for your child? Fill out the form below.
-                  </p>
-                </div>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  <Input
-                    label="Name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onValueChange={handleNameChange}
-                    isRequired
-                    isClearable
-                    variant="bordered"
-                    isInvalid={errors.name}
-                    errorMessage={
-                      errors.name
-                        ? "Please enter a valid name (2-50 characters, letters only)"
-                        : ""
-                    }
-                    classNames={{
-                      input: "text-base",
-                      inputWrapper: errors.name ? "border-danger" : "",
-                    }}
-                  />
+            <div className="mb-4">
+              <p className="text-sm text-default-600">
+                Looking for a tutor for your child? Fill out the form below.
+              </p>
+            </div>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <Input
+                label="Name"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onValueChange={handleNameChange}
+                isRequired
+                isClearable
+                variant="bordered"
+                isInvalid={errors.name}
+                errorMessage={
+                  errors.name
+                    ? "Please enter a valid name (2-50 characters, letters only)"
+                    : ""
+                }
+                classNames={{
+                  input: "text-base",
+                  inputWrapper: errors.name ? "border-danger" : "",
+                }}
+              />
 
-                  <Input
-                    label="Phone Number"
-                    placeholder="Enter your phone number"
-                    type="tel"
-                    value={formData.phone}
-                    onValueChange={handlePhoneChange}
-                    isRequired
-                    isClearable
-                    variant="bordered"
-                    isInvalid={errors.phone}
-                    errorMessage={
-                      errors.phone
-                        ? "Please enter a valid Indian phone number"
-                        : ""
-                    }
-                    classNames={{
-                      input: "text-base",
-                      inputWrapper: errors.phone ? "border-danger" : "",
-                    }}
-                  />
-                  <Textarea
-                    isClearable
-                    label="Query"
-                    variant="bordered"
-                    placeholder='e.g., "I need a science tutor for my son in class 6, ICSE"'
-                    value={formData.query}
-                    onChange={(e) =>
-                      setFormData({ ...formData, query: e.target.value })
-                    }
-                    required
-                    rows={4}
-                    classNames={{
-                      input: "resize-y min-h-[40px]",
-                    }}
-                  />
+              <Input
+                label="Phone Number"
+                placeholder="Enter your phone number"
+                type="tel"
+                value={formData.phone}
+                onValueChange={handlePhoneChange}
+                isRequired
+                isClearable
+                variant="bordered"
+                isInvalid={errors.phone}
+                errorMessage={
+                  errors.phone ? "Please enter a valid Indian phone number" : ""
+                }
+                classNames={{
+                  input: "text-base",
+                  inputWrapper: errors.phone ? "border-danger" : "",
+                }}
+              />
+              <Textarea
+                isClearable
+                label="Query"
+                variant="bordered"
+                placeholder="Write your enquiry here..."
+                value={formData.query}
+                onChange={(e) =>
+                  setFormData({ ...formData, query: e.target.value })
+                }
+                required
+                rows={4}
+                classNames={{
+                  input: "resize-y min-h-[40px]",
+                }}
+              />
 
-                  <Button
-                    type="submit"
-                    color="primary"
-                    size="lg"
-                    isLoading={isSubmitting}
-                    className="w-full mt-2"
-                  >
-                    Submit Enquiry as Guardian
-                  </Button>
-                </form>
-              </Tab>
-
-              <Tab key="client" title="Client">
-                <div className="mb-4">
-                  <p className="text-sm text-default-600">
-                    Want to post a teaching job or hire a tutor? Fill out the
-                    form below.
-                  </p>
-                </div>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  <Input
-                    isClearable
-                    label="Name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onValueChange={handleNameChange}
-                    isRequired
-                    variant="bordered"
-                    isInvalid={errors.name}
-                    errorMessage={
-                      errors.name
-                        ? "Please enter a valid name (2-50 characters, letters only)"
-                        : ""
-                    }
-                    classNames={{
-                      input: "text-base",
-                      inputWrapper: errors.name ? "border-danger" : "",
-                    }}
-                  />
-
-                  <Input
-                    isClearable
-                    label="Phone Number"
-                    placeholder="Enter your phone number"
-                    type="tel"
-                    value={formData.phone}
-                    onValueChange={handlePhoneChange}
-                    isRequired
-                    variant="bordered"
-                    isInvalid={errors.phone}
-                    errorMessage={
-                      errors.phone
-                        ? "Please enter a valid Indian phone number"
-                        : ""
-                    }
-                    classNames={{
-                      input: "text-base",
-                      inputWrapper: errors.phone ? "border-danger" : "",
-                    }}
-                  />
-
-                  <Textarea
-                    isClearable
-                    label="Query"
-                    variant="bordered"
-                    placeholder='e.g., "I want to post a job for a Mathematics teacher for CBSE, Class 10"'
-                    value={formData.query}
-                    onChange={(e) =>
-                      setFormData({ ...formData, query: e.target.value })
-                    }
-                    required
-                    rows={4}
-                  />
-
-                  <Button
-                    type="submit"
-                    color="primary"
-                    size="lg"
-                    isLoading={isSubmitting}
-                    className="w-full mt-2"
-                  >
-                    Submit Enquiry as Client
-                  </Button>
-                </form>
-              </Tab>
-            </Tabs>
+              <Button
+                type="submit"
+                color="primary"
+                size="lg"
+                isLoading={isSubmitting}
+                className="w-full mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
+              >
+                Submit Your Enquiry
+              </Button>
+            </form>
           </CardBody>
         </Card>
       </div>

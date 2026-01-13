@@ -35,27 +35,26 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
 
   return (
     <div
-      className="w-full dark:bg-neutral-950 font-sans my-10 md:py-10 md:px-5 rounded-2xl"
+      className="w-full dark:bg-neutral-950 font-sans my-5 md:my-10 py-5 md:py-10 md:px-5 rounded-2xl"
       ref={containerRef}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-10">
         <Underline title="Salient Features" size="large" className="mb-4" />
         <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm">
-        <span className="font-semibold">AOTF</span> is providing quality teachers for your tuition requirements along with proven talents to client needs.
+          <span className="font-semibold">AOTF</span> is providing quality
+          teachers for your tuition requirements along with proven talents to
+          client needs.
         </p>
       </div>
 
       <div ref={ref} className="relative max-w-7xl mx-auto pb-10">
         {data.map((item, index) => (
-          <div
-            key={index}
-            className="flex justify-start pt-10 md:gap-10"
-          >
+          <div key={index} className="flex justify-start pt-10 md:gap-10">
             <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-full">
               <div className="h-10 absolute left-3 md:left-3 w-10 rounded-full bg-white dark:bg-black flex items-center justify-center">
                 <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 p-2" />
               </div>
-              <h3 className="hidden md:block text-xl md:pl-20 md:text-3xl font-bold text-neutral-500 dark:text-neutral-500 ">
+              <h3 className="hidden md:block text-xl md:pl-20 md:text-2xl font-bold text-neutral-500 dark:text-neutral-500 ">
                 {item.title}
               </h3>
             </div>
@@ -79,7 +78,7 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
               height: heightTransform,
               opacity: opacityTransform,
             }}
-            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-purple-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
+            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-orange-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
           />
         </div>
       </div>

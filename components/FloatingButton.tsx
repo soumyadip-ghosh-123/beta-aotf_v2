@@ -62,7 +62,7 @@ export default function FloatingSupportCard() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-10 h-10 rounded-full bg-blue-600 text-white
+        className="w-10 h-10 rounded-full bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 text-white
         shadow-lg flex items-center justify-center
         hover:bg-blue-700 transition"
       >

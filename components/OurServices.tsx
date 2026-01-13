@@ -11,51 +11,33 @@ export default function OurServices() {
                     font-family: 'Poppins', sans-serif;
                 }
             `}</style>
-      <section className="flex flex-col md:flex-row items-center justify-center gap-10 my-10">
+      <section className="flex flex-col md:flex-row items-center justify-center gap-10 my-5 md:my-10">
         <div className="relative shadow-2xl shadow-indigo-600/40 rounded-2xl overflow-hidden shrink-0">
           <img
             className="max-w-md w-full object-cover rounded-2xl"
-            src="https://images.unsplash.com/photo-1531497865144-0464ef8fb9a9?q=80&w=451&h=451&auto=format&fit=crop"
+            src="./our_services.png"
             alt=""
           />
-          <div className="flex items-center gap-1 max-w-72 absolute bottom-3 left-8 bg-white p-1 rounded-xl">
-            <div className="flex -space-x-4 shrink-0">
-              <img
-                src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200"
-                alt="image"
-                className="size-9 rounded-full border-[3px] border-white hover:-translate-y-1 transition z-1"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200"
-                alt="image"
-                className="size-9 rounded-full border-[3px] border-white hover:-translate-y-1 transition z-[2]"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&h=200&auto=format&fit=crop"
-                alt="image"
-                className="size-9 rounded-full border-[3px] border-white hover:-translate-y-1 transition z-[3]"
-              />
-              <div className="flex items-center justify-center text-xs  text-white size-9 rounded-full border-[3px] border-white bg-indigo-600 hover:-translate-y-1 transition z-[4]">
-                99+
-              </div>
-            </div>
-            <p className="text-xs font-medium text-slate-800">
-              Join the AOTF teacher & talent community.
-            </p>
-          </div>
         </div>
-        <div className="text-sm max-w-lg px-5">
+        <div className="text-sm max-w-lg px-4">
           <Underline title="Our Services" size="large" className="mb-4" />
           <p className="mt-8">
-            AOTF bridges the gap between trusted educators, skilled professionals, and those who need them. We provide a structured, reliable platform to connect guardians with qualified teachers and clients with verified freelancers across India.{" "}
+            AOTF bridges the gap between trusted educators, skilled
+            professionals, and those who need them. We provide a structured,
+            reliable platform to connect guardians with qualified teachers and
+            clients with verified freelancers across India.{" "}
           </p>
           <p className="mt-4">
-            From 1:1 personalized tutoring and batch tuition (online or at home) to freelance and job-based talent hiring, AOTF ensures quality matching, transparent processes, and dependable support at every step.
+            From 1:1 personalized tutoring and batch tuition (online or at home)
+            to freelance and job-based talent hiring, AOTF ensures quality
+            matching, transparent processes, and dependable support at every
+            step.
           </p>
           <p className="mt-4">
-            Whether you are looking to learn, teach, hire, or work, AOTF makes the connection simple, secure, and scalable.
+            Whether you are looking to learn, teach, hire, or work, AOTF makes
+            the connection simple, secure, and scalable.
           </p>
-          <Button className="flex items-center w-max gap-2 mt-8 hover:-translate-y-0.5 transition bg-gradient-to-r from-indigo-600 to-[#8A7DFF] py-3 px-8 rounded-full text-white">
+          <Button className="flex items-center w-max gap-2 mt-8 hover:-translate-y-0.5 transition bg-linear-to-r from-indigo-600 to-[#8A7DFF] py-3 px-8 rounded-full text-white">
             <span>Read more</span>
             <svg
               width="13"
