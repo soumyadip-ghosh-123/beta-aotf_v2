@@ -36,28 +36,24 @@ export default function OurServices() {
                 className="size-9 rounded-full border-[3px] border-white hover:-translate-y-1 transition z-[3]"
               />
               <div className="flex items-center justify-center text-xs  text-white size-9 rounded-full border-[3px] border-white bg-indigo-600 hover:-translate-y-1 transition z-[4]">
-                50+
+                99+
               </div>
             </div>
             <p className="text-xs font-medium text-slate-800">
-              Become a part of AOTF teachers & talent community.
+              Join the AOTF teacher & talent community.
             </p>
           </div>
         </div>
         <div className="text-sm max-w-lg px-5">
           <Underline title="Our Services" size="large" className="mb-4" />
           <p className="mt-8">
-            PrebuiltUI helps you build faster by transforming your design vision
-            into fully functional, production-ready UI components.{" "}
+            AOTF bridges the gap between trusted educators, skilled professionals, and those who need them. We provide a structured, reliable platform to connect guardians with qualified teachers and clients with verified freelancers across India.{" "}
           </p>
           <p className="mt-4">
-            Whether you're launching a SaaS app, landing page, or dashboard, our
-            collection of Tailwind CSS components is crafted to boost your
-            development speed and improve user experience.
+            From 1:1 personalized tutoring and batch tuition (online or at home) to freelance and job-based talent hiring, AOTF ensures quality matching, transparent processes, and dependable support at every step.
           </p>
           <p className="mt-4">
-            From UI design systems to automation-ready layouts, PrebuiltUI
-            empowers you to build beautifully and scale effortlessly.
+            Whether you are looking to learn, teach, hire, or work, AOTF makes the connection simple, secure, and scalable.
           </p>
           <Button className="flex items-center w-max gap-2 mt-8 hover:-translate-y-0.5 transition bg-gradient-to-r from-indigo-600 to-[#8A7DFF] py-3 px-8 rounded-full text-white">
             <span>Read more</span>
