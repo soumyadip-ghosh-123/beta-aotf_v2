@@ -1,4 +1,3 @@
-import { ImagesSliderDemo } from "@/components/aceternity/ImagesSliderDemo";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/TuitionPost";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";

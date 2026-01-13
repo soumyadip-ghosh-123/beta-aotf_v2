@@ -4,6 +4,8 @@ import Testimonials from "@/components/Testimonials";
 import ImageSlider from "@/components/ImageSlider";
 import HeroDescription from "@/components/HeroDescription";
 import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
+import FeatureSection from "@/components/home/FeatureSection";
+import CTA from "@/components/home/CTA";
 
 export default function Home() {
   return (
@@ -17,34 +19,31 @@ export default function Home() {
             title: "First Slide",
             description: "This is the first image",
             buttonText: "Enquiry",
+            link: "/enquiry",
           },
           {
             src: "./scatch_image.png",
             title: "Second Slide",
             description: "This is the second image",
             buttonText: "Join Now",
+            link: "/join",
           },
           {
             src: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/gallery/slide3.png",
             title: "Third Slide",
             description: "This is the third image",
             buttonText: "Get Started",
+            link: "/get-started",
           },
         ]}
         autoPlay
         interval={3000}
       />
-      <div className="flex flex-col md:flex-row-reverse items-center gap-8">
-        <div className="flex flex-col h-full gap-4 flex-1 p-4 sm:p-0">
-          {/* <FeatureSection /> */}
-          {/* <CTA /> */}
-        </div>
-      </div>
       <HeroDescription />
       <ReknownedSection />
       <OurServices />
-      <Testimonials />
       <TimelineDemo />
+      <Testimonials />
       {/* <Stats /> */}
       {/* <ScrollBanner /> */}
     </section>

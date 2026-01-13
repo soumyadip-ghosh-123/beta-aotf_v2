@@ -1,4 +1,5 @@
 "use client";
+import Underline from "@/components/ui/Underline";
 import {
   useMotionValueEvent,
   useScroll,
@@ -34,13 +35,11 @@ export const Timeline = ({ data }: { data: TimelineEntry[] }) => {
 
   return (
     <div
-      className="w-full bg-white dark:bg-neutral-950 font-sans py-10 md:px-5 rounded-2xl"
+      className="w-full dark:bg-neutral-950 font-sans my-10 md:py-10 md:px-5 rounded-2xl"
       ref={containerRef}
     >
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-10">
-        <h2 className="text-2xl font-semibold md:text-4xl mb-4 text-black dark:text-white max-w-4xl">
-          Our Services
-        </h2>
+        <Underline title="Salient Features" size="large" className="mb-4" />
         <p className="text-neutral-700 dark:text-neutral-300 text-sm md:text-base max-w-sm">
         <span className="font-semibold">AOTF</span> is providing quality teachers for your tuition requirements along with proven talents to client needs.
         </p>

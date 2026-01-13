@@ -125,10 +125,10 @@ const AdminSchema: Schema = new Schema(
 );
 
 // Hash password before saving
-AdminSchema.pre("save", async function (next) {
+AdminSchema.pre("save", async function () {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified("password")) {
-    return next();
+    return;
   }
 
   try {
@@ -136,9 +136,8 @@ AdminSchema.pre("save", async function (next) {
     const hash = crypto.createHash("sha256");
     hash.update(this.password as string);
     this.password = hash.digest("hex");
-    next();
   } catch (error) {
-    next(error as Error);
+    throw error;
   }
 });
 

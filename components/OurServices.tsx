@@ -1,3 +1,6 @@
+import { Button } from "@heroui/button";
+import Underline from "./ui/Underline";
+
 export default function OurServices() {
   return (
     <>
@@ -8,7 +11,7 @@ export default function OurServices() {
                     font-family: 'Poppins', sans-serif;
                 }
             `}</style>
-      <section className="flex flex-col md:flex-row items-center justify-center gap-10 max-md:px-4">
+      <section className="flex flex-col md:flex-row items-center justify-center gap-10 my-10">
         <div className="relative shadow-2xl shadow-indigo-600/40 rounded-2xl overflow-hidden shrink-0">
           <img
             className="max-w-md w-full object-cover rounded-2xl"
@@ -37,15 +40,12 @@ export default function OurServices() {
               </div>
             </div>
             <p className="text-xs font-medium text-slate-800">
-              Join our developer community
+              Become a part of AOTF teachers & talent community.
             </p>
           </div>
         </div>
-        <div className="text-sm text-slate-600 max-w-lg">
-          <h1 className="text-xl uppercase font-semibold text-slate-700">
-            Our Services
-          </h1>
-          <div className="w-30 h-0.75 rounded-full bg-gradient-to-r from-indigo-600 to-[#DDD9FF]"></div>
+        <div className="text-sm max-w-lg px-5">
+          <Underline title="Our Services" size="large" className="mb-4" />
           <p className="mt-8">
             PrebuiltUI helps you build faster by transforming your design vision
             into fully functional, production-ready UI components.{" "}
@@ -59,10 +59,7 @@ export default function OurServices() {
             From UI design systems to automation-ready layouts, PrebuiltUI
             empowers you to build beautifully and scale effortlessly.
           </p>
-          <a
-            href="#"
-            className="flex items-center w-max gap-2 mt-8 hover:-translate-y-0.5 transition bg-gradient-to-r from-indigo-600 to-[#8A7DFF] py-3 px-8 rounded-full text-white"
-          >
+          <Button className="flex items-center w-max gap-2 mt-8 hover:-translate-y-0.5 transition bg-gradient-to-r from-indigo-600 to-[#8A7DFF] py-3 px-8 rounded-full text-white">
             <span>Read more</span>
             <svg
               width="13"
@@ -76,7 +73,7 @@ export default function OurServices() {
                 fill="#fff"
               />
             </svg>
-          </a>
+          </Button>
         </div>
       </section>
     </>

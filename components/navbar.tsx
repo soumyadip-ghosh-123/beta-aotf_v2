@@ -14,6 +14,7 @@ import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
 import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import clsx from "clsx";
 
 import { navConfig } from "@/config/site";
@@ -59,6 +60,7 @@ export const Navbar = () => {
       type="search"
     />
   );
+  const router = useRouter();
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
@@ -121,7 +123,13 @@ export const Navbar = () => {
       )}
       {!isLoggedIn && (
         <NavbarContent justify="center" className="gap-4">
-          <Button variant="shadow" color="primary">Log In</Button>
+          <Button
+            variant="shadow"
+            color="primary"
+            onPress={() => router.push("/login")}
+          >
+            Log In
+          </Button>
         </NavbarContent>
       )}
     </HeroUINavbar>

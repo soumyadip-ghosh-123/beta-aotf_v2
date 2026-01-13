@@ -6,8 +6,8 @@ import TextType from "./reactbits/ui/TextType";
 
 const HeroDescription = () => {
   return (
-    <section className="w-full my-5 flex flex-col gap-10 max-md:gap-20 md:flex-row items-center justify-between">
-      <div className="flex flex-col items-center md:items-start">
+    <section className="w-full my-10 flex flex-col lg:flex-row gap-5 max-md:gap-10 items-left justify-between">
+      <div className="flex flex-col md:flex-col md:items-start justify-between">
         {/* <div className="flex flex-wrap items-center justify-center p-1.5 rounded-full border border-slate-400 text-gray-500 text-xs">
           <div className="flex items-center">
             <img
@@ -28,8 +28,9 @@ const HeroDescription = () => {
           </div>
           <p className="-translate-x-2">Join community of 1m+ founders </p>
         </div> */}
-        <h1 className="text-center font-semibold md:text-left text-3xl md:text-5xl md:leading-15 max-w-xl leading-10">
-          Connecting<br />
+        <h1 className="font-semibold md:text-left text-3xl md:text-5xl md:leading-15 max-w-xl leading-10">
+          Connecting
+          <br />
           <TextType
             text={["Quality Educators", "Skilled Professionals"]}
             typingSpeed={75}
@@ -43,12 +44,15 @@ const HeroDescription = () => {
           <br />
           <span className="bg-[#2e8b57] text-white"> Across India</span>
         </h1>
-        <p className="text-center md:text-left text-sm max-w-lg mt-2">
+        <p className="md:text-left text-sm max-w-lg mt-2">
           Built on trust and transparency, AOTF makes it easy to find the right
           tutor or professional with confidence.
         </p>
-        <div className="flex items-center gap-4 mt-8 text-sm">
-          <Button className="text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 rounded-md px-7">
+        <div className="flex items-center justify-center gap-4 mt-4 text-sm">
+          <Button
+            radius="full"
+            className="text-white hover:-translate-y-0.5 transition bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 px-7"
+          >
             Make an Enquiry <ArrowRight />
           </Button>
           {/* <Button className="flex items-center gap-2 border transition rounded-md px-6">
@@ -56,11 +60,13 @@ const HeroDescription = () => {
           </Button> */}
         </div>
       </div>
-      <img
-        src="./academy.png"
-        alt="hero"
-        className="h-100 w-auto transition-all duration-300"
-      />
+      <div className="flex-1 flex items-center justify-center">
+        <img
+          src="./academy.png"
+          alt="hero"
+          className="h-auto w-auto transition-all duration-300 hover:scale-102 rounded-xl"
+        />
+      </div>
     </section>
   );
 };

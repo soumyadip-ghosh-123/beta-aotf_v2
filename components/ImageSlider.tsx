@@ -1,12 +1,13 @@
 "use client";
 import { Button } from "@heroui/button";
 import { useEffect, useRef, useState } from "react";
-
+import { useRouter } from "next/navigation";
 type Slide = {
   src: string;
   title?: string;
   description?: string;
   buttonText?: string;
+  link?: string;
 };
 
 type ImageSliderProps = {
@@ -22,6 +23,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
 }) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
+  const router = useRouter();
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -64,83 +66,104 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
   }, []);
 
   return (
-    <div className="w-full relative overflow-hidden">
-      {/* SLIDER */}
-      <div
-        ref={sliderRef}
-        className="flex transition-transform duration-500 ease-in-out"
-      >
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
-        {slides.map((slide, index) => (
-          <div key={index} className="relative w-full h-90 shrink-0 gradient-to-r from-black to-transparent">
-            <img
-              src={slide.src}
-              className="w-full object-cover h-90"
-              alt={`Slide ${index + 1}`}
+    <>
+      <div className="w-full relative overflow-hidden rounded-xl">
+        {/* SLIDER */}
+        <div
+          ref={sliderRef}
+          className="flex transition-transform duration-500 ease-in-out"
+        >
+          {slides.map((slide, index) => (
+            <div
+              key={index}
+              className="relative w-full h-90 shrink-0 gradient-to-r from-black to-transparent"
+            >
+              <img
+                src={slide.src}
+                className="w-full object-cover h-90"
+                alt={`Slide ${index + 1}`}
+              />
+
+              {/* TEXT OVERLAY */}
+              {(slide.title || slide.description) && (
+                <div className="w-full h-full absolute top-0 left-0 flex items-end bg-linear-to-t from-slate-900/90 via-slate-900/40 to-transparent">
+                  <div className="absolute bottom-6 left-6 text-white ml-10 flex flex-col max-w-xs">
+                    <div>
+                      {slide.title && (
+                        <h3 className="text-lg font-bold">{slide.title}</h3>
+                      )}
+                      {slide.description && (
+                        <p className="text-sm opacity-90">
+                          {slide.description}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="shadow"
+                      color="primary"
+                      className="mt-2"
+                      onPress={() => {
+                        router.push(slide.link || "/");
+                      }}
+                    >
+                      {slide.buttonText || "Learn More"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* LEFT BUTTON */}
+        <button
+          onClick={() => {
+            prevSlide();
+            resetAutoPlay();
+          }}
+          className="absolute left-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
             />
+          </svg>
+        </button>
 
-            {/* TEXT OVERLAY */}
-            {(slide.title || slide.description) && (
-              <div className="absolute bottom-6 left-6 text-white ml-10">
-                {slide.title && (
-                  <h3 className="text-lg font-bold">{slide.title}</h3>
-                )}
-                {slide.description && (
-                  <p className="text-sm opacity-90">{slide.description}</p>
-                )}
-                <Button variant="shadow" color="primary" className="mt-2">
-                  {slide.buttonText || "Learn More"}
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
+        {/* RIGHT BUTTON */}
+        <button
+          onClick={() => {
+            nextSlide();
+            resetAutoPlay();
+          }}
+          className="absolute right-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
       </div>
-
-      {/* LEFT BUTTON */}
-      <button
-        onClick={() => {
-          prevSlide();
-          resetAutoPlay();
-        }}
-        className="absolute left-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button>
-
-      {/* RIGHT BUTTON */}
-      <button
-        onClick={() => {
-          nextSlide();
-          resetAutoPlay();
-        }}
-        className="absolute right-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-white"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </div>
+    </>
   );
 };
 

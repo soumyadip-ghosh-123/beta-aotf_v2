@@ -150,7 +150,7 @@ export default function EnquiryPage() {
 
                   <Input
                     label="Phone Number"
-                    placeholder="76347 23234"
+                    placeholder="Enter your phone number"
                     type="tel"
                     value={formData.phone}
                     onValueChange={handlePhoneChange}
@@ -170,8 +170,8 @@ export default function EnquiryPage() {
                   />
                   <Textarea
                     isClearable
-                    label="Description"
-                    variant="underlined"
+                    label="Query"
+                    variant="bordered"
                     placeholder='e.g., "I need a science tutor for my son in class 6, ICSE"'
                     value={formData.query}
                     onChange={(e) =>
@@ -205,6 +205,7 @@ export default function EnquiryPage() {
                 </div>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                   <Input
+                    isClearable
                     label="Name"
                     placeholder="Enter your full name"
                     value={formData.name}
@@ -224,8 +225,10 @@ export default function EnquiryPage() {
                   />
 
                   <Input
+                    isClearable
                     label="Phone Number"
-                    placeholder="+91 1234567890"
+                    placeholder="Enter your phone number"
+                    type="tel"
                     value={formData.phone}
                     onValueChange={handlePhoneChange}
                     isRequired
@@ -242,21 +245,18 @@ export default function EnquiryPage() {
                     }}
                   />
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-default-700">
-                      Query <span className="text-danger">*</span>
-                    </label>
-                    <textarea
-                      placeholder='e.g., "I want to post a job for a Mathematics teacher for CBSE, Class 10"'
-                      value={formData.query}
-                      onChange={(e) =>
-                        setFormData({ ...formData, query: e.target.value })
-                      }
-                      required
-                      rows={4}
-                      className="w-full px-3 py-2 text-base rounded-lg border-2 border-default-200 hover:border-default-400 focus:border-primary focus:outline-none transition-colors resize-none"
-                    />
-                  </div>
+                  <Textarea
+                    isClearable
+                    label="Query"
+                    variant="bordered"
+                    placeholder='e.g., "I want to post a job for a Mathematics teacher for CBSE, Class 10"'
+                    value={formData.query}
+                    onChange={(e) =>
+                      setFormData({ ...formData, query: e.target.value })
+                    }
+                    required
+                    rows={4}
+                  />
 
                   <Button
                     type="submit"

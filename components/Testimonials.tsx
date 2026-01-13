@@ -1,3 +1,5 @@
+import Underline from "./ui/Underline";
+
 const Testimonials = () => {
   const cardsData = [
     {
@@ -83,10 +85,13 @@ const Testimonials = () => {
                 animation-direction: reverse;
             }
         `}</style>
-      <div className="my-5 w-full">
-        <div className="w-full">
-          <h2 className="text-3xl font-bold text-center">Reviews</h2>
-        </div>
+      <div className="my-10 w-full">
+        <Underline
+          title="Reviews"
+          className="text-center"
+          color="green"
+          size="small"
+        />
         <div className="w-full">
           <div className="marquee-row w-full mx-auto max-w-5xl overflow-hidden relative">
             <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-gradient-to-r from-white dark:from-black to-transparent"></div>
