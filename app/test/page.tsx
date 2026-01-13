@@ -1,6 +1,10 @@
+import { ImagesSliderDemo } from "@/components/aceternity/ImagesSliderDemo";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/TuitionPost";
-
+import ClickSpark from "@/components/reactbits/ui/ClickSpark";
+import ImageSlider from "@/components/ImageSlider";
+import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
+import TextType from "@/components/reactbits/ui/TextType";
 export default function PricingPage() {
   const data = {
     postId: "P-25112500",
@@ -23,8 +27,40 @@ export default function PricingPage() {
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-4">
-      <Search />
-      <TuitionPost {...data} />
+      {/* <Search /> */}
+      {/* <TuitionPost {...data} /> */}
+      {/* Your content here */}
+      {/* <ImagesSliderDemo /> */}
+      {/* </div> */}
+      {/* <ImageSlider
+        slides={[
+          {
+            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
+            title: "First Slide",
+            description: "This is the first image",
+          },
+          {
+            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
+            title: "Second Slide",
+            description: "This is the second image",
+          },
+          {
+            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
+            title: "Third Slide",
+            description: "This is the third image",
+          },
+        ]}
+        autoPlay
+        interval={3000}
+      />
+      <TimelineDemo /> */}
+      <TextType
+        text={["Text typing effect", "for your websites", "Happy coding!"]}
+        typingSpeed={75}
+        pauseDuration={1500}
+        showCursor={true}
+        cursorCharacter="_"
+      />
     </div>
   );
 }

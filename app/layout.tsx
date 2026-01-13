@@ -10,6 +10,7 @@ import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
 import Footer from "@/components/Footer";
 import FloatingButton from "@/components/FloatingButton";
+import ClickSpark from "@/components/reactbits/ui/ClickSpark";
 
 export const metadata: Metadata = {
   title: {
@@ -43,14 +44,21 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-          <div className="relative flex flex-col">
-            <FloatingButton />
-            <Navbar />
-            <main className="container mx-auto grow px-2">{children}</main>
-            <Footer />
-          </div>
-        </Providers>
+        <ClickSpark
+          sparkSize={9}
+          sparkRadius={25}
+          duration={500}
+          extraScale={0.9}
+        >
+          <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+            <div className="relative flex flex-col">
+              <FloatingButton />
+              <Navbar />
+              <main className="container mx-auto grow px-2">{children}</main>
+              <Footer />
+            </div>
+          </Providers>
+        </ClickSpark>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@heroui/button";
 import { useEffect } from "react";
 
 export default function Error({
@@ -16,16 +17,16 @@ export default function Error({
   }, [error]);
 
   return (
-    <div>
-      <h2>Something went wrong!</h2>
-      <button
+    <div className="flex flex-col items-center justify-center p-4">
+      <h2 className="text-lg font-bold">Something went wrong!</h2>
+      <Button
         onClick={
           // Attempt to recover by trying to re-render the segment
           () => reset()
         }
       >
         Try again
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,0 +1,147 @@
+"use client";
+import { Button } from "@heroui/button";
+import { useEffect, useRef, useState } from "react";
+
+type Slide = {
+  src: string;
+  title?: string;
+  description?: string;
+  buttonText?: string;
+};
+
+type ImageSliderProps = {
+  slides: Slide[];
+  autoPlay?: boolean;
+  interval?: number;
+};
+
+const ImageSlider: React.FC<ImageSliderProps> = ({
+  slides,
+  autoPlay = true,
+  interval = 3000,
+}) => {
+  const sliderRef = useRef<HTMLDivElement | null>(null);
+  const timerRef = useRef<number | null>(null);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const totalSlides = slides.length;
+
+  const goToSlide = (index: number) => {
+    if (!sliderRef.current) return;
+    const slideWidth = sliderRef.current.children[0].clientWidth;
+    sliderRef.current.style.transform = `translateX(-${index * slideWidth}px)`;
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  const resetAutoPlay = () => {
+    if (!autoPlay) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = window.setInterval(nextSlide, interval);
+  };
+
+  useEffect(() => {
+    goToSlide(currentSlide);
+  }, [currentSlide]);
+
+  useEffect(() => {
+    if (autoPlay) resetAutoPlay();
+
+    const handleResize = () => goToSlide(currentSlide);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return (
+    <div className="w-full relative overflow-hidden">
+      {/* SLIDER */}
+      <div
+        ref={sliderRef}
+        className="flex transition-transform duration-500 ease-in-out"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+        {slides.map((slide, index) => (
+          <div key={index} className="relative w-full h-90 shrink-0 gradient-to-r from-black to-transparent">
+            <img
+              src={slide.src}
+              className="w-full object-cover h-90"
+              alt={`Slide ${index + 1}`}
+            />
+
+            {/* TEXT OVERLAY */}
+            {(slide.title || slide.description) && (
+              <div className="absolute bottom-6 left-6 text-white ml-10">
+                {slide.title && (
+                  <h3 className="text-lg font-bold">{slide.title}</h3>
+                )}
+                {slide.description && (
+                  <p className="text-sm opacity-90">{slide.description}</p>
+                )}
+                <Button variant="shadow" color="primary" className="mt-2">
+                  {slide.buttonText || "Learn More"}
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* LEFT BUTTON */}
+      <button
+        onClick={() => {
+          prevSlide();
+          resetAutoPlay();
+        }}
+        className="absolute left-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
+
+      {/* RIGHT BUTTON */}
+      <button
+        onClick={() => {
+          nextSlide();
+          resetAutoPlay();
+        }}
+        className="absolute right-3 top-1/2 -translate-y-1/2 md:p-2 p-1 bg-black/30 rounded-full hover:bg-black/50"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+};
+
+export default ImageSlider;

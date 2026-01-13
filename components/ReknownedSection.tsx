@@ -31,8 +31,8 @@ const testimonials = [
 const ReknownedSection = () => {
   return (
     <div className="w-full max-w-7xl flex flex-col px-4 py-5 md:px-0">
-      <h2 className="text-xl font-semibold text-center">
-        Renowned Teachers
+      <h2 className="text-3xl font-bold text-center">
+        Reknowned Teachers
       </h2>
       <ScrollShadow
         orientation="horizontal"
@@ -42,7 +42,7 @@ const ReknownedSection = () => {
           {testimonials.map((item, index) => (
             <Card
               key={index}
-              className="min-w-[280px] max-w-[280px]
+              className="min-w-70 max-w-70
             shadow-sm border border-slate-100
             dark:border-slate-800"
             >

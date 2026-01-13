@@ -31,9 +31,10 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ items, className }) => {
           return (
             <div key={index}>
               <Button
-                className="w-full rounded-none justify-between"
+                className="w-full rounded-none justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
                 size="lg"
                 onClick={() => router.push(item.link)}
+                
               >
                 <span className="flex items-center gap-2">
                   {item.icon}

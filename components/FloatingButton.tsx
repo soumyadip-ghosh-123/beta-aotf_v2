@@ -5,6 +5,7 @@ import { PersonStanding, Phone, X } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { RiCustomerServiceFill } from "react-icons/ri";
 import { IoPersonCircleSharp } from "react-icons/io5";
+import { FaPhoneAlt } from "react-icons/fa";
 
 export default function FloatingSupportCard() {
   const [open, setOpen] = useState(false);
@@ -36,7 +37,10 @@ export default function FloatingSupportCard() {
               </p>
             </div>
           </div>
-          <IoPersonCircleSharp size={80} className="right-5 text-slate-400 dark:text-slate-500" />
+          <IoPersonCircleSharp
+            size={80}
+            className="right-5 text-slate-400 dark:text-slate-500"
+          />
         </div>
 
         {/* Call Button */}
@@ -49,7 +53,7 @@ export default function FloatingSupportCard() {
             hover:bg-blue-50 dark:hover:bg-blue-900/20
             transition"
           >
-            <Phone size={18} />
+            <FaPhoneAlt size={20} />
             {phoneNumber}
           </a>
         </div>
@@ -58,11 +62,11 @@ export default function FloatingSupportCard() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(!open)}
-        className="w-14 h-14 rounded-full bg-blue-600 text-white
+        className="w-10 h-10 rounded-full bg-blue-600 text-white
         shadow-lg flex items-center justify-center
         hover:bg-blue-700 transition"
       >
-        <Phone size={26} />
+        <FaPhoneAlt size={20} />
       </button>
     </div>
   );

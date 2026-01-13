@@ -30,13 +30,12 @@ const Footer = () => {
   return (
     <footer className="m-auto px-8 mb-20 sm:mb-0 container w-full pb-25 mt-8">
       <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-500 pb-10">
-        <div className="md:max-w-96">
+        {/* <div className="md:max-w-96">
           <h3 className="text-xl font-bold text-primary">{siteConfig.name}</h3>
           <p className="mt-2 text-md">{siteConfig.description}</p>
           <p>&nbsp;&nbsp;&nbsp; Currently we provide services in Kolkata, West Bengal based & we are expanding accross India.</p>
 
-          {/* Social Media Links */}
-          {/* <div className="flex items-center gap-4 mt-4">
+          <div className="flex items-center gap-4 mt-4">
             {Object.entries(siteConfig.social).map(([platform, url]) => (
               <a
                 key={platform}
@@ -48,8 +47,8 @@ const Footer = () => {
                 <span className="capitalize">{platform}</span>
               </a>
             ))}
-          </div> */}
-        </div>
+          </div>
+        </div> */}
 
         <ButtonGroup items={items} className="px-0"/>
 

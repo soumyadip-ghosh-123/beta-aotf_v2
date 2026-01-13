@@ -15,7 +15,7 @@ export default function OurServices() {
             src="https://images.unsplash.com/photo-1531497865144-0464ef8fb9a9?q=80&w=451&h=451&auto=format&fit=crop"
             alt=""
           />
-          <div className="flex items-center gap-1 max-w-72 absolute bottom-8 left-8 bg-white p-4 rounded-xl">
+          <div className="flex items-center gap-1 max-w-72 absolute bottom-3 left-8 bg-white p-1 rounded-xl">
             <div className="flex -space-x-4 shrink-0">
               <img
                 src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200"
@@ -36,7 +36,7 @@ export default function OurServices() {
                 50+
               </div>
             </div>
-            <p className="text-sm font-medium text-slate-800">
+            <p className="text-xs font-medium text-slate-800">
               Join our developer community
             </p>
           </div>

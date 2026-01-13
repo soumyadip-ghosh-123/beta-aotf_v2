@@ -38,6 +38,7 @@ import { RiDashboardHorizontalFill } from "react-icons/ri";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 
 export const Navbar = () => {
+  const isLoggedIn = false;
   const searchInput = (
     <Input
       aria-label="Search"
@@ -76,46 +77,53 @@ export const Navbar = () => {
         {/* </NavbarItem> */}
       </NavbarContent>
 
-      <NavbarContent justify="center">
-        <Dropdown placement="bottom-end">
-          <DropdownTrigger>
-            <Avatar
-              isBordered
-              size="sm"
-              as="button"
-              className="transition-transform"
-              src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
-            />
-          </DropdownTrigger>
-          <DropdownMenu aria-label="Profile Actions" variant="flat">
-            <DropdownItem key="email" className="gap-2">
-              <p className="font-semibold">zoey@example.com</p>
-            </DropdownItem>
-            <DropdownItem key="profile">
-              <div className="flex items-center gap-2">
-                <FaUserAlt className="text-default-500" />
-                <p className="font-semibold">Profile</p>
-              </div>
-            </DropdownItem>
-            <DropdownItem key="dashboard">
-              <div className="flex items-center gap-2">
-                <RiDashboardHorizontalFill className="text-default-500" />
-                <p className="font-semibold">Dashboard</p>
-              </div>
-            </DropdownItem>
-            <DropdownItem
-              key="logout"
-              color="danger"
-              className="text-danger bg-danger/10 hover:bg-danger/20"
-            >
-              <div className="flex items-center gap-2">
-                <RiLogoutBoxRLine className="text-danger" />
-                <p className="font-semibold">Log Out</p>
-              </div>
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-      </NavbarContent>
+      {isLoggedIn && (
+        <NavbarContent justify="center">
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Avatar
+                isBordered
+                size="sm"
+                as="button"
+                className="transition-transform"
+                src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
+              />
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Profile Actions" variant="flat">
+              <DropdownItem key="email" className="gap-2">
+                <p className="font-semibold">zoey@example.com</p>
+              </DropdownItem>
+              <DropdownItem key="profile">
+                <div className="flex items-center gap-2">
+                  <FaUserAlt className="text-default-500" />
+                  <p className="font-semibold">Profile</p>
+                </div>
+              </DropdownItem>
+              <DropdownItem key="dashboard">
+                <div className="flex items-center gap-2">
+                  <RiDashboardHorizontalFill className="text-default-500" />
+                  <p className="font-semibold">Dashboard</p>
+                </div>
+              </DropdownItem>
+              <DropdownItem
+                key="logout"
+                color="danger"
+                className="text-danger bg-danger/10 hover:bg-danger/20"
+              >
+                <div className="flex items-center gap-2">
+                  <RiLogoutBoxRLine className="text-danger" />
+                  <p className="font-semibold">Log Out</p>
+                </div>
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </NavbarContent>
+      )}
+      {!isLoggedIn && (
+        <NavbarContent justify="center" className="gap-4">
+          <Button variant="shadow" color="primary">Log In</Button>
+        </NavbarContent>
+      )}
     </HeroUINavbar>
   );
 };
