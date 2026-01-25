@@ -12,7 +12,7 @@ const BackButton = ({ title }: BackButtonProps) => {
   const router = useRouter();
 
   return (
-    <div className="grid grid-cols-3 items-center mb-2">
+    <div className="grid grid-cols-3 items-center mb-2 max-w-3xl w-full mx-auto px-2">
       <Button
         isIconOnly
         aria-label="Back"
@@ -23,9 +23,9 @@ const BackButton = ({ title }: BackButtonProps) => {
         <FaChevronLeft size={20} />
       </Button>
 
-      <h2 className="text-center text-lg font-bold text-gray-900 dark:text-white">
+      <p className="text-center text-lg font-semibold">
         {title || "Page Title"}
-      </h2>
+      </p>
 
       <div />
     </div>

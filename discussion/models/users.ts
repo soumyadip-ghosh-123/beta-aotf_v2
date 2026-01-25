@@ -7,7 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name?: string;
-  role?: 1 | 2 | null;
+  role?: "1" | "2" | null;
   onboardingCompleted: boolean;
   passwordReset?: {
     otpHash?: string;

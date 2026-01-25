@@ -1,9 +1,13 @@
 import Search from "@/components/Search";
-import TuitionPost from "@/components/TuitionPost";
+import TuitionPost from "@/components/PostCards/TuitionPost";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
 import ImageSlider from "@/components/ImageSlider";
 import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
 import TextType from "@/components/reactbits/ui/TextType";
+import Onboarding from "@/components/reactbits/Onboarding";
+import { FaBook } from "react-icons/fa";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { IdCard } from "@/components/aceternity/IdCard";
 export default function PricingPage() {
   const data = {
     postId: "P-25112500",
@@ -27,7 +31,7 @@ export default function PricingPage() {
   return (
     <div className="w-full flex flex-col items-center justify-center gap-4">
       {/* <Search /> */}
-      <TuitionPost {...data} />
+      {/* <TuitionPost {...data} /> */}
       {/* Your content here */}
       {/* <ImagesSliderDemo /> */}
       {/* </div> */}
@@ -53,13 +57,17 @@ export default function PricingPage() {
         interval={3000}
       />
       <TimelineDemo /> */}
-      <TextType
+      {/* <TextType
         text={["Text typing effect", "for your websites", "Happy coding!"]}
         typingSpeed={75}
         pauseDuration={1500}
         showCursor={true}
         cursorCharacter="_"
-      />
+      /> */}
+      {/* <Onboarding /> */}
+
+      {/* educational content */}
+      <IdCard />
     </div>
   );
 }

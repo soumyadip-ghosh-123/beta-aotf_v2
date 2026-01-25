@@ -10,10 +10,15 @@ import {
 } from "@heroui/dropdown";
 import { IoMdSearch } from "react-icons/io";
 import { FaAngleDown } from "react-icons/fa";
+import { ScrollShadow } from "@heroui/scroll-shadow";
+import { Chip } from "@heroui/chip";
 
 const Search = () => {
+  // show or hide scrollable chips based on screen size
+  const isShowChip = false; // You can replace this with actual logic based on screen size
+
   return (
-    <div className="max-w-md w-full flex flex-col justify-center">
+    <div className="max-w-md w-full flex flex-col justify-center sticky top-20 z-10 mx-auto my-4 bg-white backdrop-blur-xs">
       <div className="flex w-full max-w-2xl items-center gap-2">
         <Input
           type="text"
@@ -57,14 +62,17 @@ const Search = () => {
         <Dropdown>
           <DropdownTrigger>
             <Button size="sm" variant="bordered">
-              Type <FaAngleDown className="inline" />
+              Subject <FaAngleDown className="inline" />
             </Button>
           </DropdownTrigger>
 
           <DropdownMenu aria-label="Search Filters">
             <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="files">Files</DropdownItem>
-            <DropdownItem key="links">Links</DropdownItem>
+            <DropdownItem key="files">Bengali</DropdownItem>
+            <DropdownItem key="links">English</DropdownItem>
+            <DropdownItem key="links">Math</DropdownItem>
+            <DropdownItem key="links">Science</DropdownItem>
+            <DropdownItem key="links">History</DropdownItem>
           </DropdownMenu>
         </Dropdown>
         <Dropdown>
@@ -81,6 +89,23 @@ const Search = () => {
           </DropdownMenu>
         </Dropdown>
       </div>
+      {/* show or hide scrollable chips based on screen size with props */}
+
+      {isShowChip && (
+        <ScrollShadow
+          className="max-w-full max-h-75 no-scrollbar my-2"
+          orientation="horizontal"
+        >
+          <div className="flex gap-2 ">
+            {/* 6 chips */}
+            {Array.from({ length: 6 }, (_, i) => (
+              <Chip key={i} radius="sm" className="p-4 px-2">
+                Chip {i + 1}
+              </Chip>
+            ))}
+          </div>
+        </ScrollShadow>
+      )}
     </div>
   );
 };

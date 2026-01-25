@@ -87,5 +87,52 @@ Database Modification
 
 
 
+short address locality - 20 charecter length 
+
+navigation
 
 
+create a dynamic dashboard for specific users (teacher and candidate) with heroui components make the ui modern and responsive only create for /dashboard
+
+# common for two types of users 
+avatar
+name 
+phone 
+email
+location
+experience
+bio
+qualification
+school board
+
+# only for teachers 
+subject teaching
+teaching mode
+
+# only for candiate
+job experience
+profesional skills
+
+
+
+->    /u/:username/dashboard
+                /u/sayantan_bal_92/dashboard
+                /u/sayantan_bal_k9x2/dashboard
+
+
+
+Action button -> 
+Only applicant's details 
+1st section -> 
+1. Mail id 
+2. Phone number 
+2nd section -> 
+   1. Name
+2. School board
+3. Qualification 
+   4. Graduation subject 
+   5. Experience in year
+   6. Address location 
+
+
+6. Notes if any       

@@ -3,7 +3,7 @@ import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
 import { IoSearch } from "react-icons/io5";
 import Search from "@/components/Search";
-import TuitionPost from "@/components/TuitionPost";
+import TuitionPost from "@/components/PostCards/TuitionPost";
 
 export default function DocsPage() {
   const Mockdata = {
@@ -28,19 +28,7 @@ export default function DocsPage() {
   return (
     <div className="flex flex-col items-center justify-center w-full px-2">
       <Search />
-      <ScrollShadow
-        className="max-w-full max-h-75 no-scrollbar my-2"
-        orientation="horizontal"
-      >
-        <div className="flex gap-2 ">
-          {/* 6 chips */}
-          {Array.from({ length: 6 }, (_, i) => (
-            <Chip key={i} radius="sm" className="p-4 px-2">
-              Chip {i + 1}
-            </Chip>
-          ))}
-        </div>
-      </ScrollShadow>
+      
       {Array.from({ length: 6 }, (_, i) => (
         <TuitionPost key={i} {...Mockdata}/>
       ))}

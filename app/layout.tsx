@@ -8,7 +8,6 @@ import { Providers } from "./providers";
 import { navConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
-import Footer from "@/components/Footer";
 import FloatingButton from "@/components/FloatingButton";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
 
@@ -55,7 +54,6 @@ export default function RootLayout({
               <FloatingButton />
               <Navbar />
               <main className="container mx-auto grow px-2">{children}</main>
-              <Footer />
             </div>
           </Providers>
         </ClickSpark>

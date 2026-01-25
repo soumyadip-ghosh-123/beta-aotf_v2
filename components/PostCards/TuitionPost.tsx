@@ -120,7 +120,7 @@ const TuitionPost = ({
   const router = useRouter();
   return (
     <Card className="max-w-115 w-full mx-auto pt-3 mb-4">
-      <CardHeader className="justify-between">
+      <CardHeader className="justify-between z-0">
         <User
           avatarProps={{
             src: `${createdByUserId.avatar || ""}`,

@@ -1,6 +1,5 @@
 'use client'
 import Link from "next/link";
-import React from "react";
 import { siteConfig, getFullAddress, getCopyrightText } from "@/config/site";
 import { Button } from "@heroui/button";
 import { FaFacebookSquare } from "react-icons/fa";
@@ -28,7 +27,7 @@ const Footer = () => {
     },
   ];
   return (
-    <footer className="m-auto px-8 mb-20 sm:mb-0 container w-full my-10">
+    <footer className="m-auto px-4 mb-20 sm:mb-0 container w-full my-10"> 
       <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-500 pb-10">
         {/* <div className="md:max-w-96">
           <h3 className="text-xl font-bold text-primary">{siteConfig.name}</h3>

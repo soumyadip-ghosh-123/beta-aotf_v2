@@ -1,0 +1,5 @@
+ignoredBuiltDependencies:
+  - '@heroui/shared-utils'
+  - '@tsparticles/engine'
+  - sharp
+  - unrs-resolver

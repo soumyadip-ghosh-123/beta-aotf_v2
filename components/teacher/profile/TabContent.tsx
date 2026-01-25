@@ -1,5 +1,4 @@
-import TuitionPost from "@/components/TuitionPost";
-import React from "react";
+import TuitionPost from "@/components/PostCards/TuitionPost";
 
 const TabContent = () => {
     const Mockdata = {
