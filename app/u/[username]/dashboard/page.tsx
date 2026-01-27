@@ -6,61 +6,83 @@ import React from "react";
 import { LiaCheckDoubleSolid } from "react-icons/lia";
 import { LuNotebookPen } from "react-icons/lu";
 import { RxCross2 } from "react-icons/rx";
+import { PiBagSimpleDuotone } from "react-icons/pi";
+import TuitionPost from "@/components/PostCards/TuitionPost";
 
 const page = () => {
+  const isTeacher = true;
+  const isCandidate = true; // Replace with actual logic to determine if user is a candidate
+  const Mockdata = {
+    postId: "P-25112500",
+    subject: "Science",
+    className: "8",
+    board: 2 as const, // ICSE = 2
+    preferredTime: "6 PM",
+    preferredDays: ["Mon", "Wed", "Fri"],
+    frequencyPerWeek: 2 as const, // twice = 2
+    classType: 1 as const, // in-person = 1
+    location: "Dhakuria near Metro Station",
+    monthlyBudget: 2000,
+    notes: "Only Female Teacher Required",
+    status: 1 as const, // open = 1
+    applicants: ["69254be157f77cfb98de0d6e", "69258aa32ef2dd07ebaae681"],
+    createdAt: new Date("2025-11-25T06:10:16.434Z"),
+    updatedAt: new Date("2025-11-25T10:55:23.704Z"),
+    createdByUserId: { name: "Soumyadip", avatar: "" },
+  };
   return (
     <div className="w-full">
       <BackButton title="Dashboard" />
 
-      <div className="flex w-full flex-col items-center">
-        <Tabs aria-label="Options" color="primary" variant="bordered">
-          <Tab
-            key="info"
-            title={
-              <div className="flex items-center space-x-2">
-                <LuNotebookPen size={20} />
-                <span>Info</span>
-              </div>
-            }
-          >
-            {/* Tab content */}
-            <div className="p-4">
-              <h2 className="font-semibold">Information</h2>
-              <p>This is the Info tab content.</p>
-            </div>
-          </Tab>
+      {/* Show Tabs ONLY if user is a Candidate */}
+      {isCandidate ? (
+        <div className="flex w-full flex-col items-center">
+          <Tabs aria-label="Options" color="primary" variant="solid" className="sticky top-18 z-20">
+            {/* Show Tuition tab ONLY if also Teacher */}
+            {isTeacher && (
+              <Tab
+                key="tuition"
+                title={
+                  <div className="flex items-center space-x-2">
+                    <LuNotebookPen size={20} />
+                    <span>Tuition</span>
+                  </div>
+                }
+              >
+                <div className="mt-4">
+                  {/* sample 5 post with map */}
+                  {[...Array(5)].map((_, index) => (
+                    <TuitionPost key={index} {...Mockdata} />
+                  ))}
+                </div>
+              </Tab>
+            )}
 
-          <Tab
-            key="approved"
-            title={
-              <div className="flex items-center space-x-2">
-                <LiaCheckDoubleSolid size={20} />
-                <span>Approved</span>
+            {/* Always show Jobs tab for any Candidate */}
+            <Tab
+              key="jobs"
+              title={
+                <div className="flex items-center space-x-2">
+                  <PiBagSimpleDuotone size={20} />
+                  <span>Jobs</span>
+                </div>
+              }
+            >
+              <div>
+                {[...Array(7)].map((_, index) => (
+                  <TuitionPost key={index} {...Mockdata} />
+                ))}
               </div>
-            }
-          >
-            <div className="p-4">
-              <h2 className="font-semibold">Approved Items</h2>
-              <p>List of approved entries.</p>
-            </div>
-          </Tab>
-
-          <Tab
-            key="rejected"
-            title={
-              <div className="flex items-center space-x-2">
-                <RxCross2 size={20} />
-                <span>Rejected</span>
-              </div>
-            }
-          >
-            <div className="p-4">
-              <h2 className="font-semibold">Rejected Items</h2>
-              <p>List of rejected entries.</p>
-            </div>
-          </Tab>
-        </Tabs>
-      </div>
+            </Tab>
+          </Tabs>
+        </div>
+      ) : (
+        <>
+          {[...Array(2)].map((_, index) => (
+            <TuitionPost key={index} {...Mockdata} />
+          ))}
+        </>
+      )}
     </div>
   );
 };

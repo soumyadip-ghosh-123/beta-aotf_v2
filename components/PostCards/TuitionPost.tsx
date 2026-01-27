@@ -185,7 +185,7 @@ const TuitionPost = ({
 
         <div className="flex gap-3">
           <Card className="w-full p-3 h-fit">
-            <CardHeader className="p-0 mb-2">
+            <CardHeader className="p-0 mb-2 z-0">
               <SlCalender
                 size={20}
                 className="text-primary inline-block mr-2"
@@ -195,7 +195,7 @@ const TuitionPost = ({
             <p className="text-sm">{getFrequencyText(frequencyPerWeek)}</p>
           </Card>
           <Card className="w-full p-3 h-fit">
-            <CardHeader className="p-0 mb-2">
+            <CardHeader className="p-0 mb-2 z-0">
               <FaBookOpen
                 size={20}
                 className="text-primary inline-block mr-2"

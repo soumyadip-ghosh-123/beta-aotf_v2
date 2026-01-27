@@ -40,7 +40,7 @@ import { RiLogoutBoxRLine } from "react-icons/ri";
 import Image from "next/image";
 
 export const Navbar = () => {
-  const isLoggedIn = false;
+  const isLoggedIn = true;
   const searchInput = (
     <Input
       aria-label="Search"
@@ -85,7 +85,7 @@ export const Navbar = () => {
         {/* </NavbarItem> */}
       </NavbarContent>
 
-      {isLoggedIn && (
+      {isLoggedIn ? (
         <NavbarContent justify="center">
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
@@ -101,13 +101,20 @@ export const Navbar = () => {
               <DropdownItem key="email" className="gap-2">
                 <p className="font-semibold">zoey@example.com</p>
               </DropdownItem>
-              <DropdownItem key="profile">
+
+              <DropdownItem
+                key="profile"
+                onPress={() => router.push("/u/zoey/profile")}
+              >
                 <div className="flex items-center gap-2">
                   <FaUserAlt className="text-default-500" />
                   <p className="font-semibold">Profile</p>
                 </div>
               </DropdownItem>
-              <DropdownItem key="dashboard">
+              <DropdownItem
+                key="dashboard"
+                onPress={() => router.push("/u/zoey/dashboard")}
+              >
                 <div className="flex items-center gap-2">
                   <RiDashboardHorizontalFill className="text-default-500" />
                   <p className="font-semibold">Dashboard</p>
@@ -117,6 +124,9 @@ export const Navbar = () => {
                 key="logout"
                 color="danger"
                 className="text-danger bg-danger/10 hover:bg-danger/20"
+                onPress={() => {
+                  router.push("/login");
+                }}
               >
                 <div className="flex items-center gap-2">
                   <RiLogoutBoxRLine className="text-danger" />
@@ -126,8 +136,7 @@ export const Navbar = () => {
             </DropdownMenu>
           </Dropdown>
         </NavbarContent>
-      )}
-      {!isLoggedIn && (
+      ) : (
         <NavbarContent justify="center" className="gap-4">
           <Button
             variant="shadow"

@@ -19,6 +19,7 @@ import {
 import { Chip } from "@heroui/chip";
 import BackButton from "@/components/BackButton";
 import { IoNotificationsCircleOutline } from "react-icons/io5";
+import { GoVerified } from "react-icons/go";
 
 const page = () => {
   const items = [
@@ -46,8 +47,8 @@ const page = () => {
         <div className="flex flex-row items-center justify-start gap-4 py-4">
           <Badge
             isOneChar
-            color="danger"
-            content={<IoNotificationsCircleOutline size={100} />}
+            color="primary"
+            content={<GoVerified size={100} />}
             placement="top-right"
             shape="circle"
             showOutline={false}
@@ -263,8 +264,8 @@ function ProfessionalDetailsCard({
   teachingMode: string;
 }) {
   return (
-    <Card>
-      <CardBody className="p-6">
+    <Card className="p-4 max-w-lg mx-auto">
+      <CardBody className="p-0">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Professional Details</h3>
         </div>

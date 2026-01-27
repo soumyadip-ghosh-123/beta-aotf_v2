@@ -18,7 +18,7 @@ const Search = () => {
   const isShowChip = false; // You can replace this with actual logic based on screen size
 
   return (
-    <div className="max-w-md w-full flex flex-col justify-center sticky top-20 z-10 mx-auto my-4 bg-white backdrop-blur-xs">
+    <div className="max-w-md w-full flex flex-col justify-center sticky top-20 z-10 mx-auto my-4 bg-white dark:bg-gray-800 rounded backdrop-blur-xs">
       <div className="flex w-full max-w-2xl items-center gap-2">
         <Input
           type="text"
