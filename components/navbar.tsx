@@ -64,8 +64,8 @@ export const Navbar = () => {
   const router = useRouter();
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky" className="z-50">
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
+    <HeroUINavbar maxWidth="xl" position="sticky" className="z-50 h-fit top-0">
+      <NavbarContent className="h-fit" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
             <Image
@@ -73,20 +73,19 @@ export const Navbar = () => {
               alt="Logo"
               width={50}
               height={50}
-              className="h-16 w-16"
             />
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
 
-      <NavbarContent className="flex basis-1/5 sm:basis-full" justify="end">
+      <NavbarContent className="flex h-fit" justify="end">
         {/* <NavbarItem className="flex gap-2"> */}
         <ThemeSwitch />
         {/* </NavbarItem> */}
       </NavbarContent>
 
       {isLoggedIn ? (
-        <NavbarContent justify="center">
+        <NavbarContent justify="center" className=" h-fit">
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Avatar
@@ -121,6 +120,15 @@ export const Navbar = () => {
                 </div>
               </DropdownItem>
               <DropdownItem
+                key="feedback"
+                onPress={() => router.push("/u/zoey/feedback")}
+              >
+                <div className="flex items-center gap-2">
+                  <RiDashboardHorizontalFill className="text-default-500" />
+                  <p className="font-semibold">Feedback</p>
+                </div>
+              </DropdownItem>
+              <DropdownItem
                 key="logout"
                 color="danger"
                 className="text-danger bg-danger/10 hover:bg-danger/20"
@@ -137,7 +145,7 @@ export const Navbar = () => {
           </Dropdown>
         </NavbarContent>
       ) : (
-        <NavbarContent justify="center" className="gap-4">
+        <NavbarContent justify="center" className="gap-4 h-fit">
           <Button
             variant="shadow"
             color="primary"

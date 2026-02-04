@@ -116,10 +116,12 @@ const TuitionPost = ({
   const [isApplied, setIsApplied] = useState(false);
 
   const boardName = getBoardName(board);
-  const chips = [className, boardName, subject].filter(Boolean);
+  const chips = ["Class - " + className, "Board - " + boardName].filter(
+    Boolean
+  );
   const router = useRouter();
   return (
-    <Card className="max-w-115 w-full mx-auto pt-3 mb-4">
+    <Card className="max-w-md w-full mx-auto pt-3 mb-4">
       <CardHeader className="justify-between z-0">
         <User
           avatarProps={{
@@ -135,7 +137,7 @@ const TuitionPost = ({
       </CardHeader>
       <CardBody className="px-3 py-0 text-small text-default-400">
         <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-snug">
-          {subject} Tuition Needed
+          {subject}
         </h1>
         {/* 3 chips with map function */}
         <div className="flex gap-2">
@@ -145,7 +147,7 @@ const TuitionPost = ({
               radius="sm"
               variant="faded"
               size="sm"
-              className="bg-default-100"
+              className="bg-default-100 text-sm font-medium"
             >
               {chip}
             </Chip>
@@ -177,7 +179,7 @@ const TuitionPost = ({
                 Monthly Budget
               </span>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
-                ₹{monthlyBudget.toLocaleString()}/month
+                ₹ {monthlyBudget.toLocaleString()}/month
               </p>
             </div>
           </div>
@@ -235,7 +237,7 @@ const TuitionPost = ({
             View Details
             <FaEye />
           </Button>
-          <Button size="sm" color="secondary" variant="bordered">
+          <Button size="sm" color="secondary">
             Share
             <FaShareFromSquare />
           </Button>

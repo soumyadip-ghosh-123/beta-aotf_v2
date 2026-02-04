@@ -1,3 +1,4 @@
+"use client";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
@@ -8,66 +9,58 @@ import Onboarding from "@/components/reactbits/Onboarding";
 import { FaBook } from "react-icons/fa";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { IdCard } from "@/components/aceternity/IdCard";
+import Carousel from "@/components/reactbits/ui/Carousel";
+import { Archive, Home } from "lucide-react";
+import { MdAccountBalance, MdSettings } from "react-icons/md";
+import { ArcNavigation } from "@/components/arc-navigation";
+import JobPost from "@/components/PostCards/JobPost";
+import EnquiryForm from "@/components/enquiry/EnquiryForm";
 export default function PricingPage() {
-  const data = {
-    postId: "P-25112500",
-    subject: "Science",
-    className: "8",
-    board: 2 as const, // ICSE = 2
-    preferredTime: "6 PM",
-    preferredDays: ["Mon", "Wed", "Fri"],
-    frequencyPerWeek: 2 as const, // twice = 2
-    classType: 1 as const, // in-person = 1
-    location: "Dhakuria near Metro Station",
-    monthlyBudget: 2000,
-    notes: "Only Female Teacher Required",
-    status: 1 as const, // open = 1
-    applicants: ["69254be157f77cfb98de0d6e", "69258aa32ef2dd07ebaae681"],
-    createdAt: new Date("2025-11-25T06:10:16.434Z"),
-    updatedAt: new Date("2025-11-25T10:55:23.704Z"),
-    createdByUserId: { name: "Soumyadip", avatar: "" },
-  };
+  const jobPostData = {
+    jobId: "JOB-081225001",
+    companyName: "Google LLC",
+    phoneNumber: "8697159284",
+    companyType: "Steel Industries",
+    designation: "HR for Payroll, PF & ESIC",
+    experience: "Minimum 5 Years",
+
+    locationType: 1, // ✅ literal preserved
+    location: "Chandni Metro Station, Kolkata",
+    gender: 1,
+    status: 1,
+    jobType: 1,
+
+    timing: "10:00 AM – 7:00 PM",
+    salary: "₹70,000 CTC + PF",
+    requiredQualification: "Degree in HR / Finance or related field",
+    createdAt: new Date(),
+  } as const;
+
+  const tuitionPostData = {
+    postId: "TUITION-081225001",
+    subject: "Mathematics",
+    className: "10th Grade",
+    board: 1,
+    frequencyPerWeek: 3,
+    classType: 2,
+    status: 1,
+    createdAt: new Date(),
+    guardianName: "Anita Sharma",
+    guardianPhone: "9876543210",
+    preferredTime: "4:00 PM - 6:00 PM",
+    preferredDays: ["Monday", "Wednesday", "Friday"],
+    location: "Salt Lake City, Kolkata",
+    monthlyBudget: 5000,
+    notes: "Looking for an experienced tutor to help with exam preparation.",
+    applicants: [],
+    createdByUserId: { name: "Anita Sharma", avatar: "" },
+    updatedAt: new Date(),
+  } as const;
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-4">
-      {/* <Search /> */}
-      {/* <TuitionPost {...data} /> */}
-      {/* Your content here */}
-      {/* <ImagesSliderDemo /> */}
-      {/* </div> */}
-      {/* <ImageSlider
-        slides={[
-          {
-            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
-            title: "First Slide",
-            description: "This is the first image",
-          },
-          {
-            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
-            title: "Second Slide",
-            description: "This is the second image",
-          },
-          {
-            src: "https://images.unsplash.com/photo-1543269865-0a740d43b90c?q=80&w=800&h=400&auto=format&fit=crop",
-            title: "Third Slide",
-            description: "This is the third image",
-          },
-        ]}
-        autoPlay
-        interval={3000}
-      />
-      <TimelineDemo /> */}
-      {/* <TextType
-        text={["Text typing effect", "for your websites", "Happy coding!"]}
-        typingSpeed={75}
-        pauseDuration={1500}
-        showCursor={true}
-        cursorCharacter="_"
-      /> */}
-      {/* <Onboarding /> */}
-
-      {/* educational content */}
-      <IdCard />
+      <EnquiryForm />
+      {/* <TuitionPost {...tuitionPostData} /> */}
     </div>
   );
 }

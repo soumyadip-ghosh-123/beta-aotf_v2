@@ -136,3 +136,14 @@ Only applicant's details
 
 
 6. Notes if any       
+
+
+http://localhost:3000/posts/P-25112500
+
+data
+api/
+
+{
+    name: "pritam"
+    roll: "13"
+}

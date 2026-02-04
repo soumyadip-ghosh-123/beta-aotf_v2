@@ -8,6 +8,7 @@ import { LuNotebookPen } from "react-icons/lu";
 import { RxCross2 } from "react-icons/rx";
 import { PiBagSimpleDuotone } from "react-icons/pi";
 import TuitionPost from "@/components/PostCards/TuitionPost";
+import JobPost from "@/components/PostCards/JobPost";
 
 const page = () => {
   const isTeacher = true;
@@ -30,6 +31,25 @@ const page = () => {
     updatedAt: new Date("2025-11-25T10:55:23.704Z"),
     createdByUserId: { name: "Soumyadip", avatar: "" },
   };
+  const jobPostData = {
+    jobId: "JOB-081225001",
+    companyName: "Google LLC",
+    phoneNumber: "8697159284",
+    companyType: "Steel Industries",
+    designation: "HR for Payroll, PF & ESIC",
+    experience: "Minimum 5 Years",
+
+    locationType: 1, // ✅ literal preserved
+    location: "Chandni Metro Station, Kolkata",
+    gender: 1,
+    status: 1,
+    jobType: 1,
+
+    timing: "10:00 AM – 7:00 PM",
+    salary: "₹70,000 CTC + PF",
+    requiredQualification: "Degree in HR / Finance or related field",
+    createdAt: new Date(),
+  } as const;
   return (
     <div className="w-full">
       <BackButton title="Dashboard" />
@@ -37,7 +57,12 @@ const page = () => {
       {/* Show Tabs ONLY if user is a Candidate */}
       {isCandidate ? (
         <div className="flex w-full flex-col items-center">
-          <Tabs aria-label="Options" color="primary" variant="solid" className="sticky top-18 z-20">
+          <Tabs
+            aria-label="Options"
+            color="primary"
+            variant="solid"
+            className="sticky top-18 z-20"
+          >
             {/* Show Tuition tab ONLY if also Teacher */}
             {isTeacher && (
               <Tab
@@ -49,7 +74,7 @@ const page = () => {
                   </div>
                 }
               >
-                <div className="mt-4">
+                <div>
                   {/* sample 5 post with map */}
                   {[...Array(5)].map((_, index) => (
                     <TuitionPost key={index} {...Mockdata} />
@@ -70,7 +95,7 @@ const page = () => {
             >
               <div>
                 {[...Array(7)].map((_, index) => (
-                  <TuitionPost key={index} {...Mockdata} />
+                  <JobPost key={index} {...jobPostData} />
                 ))}
               </div>
             </Tab>

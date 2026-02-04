@@ -7,6 +7,8 @@ import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/tabs";
 import { addToast } from "@heroui/toast";
+import EnquiryForm from "@/components/enquiry/EnquiryForm";
+import { TestTube } from "lucide-react";
 
 export default function EnquiryPage() {
   const [selected, setSelected] = useState("guardian");
@@ -102,90 +104,8 @@ export default function EnquiryPage() {
     }, 1000);
   };
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-      <div className="w-full max-w-2xl">
-        <Card className="w-full mt-4">
-          <CardHeader className="flex flex-col gap-1 pb-4">
-            <h2 className="text-2xl font-bold">Enquiry Form</h2>
-            <p className="text-sm text-default-500">
-              Are you a Guardian looking for tutors or a Client wanting to post
-              a job?
-            </p>
-          </CardHeader>
-          <CardBody>
-            <div className="mb-4">
-              <p className="text-sm text-default-600">
-                Looking for a tutor for your child? Fill out the form below.
-              </p>
-            </div>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                label="Name"
-                placeholder="Enter your full name"
-                value={formData.name}
-                onValueChange={handleNameChange}
-                isRequired
-                isClearable
-                variant="bordered"
-                isInvalid={errors.name}
-                errorMessage={
-                  errors.name
-                    ? "Please enter a valid name (2-50 characters, letters only)"
-                    : ""
-                }
-                classNames={{
-                  input: "text-base",
-                  inputWrapper: errors.name ? "border-danger" : "",
-                }}
-              />
-
-              <Input
-                label="Phone Number"
-                placeholder="Enter your phone number"
-                type="tel"
-                value={formData.phone}
-                onValueChange={handlePhoneChange}
-                isRequired
-                isClearable
-                variant="bordered"
-                isInvalid={errors.phone}
-                errorMessage={
-                  errors.phone ? "Please enter a valid Indian phone number" : ""
-                }
-                classNames={{
-                  input: "text-base",
-                  inputWrapper: errors.phone ? "border-danger" : "",
-                }}
-              />
-              <Textarea
-                isClearable
-                label="Query"
-                variant="bordered"
-                placeholder="Write your enquiry here..."
-                value={formData.query}
-                onChange={(e) =>
-                  setFormData({ ...formData, query: e.target.value })
-                }
-                required
-                rows={4}
-                classNames={{
-                  input: "resize-y min-h-[40px]",
-                }}
-              />
-
-              <Button
-                type="submit"
-                color="primary"
-                size="lg"
-                isLoading={isSubmitting}
-                className="w-full mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
-              >
-                Submit Your Enquiry
-              </Button>
-            </form>
-          </CardBody>
-        </Card>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] w-full">
+      <EnquiryForm />
     </div>
   );
 }

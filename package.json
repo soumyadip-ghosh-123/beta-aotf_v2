@@ -54,9 +54,9 @@
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
-    "gsap": "^3.14.2",
     "clsx": "2.1.1",
     "framer-motion": "12.23.26",
+    "gsap": "^3.14.2",
     "intl-messageformat": "11.0.8",
     "lucide-react": "^0.562.0",
     "mongoose": "^9.1.1",
@@ -66,7 +66,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.5.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "16.1.1",
