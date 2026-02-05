@@ -107,7 +107,7 @@ export default function FeedbackForm() {
           <div>
             <label className="text-sm block mb-2">Rating *</label>
 
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-5 gap-1 justify-items-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Button
                   key={star}
@@ -118,7 +118,7 @@ export default function FeedbackForm() {
                   className="p-1"
                 >
                   <Star
-                    size={24}
+                    size={30}
                     className={`transition-colors ${
                       (rating ?? 0) >= star
                         ? "fill-yellow-400 text-yellow-400"

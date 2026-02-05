@@ -347,7 +347,6 @@
     display: grid;
     grid-template-rows: 52px 1fr 56px;
     border-radius: 5px;
-    user-select: none;
     max-height: 85vh;
     max-width: 60vw;
 }

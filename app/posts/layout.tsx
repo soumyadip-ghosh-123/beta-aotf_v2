@@ -1,3 +1,5 @@
+import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
+
 export default function DocsLayout({
   children,
 }: {

@@ -2,31 +2,15 @@
 import {
   Navbar as HeroUINavbar,
   NavbarContent,
-  NavbarMenu,
-  NavbarMenuToggle,
   NavbarBrand,
-  NavbarItem,
-  NavbarMenuItem,
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Kbd } from "@heroui/kbd";
-import { Link } from "@heroui/link";
 import { Input } from "@heroui/input";
-import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
-import clsx from "clsx";
-
-import { navConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import {
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  HeartFilledIcon,
-  SearchIcon,
-  Logo,
-} from "@/components/icons";
+import { SearchIcon } from "@/components/icons";
 import {
   Dropdown,
   DropdownItem,
@@ -38,7 +22,7 @@ import { FaUserAlt } from "react-icons/fa";
 import { RiDashboardHorizontalFill } from "react-icons/ri";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import Image from "next/image";
-
+import { MdFeedback } from "react-icons/md";
 export const Navbar = () => {
   const isLoggedIn = true;
   const searchInput = (
@@ -68,12 +52,7 @@ export const Navbar = () => {
       <NavbarContent className="h-fit" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Image
-              src="/AOTF.svg"
-              alt="Logo"
-              width={50}
-              height={50}
-            />
+            <Image src="/AOTF.svg" alt="Logo" width={50} height={50} />
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
@@ -124,7 +103,7 @@ export const Navbar = () => {
                 onPress={() => router.push("/u/zoey/feedback")}
               >
                 <div className="flex items-center gap-2">
-                  <RiDashboardHorizontalFill className="text-default-500" />
+                  <MdFeedback className="text-default-500" />
                   <p className="font-semibold">Feedback</p>
                 </div>
               </DropdownItem>

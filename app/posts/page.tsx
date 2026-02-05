@@ -4,6 +4,7 @@ import { Chip } from "@heroui/chip";
 import { IoSearch } from "react-icons/io5";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
+import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
 
 export default function DocsPage() {
   const Mockdata = {
@@ -26,12 +27,14 @@ export default function DocsPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full px-2">
-      <Search />
-      
-      {Array.from({ length: 6 }, (_, i) => (
-        <TuitionPost key={i} {...Mockdata}/>
-      ))}
-    </div>
+    <FilterSidebarProvider>
+      <div className="flex flex-col items-center justify-center w-full px-2">
+        <Search />
+
+        {Array.from({ length: 6 }, (_, i) => (
+          <TuitionPost key={i} {...Mockdata} />
+        ))}
+      </div>
+    </FilterSidebarProvider>
   );
 }

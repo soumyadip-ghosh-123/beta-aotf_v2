@@ -331,7 +331,7 @@ path {
 }
 .dTableName {
   padding: 3px 0 1px 3px;
-  user-select: none;
+  
   font-weight: 700;
   text-shadow: 0 0 1px #000;
 }
@@ -344,7 +344,7 @@ path {
 }
 .dTableNameLight {
   padding: 3px 0 1px 3px;
-  user-select: none;
+  
   font-weight: 700;
 }
 
@@ -372,7 +372,7 @@ path {
 .im-tp .dTableName {
   padding: 1px 0 1px 0;
   cursor: move;
-  user-select: none;
+  
   text-align: left;
 }
 
@@ -381,7 +381,7 @@ path {
   display: flex;
   flex-direction: column;
   height: 100%;
-  user-select: none;
+  
   flex-grow: 1;
   overflow: hidden;
   cursor: pointer;
@@ -395,7 +395,7 @@ path {
   min-width: auto;
   color: #555;
   background: #fff;
-  user-select: none;
+  
   flex-grow: 1;
   cursor: pointer;
 }
@@ -505,7 +505,7 @@ pre.im-n-text {
   min-height: auto;
   min-width: auto;
   color: #555;
-  user-select: none;
+  
   flex-grow: 1;
 }
 
@@ -648,7 +648,7 @@ circle.relationCardinality {
 
 text,
 tspan {
-  user-select: none;
+  
   cursor: pointer;
 }
 
@@ -916,7 +916,7 @@ tspan {
   .dTableName {
     padding: 3px 0 1px 3px;
     cursor: move;
-    user-select: none;
+    
     font-weight: 700;
     text-shadow: none;
   }

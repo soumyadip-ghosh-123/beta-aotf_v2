@@ -1,19 +1,5 @@
 "use client";
-import Search from "@/components/Search";
-import TuitionPost from "@/components/PostCards/TuitionPost";
-import ClickSpark from "@/components/reactbits/ui/ClickSpark";
-import ImageSlider from "@/components/ImageSlider";
-import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
-import TextType from "@/components/reactbits/ui/TextType";
-import Onboarding from "@/components/reactbits/Onboarding";
-import { FaBook } from "react-icons/fa";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { IdCard } from "@/components/aceternity/IdCard";
-import Carousel from "@/components/reactbits/ui/Carousel";
-import { Archive, Home } from "lucide-react";
-import { MdAccountBalance, MdSettings } from "react-icons/md";
-import { ArcNavigation } from "@/components/arc-navigation";
-import JobPost from "@/components/PostCards/JobPost";
+import TuitionPostForm from "@/components/admin/postform/tuitionPostForm";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
 export default function PricingPage() {
   const jobPostData = {
@@ -59,8 +45,7 @@ export default function PricingPage() {
 
   return (
     <div className="w-full flex flex-col items-center justify-center gap-4">
-      <EnquiryForm />
-      {/* <TuitionPost {...tuitionPostData} /> */}
+      <TuitionPostForm />
     </div>
   );
 }

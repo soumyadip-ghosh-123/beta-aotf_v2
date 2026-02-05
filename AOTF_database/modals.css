@@ -27,7 +27,6 @@
   grid-template-rows: 52px 1fr 56px;
   min-width: 950px;
   border-radius: 5px;
-  user-select: none;
   max-height: 80vh;
   min-height: 500px;
 }
@@ -49,7 +48,6 @@
   font-size: 20px;
   border-bottom: 0;
   background: #fff;
-  user-select: none;
   z-index: 3;
   color: #000;
   text-align: center;

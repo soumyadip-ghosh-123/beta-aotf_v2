@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import Link from "next/link";
 import { siteConfig, getFullAddress, getCopyrightText } from "@/config/site";
 import { Button } from "@heroui/button";
@@ -6,28 +6,29 @@ import { FaFacebookSquare } from "react-icons/fa";
 import { GrInstagram } from "react-icons/gr";
 import { FaLinkedin } from "react-icons/fa6";
 import ButtonGroup from "./ButtonGroup";
-import { FcPrivacy } from "react-icons/fc";
+import { RiRefund2Fill } from "react-icons/ri";
+import { GlobeLock, ReceiptText } from "lucide-react";
 
 const Footer = () => {
-    const items = [
+  const items = [
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <GlobeLock size={22} />,
       title: "Privacy Policy",
       link: "/privacy-policy",
     },
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <RiRefund2Fill size={22} />,
       title: "Refund Policy",
       link: "/refund-policy",
     },
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <ReceiptText size={22} />,
       title: "Terms of Service",
       link: "/terms",
     },
   ];
   return (
-    <footer className="m-auto px-4 mb-20 sm:mb-0 container w-full my-10"> 
+    <footer className="m-auto px-4 mb-20 sm:mb-0 container w-full my-10">
       <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-500 pb-10">
         {/* <div className="md:max-w-96">
           <h3 className="text-xl font-bold text-primary">{siteConfig.name}</h3>
@@ -49,7 +50,7 @@ const Footer = () => {
           </div>
         </div> */}
 
-        <ButtonGroup items={items} className="px-0"/>
+        <ButtonGroup items={items} className="px-0" />
 
         <div className="flex-1 flex md:flex-row items-start md:justify-end gap-5 md:gap-20">
           {/* <div>
@@ -67,7 +68,6 @@ const Footer = () => {
               ))}
             </ul>
           </div> */}
-
 
           <div>
             <h2 className="font-semibold mb-1">Visit us at:</h2>

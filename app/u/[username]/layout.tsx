@@ -4,9 +4,9 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col items-center justify-center gap-4 ">
+    <section className="flex flex-col items-center justify-center gap-4">
       {/* <div className="justify-center"> */}
-        {children}
+      {children}
       {/* </div> */}
     </section>
   );
