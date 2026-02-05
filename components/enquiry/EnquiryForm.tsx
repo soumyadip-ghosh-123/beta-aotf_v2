@@ -45,7 +45,7 @@ export default function EnquiryForm() {
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const result = schema.safeParse(form);
     if (!result.success) {
@@ -61,15 +61,34 @@ export default function EnquiryForm() {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      // simulate submit - include role in submission object
-      const submission = { role, ...form, timestamp: new Date().toISOString() };
-      console.log("Enquiry submitted:", submission);
-      showToast(`Enquiry submitted as ${role}`, "success");
+    try {
+      const res = await fetch("/api/enquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phoneNumber: form.phone.trim(),
+          query: form.query.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      showToast(
+        `Enquiry submitted successfully! Your ID: ${data.enquiryId}`,
+        "success"
+      );
       setForm({ name: "", phone: "", query: "" });
       setErrors({});
+    } catch (err: any) {
+      showToast(err.message || "Failed to submit enquiry", "error");
+    } finally {
       setIsSubmitting(false);
-    }, 800);
+    }
   };
 
   return (

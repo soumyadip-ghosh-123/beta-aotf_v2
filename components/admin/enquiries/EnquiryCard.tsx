@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -18,24 +19,35 @@ import {
   Clock,
   ShieldCheck,
   RotateCcw,
-  Icon,
-  PhoneCall,
   TrendingUp,
 } from "lucide-react";
 import { FaPhone } from "react-icons/fa";
-import { IoConstruct } from "react-icons/io5";
-import { Link } from "@heroui/link";
 import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
+import { addToast } from "@heroui/toast";
+
+export const ENQUIRY_STATUSES = [
+  "new",
+  "in_progress",
+  "contacted",
+  "unreachable",
+  "resolved",
+  "closed",
+] as const;
+
+export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 
 export type Enquiry = {
+  _id: string;
   enquiryId: string;
   name: string;
-  phone: string;
+  phoneNumber: string;
   query: string;
-  currentStatus: "new" | "in-progress" | "resolved";
-  lastActionByAdmin?: string;
-  adminRole?: "super admin" | "support admin";
+  currentStatus: EnquiryStatus;
+  lastActionByAdminName?: string | null;
+  lastActionByAdminRole?: string | null;
+  lastAttemptNumber?: number;
+  firstResponseAt?: string;
   resolvedAt?: string;
   lastActionAt?: string;
   createdAt: string;
@@ -44,10 +56,54 @@ export type Enquiry = {
 
 type EnquiryCardProps = {
   enquiry: Enquiry;
+  onStatusUpdated?: () => void;
 };
 
-export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
+export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardProps) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStatusUpdate = async (onClose: () => void) => {
+    if (!selectedStatus) {
+      addToast({ description: "Please select a status", color: "danger" });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // TODO: Replace with actual admin info from auth session
+      const res = await fetch(`/api/enquiry/${enquiry._id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          toStatus: selectedStatus,
+          action: `Status changed from ${enquiry.currentStatus} to ${selectedStatus}`,
+          notes: notes || undefined,
+          adminId: "000000000000000000000000", // TODO: from auth
+          adminName: "Admin",                  // TODO: from auth
+          adminRole: "super_admin",             // TODO: from auth
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update status");
+      }
+
+      addToast({ description: "Status updated successfully", color: "success" });
+      setSelectedStatus("");
+      setNotes("");
+      onClose();
+      onStatusUpdated?.();
+    } catch (err: any) {
+      addToast({ description: err.message, color: "danger" });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <>
       <Modal
@@ -67,9 +123,7 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
                     <TrendingUp size={16} />
                     <p className="text-sm text-default-600">
                       Current Status:{" "}
-                      <Chip color="primary">
-                        {enquiry.currentStatus.toUpperCase()}
-                      </Chip>
+                      <StatusChip status={enquiry.currentStatus} />
                     </p>
                   </div>
                   <MetaRow
@@ -79,13 +133,16 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
                   />
                 </div>
 
-                {/* Select options with this options "new","in_progress","contacted","unreachable","resolved","closed"*/}
                 <Select
                   isRequired
-                  defaultSelectedKeys={["cat"]}
                   label="Update Status"
                   placeholder="Select status"
                   labelPlacement="outside-left"
+                  selectedKeys={selectedStatus ? [selectedStatus] : []}
+                  onSelectionChange={(keys) => {
+                    const val = Array.from(keys)[0] as string;
+                    setSelectedStatus(val);
+                  }}
                 >
                   <SelectItem key="new">New</SelectItem>
                   <SelectItem key="in_progress">In Progress</SelectItem>
@@ -99,13 +156,19 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
                   label="Add Notes"
                   placeholder="Add any notes regarding this status update"
                   minRows={4}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                 />
               </ModalBody>
               <ModalFooter>
                 <Button color="danger" variant="flat" onPress={onClose}>
                   Cancel
                 </Button>
-                <Button color="primary" onPress={onClose}>
+                <Button
+                  color="primary"
+                  isLoading={isUpdating}
+                  onPress={() => handleStatusUpdate(onClose)}
+                >
                   Update
                 </Button>
               </ModalFooter>
@@ -135,7 +198,7 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
             title="Name"
             subTitle="Phone Number"
             value={enquiry.name}
-            subValue={enquiry.phone}
+            subValue={enquiry.phoneNumber}
             subIcon={<Phone size={16} />}
           />
 
@@ -153,8 +216,8 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
               icon={<ShieldCheck size={16} />}
               label="Last Action By"
               value={
-                enquiry.lastActionByAdmin
-                  ? `${enquiry.lastActionByAdmin} ${enquiry.adminRole ? `(${enquiry.adminRole})` : ""}`
+                enquiry.lastActionByAdminName
+                  ? `${enquiry.lastActionByAdminName} ${enquiry.lastActionByAdminRole ? `(${enquiry.lastActionByAdminRole.replace("_", " ")})` : ""}`
                   : "-"
               }
             />
@@ -166,7 +229,7 @@ export default function EnquiryCard({ enquiry }: EnquiryCardProps) {
             <MetaRow
               icon={<RotateCcw size={16} />}
               label="Attempt number"
-              value={"2"}
+              value={String(enquiry.lastAttemptNumber ?? 0)}
             />
           </div>
         </CardBody>
@@ -191,16 +254,24 @@ const EnquiryModal = () => {
 
 /* ---------- Sub Components ---------- */
 
-function StatusChip({ status }: { status: Enquiry["currentStatus"] }) {
-  const config = {
+function StatusChip({ status }: { status: EnquiryStatus }) {
+  const config: Record<
+    EnquiryStatus,
+    { color: "primary" | "warning" | "success" | "danger" | "secondary" | "default"; label: string }
+  > = {
     new: { color: "primary", label: "NEW" },
-    "in-progress": { color: "warning", label: "IN PROGRESS" },
+    in_progress: { color: "warning", label: "IN PROGRESS" },
+    contacted: { color: "secondary", label: "CONTACTED" },
+    unreachable: { color: "danger", label: "UNREACHABLE" },
     resolved: { color: "success", label: "RESOLVED" },
-  } as const;
+    closed: { color: "default", label: "CLOSED" },
+  };
+
+  const c = config[status] ?? { color: "default" as const, label: status.toUpperCase() };
 
   return (
-    <Chip color={config[status].color} variant="flat" size="sm">
-      {config[status].label}
+    <Chip color={c.color} variant="flat" size="sm">
+      {c.label}
     </Chip>
   );
 }
