@@ -31,7 +31,7 @@ export default function EnquiryForm() {
   const placeHolderText =
     role === "guardian"
       ? "I need a science tutor for my son in class 6, ICSE"
-      : "I need a specific talent for my company/project.";
+      : "I need a specific candidate/talent for my company/project.";
 
   const showToast = (message: string, kind: "success" | "error") => {
     addToast({

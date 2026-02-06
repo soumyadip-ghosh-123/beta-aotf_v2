@@ -54,7 +54,7 @@ EnquirySchema.index(
   { currentStatus: 1, createdAt: -1 },
   { name: "enquiry_ix_2" },
 );
-EnquirySchema.index({ phoneNumber: 1 }, { name: "enquiry_ix_3", unique: true });
+EnquirySchema.index({ phoneNumber: 1 }, { name: "enquiry_ix_3" });
 EnquirySchema.index(
   { phoneNumber: 1, currentStatus: 1 },
   { name: "enquiry_ix_4" },
