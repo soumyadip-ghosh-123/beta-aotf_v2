@@ -38,14 +38,22 @@ export default function FilterSidebar({
             ))}
           </Select> */}
 
-          <Select label="Subject" defaultSelectedKeys={["all"]}>
+          <Select
+            label="Subject"
+            selectionMode="multiple"
+            defaultSelectedKeys={["all"]}
+          >
             <SelectItem key="all">All</SelectItem>
             <SelectItem key="math">Math</SelectItem>
             <SelectItem key="science">Science</SelectItem>
             <SelectItem key="english">English</SelectItem>
           </Select>
 
-          <Select label="Board" defaultSelectedKeys={["all"]}>
+          <Select
+            label="Board"
+            selectionMode="multiple"
+            defaultSelectedKeys={["all"]}
+          >
             <SelectItem key="all">All</SelectItem>
             <SelectItem key="cbse">CBSE</SelectItem>
             <SelectItem key="icse">ICSE</SelectItem>
@@ -58,9 +66,10 @@ export default function FilterSidebar({
           </Select>
 
           <Slider
+            showTooltip
             className="max-w-md"
             defaultValue={[500, 5000]}
-            formatOptions={{ style: "currency", currency: "USD" }}
+            formatOptions={{ style: "currency", currency: "INR" }}
             label="Price Range"
             maxValue={5000}
             minValue={500}

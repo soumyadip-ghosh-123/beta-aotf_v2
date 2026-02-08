@@ -2,6 +2,7 @@ import { Input } from "@heroui/input";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
 import { IoSearch } from "react-icons/io5";
+import { Pagination } from "@heroui/pagination";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
@@ -28,13 +29,14 @@ export default function DocsPage() {
 
   return (
     <FilterSidebarProvider>
-      <div className="flex flex-col items-center justify-center w-full px-2">
+      <div className="flex flex-col items-center justify-center w-full px-2 mb-16">
         <Search />
 
         {Array.from({ length: 6 }, (_, i) => (
           <TuitionPost key={i} {...Mockdata} />
         ))}
       </div>
+      <Pagination initialPage={1} total={10} className="p-2 fixed bottom-4 left-1/2 transform -translate-x-1/2 backdrop-blur-md rounded-2xl"/>
     </FilterSidebarProvider>
   );
 }

@@ -235,9 +235,9 @@ export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardPro
         </CardBody>
         <CardFooter className="grid grid-cols-3 gap-2 justify-end">
           {/* Action buttons can go here */}
-          <Button color="secondary">Cancel</Button>
-          <Button color="secondary" onPress={onOpen}>
-            open
+          <Button color="secondary">Create</Button>
+          <Button color="success" onPress={onOpen}>
+            Update
           </Button>
           <Button color="primary">
             <FaPhone /> Call

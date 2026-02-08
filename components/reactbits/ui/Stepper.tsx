@@ -15,6 +15,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   initialStep?: number;
   onStepChange?: (step: number) => void;
   onFinalStepCompleted?: () => void;
+  validateStep?: (step: number) => boolean;
   stepCircleContainerClassName?: string;
   stepContainerClassName?: string;
   contentClassName?: string;
@@ -36,6 +37,7 @@ export default function Stepper({
   initialStep = 1,
   onStepChange = () => {},
   onFinalStepCompleted = () => {},
+  validateStep,
   stepCircleContainerClassName = "",
   stepContainerClassName = "",
   contentClassName = "",
@@ -63,7 +65,6 @@ export default function Stepper({
       onStepChange(newStep);
     }
   };
-
   const handleBack = () => {
     if (currentStep > 1) {
       setDirection(-1);
@@ -73,12 +74,20 @@ export default function Stepper({
 
   const handleNext = () => {
     if (!isLastStep) {
+      // Validate current step before proceeding
+      if (validateStep && !validateStep(currentStep)) {
+        return; // Don't proceed if validation fails
+      }
       setDirection(1);
       updateStep(currentStep + 1);
     }
   };
 
   const handleComplete = () => {
+    // Validate final step before completing
+    if (validateStep && !validateStep(currentStep)) {
+      return; // Don't complete if validation fails
+    }
     setDirection(1);
     updateStep(totalSteps + 1);
   };
@@ -92,7 +101,7 @@ export default function Stepper({
         className={`mx-auto w-full max-w-md rounded-2xl  ${stepCircleContainerClassName}`}
       >
         <div
-          className={`${stepContainerClassName} flex w-full items-center p-8`}
+          className={`${stepContainerClassName} flex w-full items-center px-8 py-5`}
         >
           {stepsArray.map((_, index) => {
             const stepNumber = index + 1;
@@ -126,7 +135,6 @@ export default function Stepper({
             );
           })}
         </div>
-
         <StepContentWrapper
           isCompleted={isCompleted}
           currentStep={currentStep}
@@ -134,22 +142,16 @@ export default function Stepper({
           className={`space-y-2 px-8 ${contentClassName}`}
         >
           {stepsArray[currentStep - 1]}
-        </StepContentWrapper>
-
+        </StepContentWrapper>{" "}
         {!isCompleted && (
-          <div className={`px-8 pb-8 ${footerClassName}`}>
+          <div className={`px-3 pb-8 ${footerClassName}`}>
             <div
               className={`mt-5 flex ${currentStep !== 1 ? "justify-between" : "justify-end"}`}
             >
               {currentStep !== 1 && (
-                <Button onClick={handleBack} {...backButtonProps}>
-                  {backButtonText}
-                </Button>
+                <Button onPress={handleBack}>{backButtonText}</Button>
               )}
-              <Button
-                onClick={isLastStep ? handleComplete : handleNext}
-                {...nextButtonProps}
-              >
+              <Button onPress={isLastStep ? handleComplete : handleNext}>
                 {isLastStep ? "Complete" : nextButtonText}
               </Button>
             </div>

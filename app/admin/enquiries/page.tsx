@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import EnquiryCard, { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
-import { title } from "@/components/primitives";
 import { Spinner } from "@heroui/spinner";
 
 export default function EnquiriesPage() {
