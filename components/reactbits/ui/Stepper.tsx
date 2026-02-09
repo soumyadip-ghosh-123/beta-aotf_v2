@@ -92,6 +92,24 @@ export default function Stepper({
     updateStep(totalSteps + 1);
   };
 
+  const handleStepClick = (clicked: number) => {
+    // Don't allow clicking if it's the current step
+    if (clicked === currentStep) {
+      return;
+    }
+
+    // If moving forward, validate current step first
+    if (clicked > currentStep) {
+      if (validateStep && !validateStep(currentStep)) {
+        return; // Don't proceed if validation fails
+      }
+    }
+
+    // Update to the clicked step
+    setDirection(clicked > currentStep ? 1 : -1);
+    updateStep(clicked);
+  };
+
   return (
     <div
       className="flex min-h-full flex-1 flex-col items-center justify-center w-full max-w-md"
@@ -112,20 +130,14 @@ export default function Stepper({
                   renderStepIndicator({
                     step: stepNumber,
                     currentStep,
-                    onStepClick: (clicked) => {
-                      setDirection(clicked > currentStep ? 1 : -1);
-                      updateStep(clicked);
-                    },
+                    onStepClick: handleStepClick,
                   })
                 ) : (
                   <StepIndicator
                     step={stepNumber}
                     disableStepIndicators={disableStepIndicators}
                     currentStep={currentStep}
-                    onClickStep={(clicked) => {
-                      setDirection(clicked > currentStep ? 1 : -1);
-                      updateStep(clicked);
-                    }}
+                    onClickStep={handleStepClick}
                   />
                 )}
                 {isNotLastStep && (

@@ -1,4 +1,5 @@
 "use client";
+import JobPostForm from "@/components/admin/postform/jobPostForm";
 import TuitionPostForm from "@/components/admin/postform/tuitionPostForm";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
 export default function PricingPage() {
@@ -46,6 +47,8 @@ export default function PricingPage() {
   return (
     <div className="w-full flex flex-col items-center justify-center gap-4">
       <TuitionPostForm />
+
+      {/* <JobPostForm /> */}
     </div>
   );
 }

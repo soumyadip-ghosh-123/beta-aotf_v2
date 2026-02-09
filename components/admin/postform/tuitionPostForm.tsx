@@ -306,7 +306,7 @@ export default function TuitionPostForm() {
           Fill in the details
         </p>
       </div>
-      <div>
+      <div className="flex justify-center">
         <Stepper
           onFinalStepCompleted={handleSubmit}
           validateStep={validateStep}
@@ -502,7 +502,7 @@ export default function TuitionPostForm() {
               </div>{" "}
               <Input
                 label="Remuneration (/month)"
-                placeholder="e.g., 5000/month"
+                placeholder="e.g. 5000"
                 type="tel"
                 value={formData.remuneration}
                 onChange={(e) => {
