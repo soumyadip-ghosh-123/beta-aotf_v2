@@ -147,3 +147,8 @@ api/
     name: "pritam"
     roll: "13"
 }
+
+
+
+remove notes, only status and date
+remove applicants from post application 

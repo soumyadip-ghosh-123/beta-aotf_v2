@@ -1,7 +1,3 @@
-import { Input } from "@heroui/input";
-import { ScrollShadow } from "@heroui/scroll-shadow";
-import { Chip } from "@heroui/chip";
-import { IoSearch } from "react-icons/io5";
 import { Pagination } from "@heroui/pagination";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";

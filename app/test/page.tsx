@@ -1,6 +1,6 @@
 "use client";
-import JobPostForm from "@/components/admin/postform/jobPostForm";
-import TuitionPostForm from "@/components/admin/postform/tuitionPostForm";
+import JobPostForm from "@/components/admin/postforms/jobPostForm";
+import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
 export default function PricingPage() {
   const jobPostData = {
