@@ -20,6 +20,8 @@ import { Chip } from "@heroui/chip";
 import BackButton from "@/components/BackButton";
 import { IoNotificationsCircleOutline } from "react-icons/io5";
 import { GoVerified } from "react-icons/go";
+import { IdCard, ShieldCheck } from "lucide-react";
+import { Button } from "@heroui/button";
 
 const page = () => {
   const items = [
@@ -45,36 +47,29 @@ const page = () => {
       {/* Profile Header */}
       <div className="md:flex justify-between items-center max-w-3xl mx-auto">
         <div className="flex flex-row items-center justify-start gap-4 py-4">
-          <Badge
-            isOneChar
-            color="primary"
-            content={<GoVerified size={100} />}
-            placement="top-right"
-            shape="circle"
-            showOutline={false}
-          >
-            <Avatar
-              className="w-20 h-20 text-large"
-              src="https://i.pravatar.cc/150?u=a04258114e29026708c"
-            />
-          </Badge>
+          <Avatar
+            className="w-20 h-20 text-large"
+            src="https://i.pravatar.cc/150?u=a04258114e29026708c"
+          />
           <div className="flex flex-col items-start gap-1">
-            <h1 className="text-xl font-semibold">Somnath Roy</h1>
-            <div className="flex items-center gap-1">
-              <FaLocationDot />
-              <p className="text-sm text-gray-500">New York, USA</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">Somnath Roy</h1>
+              <ShieldCheck className="text-green-500" size={18} />
             </div>
             <div className="flex gap-1">
-              <FaUser />
               <p className="text-sm text-gray-500">
                 A passionate educator and lifelong learner.
               </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <FaLocationDot />
+              <p className="text-sm text-gray-500">New York, USA</p>
             </div>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 pb-4 justify-center">
+        {/* <div className="grid grid-cols-3 gap-4 pb-4 justify-center">
           <Card radius="md" className="text-center px-4 py-2 m-0 justify-center">
             <p className="font-bold text-lg">12+</p>
             <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
@@ -93,36 +88,32 @@ const page = () => {
               YEARS ON AOTF
             </p>
           </Card>
-        </div>
+        </div> */}
       </div>
 
       {/* Tabs */}
       <div className="flex w-full flex-col items-center">
-        <Tabs aria-label="Options" color="primary" variant="bordered">
+        <Tabs
+          aria-label="Options"
+          color="primary"
+          variant="bordered"
+          radius="full"
+        >
           <Tab
-            key="photos"
+            key="profile"
             title={
               <div className="flex items-center space-x-2">
                 <LuNotebookPen size={20} className="font-bold" />
-                <span>info</span>
+                <span>Profile</span>
               </div>
             }
           />
           <Tab
-            key="music"
+            key="idcard"
             title={
               <div className="flex items-center space-x-2">
-                <LiaCheckDoubleSolid size={20} className="font-bold" />
-                <span>Approved</span>
-              </div>
-            }
-          />
-          <Tab
-            key="videos"
-            title={
-              <div className="flex items-center space-x-2">
-                <RxCross2 size={20} className="font-bold" />
-                <span>Rejected</span>
+                <IdCard size={20} className="font-bold" />
+                <span>Id Card</span>
               </div>
             }
           />
@@ -194,44 +185,6 @@ const page = () => {
           </CardBody>
         </Card>
 
-        {/* contact details */}
-        <Card className="p-4 max-w-lg mx-auto">
-          <CardHeader className="flex items-center gap-2 p-0">
-            {/* <FaBook className="text-primary" /> */}
-            <h3 className="text-lg font-bold">Teaching Style</h3>
-          </CardHeader>
-          <CardBody className="space-y-3 p-2">
-            <div className="flex gap-2">
-              <Chip variant="shadow" className="bg-green-100 text-green-800">
-                Bengali
-              </Chip>
-              <Chip variant="shadow" className="bg-green-100 text-green-800">
-                English
-              </Chip>
-              <Chip variant="shadow" className="bg-green-100 text-green-800">
-                Math
-              </Chip>
-              <Chip variant="shadow" className="bg-green-100 text-green-800">
-                History
-              </Chip>
-            </div>
-          </CardBody>
-          <CardHeader className="flex items-center gap-2 p-0">
-            {/* <FaBook className="text-primary" /> */}
-            <h3 className="text-md font-semibold">Teaching Mode</h3>
-          </CardHeader>
-          <CardBody className="space-y-3 p-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-100 text-zinc-700 rounded-2xl p-3 text-center font-semibold">
-                Online
-              </div>
-              <div className="bg-blue-100 text-zinc-700 rounded-2xl p-3 text-center font-semibold">
-                Offline
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
         {/* Professional Details */}
         <ProfessionalDetailsCard
           qualification="M.Sc in Mathematics"
@@ -240,9 +193,6 @@ const page = () => {
           teachingMode="Online"
         />
       </div>
-
-      {/* Tabs Content */}
-      <div className="w-full"></div>
 
       {/* Action Buttons */}
       <div className="w-full mb-8">
@@ -297,25 +247,6 @@ function ProfessionalDetailsCard({
             </div>
           </div>
 
-          {/* Subjects */}
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-              🔬
-            </div>
-            <div>
-              <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
-                Subjects
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {subjects.map((s) => (
-                  <Chip key={s} variant="shadow" className="font-bold text-sm">
-                    {s}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* Teaching Mode */}
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
@@ -328,6 +259,30 @@ function ProfessionalDetailsCard({
               <p className="font-bold text-sm">
                 {teachingMode} (Online & Offline)
               </p>
+            </div>
+          </div>
+
+          {/* Subjects */}
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+              🔬
+            </div>
+            <div>
+              <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
+                Skills
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {subjects.map((s) => (
+                  <Chip
+                    size="sm"
+                    key={s}
+                    variant="shadow"
+                    className="font-bold text-sm"
+                  >
+                    {s}
+                  </Chip>
+                ))}
+              </div>
             </div>
           </div>
         </div>

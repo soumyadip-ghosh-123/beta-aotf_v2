@@ -2,13 +2,18 @@
 
 import BackButton from "@/components/BackButton";
 import { Tab, Tabs } from "@heroui/tabs";
-import React from "react";
-import { LiaCheckDoubleSolid } from "react-icons/lia";
 import { LuNotebookPen } from "react-icons/lu";
-import { RxCross2 } from "react-icons/rx";
 import { PiBagSimpleDuotone } from "react-icons/pi";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import JobPost from "@/components/PostCards/JobPost";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/dropdown";
+import { Button } from "@heroui/button";
+import { Filter } from "lucide-react";
 
 const page = () => {
   const isTeacher = true;
@@ -45,7 +50,7 @@ const page = () => {
     status: 1,
     jobType: 1,
 
-    timing: "10:00 AM – 7:00 PM",
+    timing: "10:00 AM - 7:00 PM",
     salary: "₹70,000 CTC + PF",
     requiredQualification: "Degree in HR / Finance or related field",
     createdAt: new Date(),
@@ -55,59 +60,44 @@ const page = () => {
       <BackButton title="Dashboard" />
 
       {/* Show Tabs ONLY if user is a Candidate */}
-      {isCandidate ? (
-        <div className="flex w-full flex-col items-center">
-          <Tabs
-            aria-label="Options"
-            color="primary"
-            variant="solid"
-            className="sticky top-18 z-20"
-          >
-            {/* Show Tuition tab ONLY if also Teacher */}
-            {isTeacher && (
-              <Tab
-                key="tuition"
-                title={
-                  <div className="flex items-center space-x-2">
-                    <LuNotebookPen size={20} />
-                    <span>Tuition</span>
-                  </div>
-                }
-              >
-                <div>
-                  {/* sample 5 post with map */}
-                  {[...Array(5)].map((_, index) => (
-                    <TuitionPost key={index} {...Mockdata} />
-                  ))}
-                </div>
-              </Tab>
-            )}
-
-            {/* Always show Jobs tab for any Candidate */}
-            <Tab
-              key="jobs"
-              title={
-                <div className="flex items-center space-x-2">
-                  <PiBagSimpleDuotone size={20} />
-                  <span>Jobs</span>
-                </div>
-              }
-            >
-              <div>
-                {[...Array(7)].map((_, index) => (
-                  <JobPost key={index} {...jobPostData} />
-                ))}
+      <div className="w-full flex flex-col items-center justify-center">
+        <Tabs
+          aria-label="Options"
+          color="primary"
+          variant="solid"
+          className="sticky top-18 z-20"
+          radius="full"
+        >
+          <Tab
+            key="tuition"
+            title={
+              <div className="w-full flex items-center space-x-2">
+                <LuNotebookPen size={20} />
+                <span>Tuition</span>
               </div>
-            </Tab>
-          </Tabs>
-        </div>
-      ) : (
-        <>
-          {[...Array(2)].map((_, index) => (
-            <TuitionPost key={index} {...Mockdata} />
-          ))}
-        </>
-      )}
+            }
+          >
+            {[...Array(5)].map((_, index) => (
+              <TuitionPost key={index} {...Mockdata} />
+            ))}
+          </Tab>
+
+          {/* Always show Jobs tab for any Candidate */}
+          <Tab
+            key="jobs"
+            title={
+              <div className="w-full flex items-center space-x-2">
+                <PiBagSimpleDuotone size={20} />
+                <span>Jobs</span>
+              </div>
+            }
+          >
+            {[...Array(7)].map((_, index) => (
+              <JobPost key={index} {...jobPostData} />
+            ))}
+          </Tab>
+        </Tabs>
+      </div>
     </div>
   );
 };

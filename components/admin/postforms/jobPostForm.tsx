@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { RadioGroup, Radio } from "@heroui/radio";
@@ -21,6 +21,7 @@ import {
 import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
+import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 
 type LocationType = "on-site" | "remote" | "hybrid";
 type GenderPreference = "male" | "female" | "both" | "all" | "others";
@@ -67,11 +68,14 @@ const experienceLevels = [
   { key: "0-1", label: "0-1 years (Fresher)" },
   { key: "1-3", label: "1-3 years" },
   { key: "3-5", label: "3-5 years" },
-  { key: "5-10", label: "5-10 years" },
-  { key: "10+", label: "10+ years" },
+  { key: "5-10", label: "5-10 years" },  { key: "10+", label: "10+ years" },
 ];
 
-export default function JobPostForm() {
+interface JobPostFormProps {
+  enquiry?: Enquiry | null;
+}
+
+export default function JobPostForm({ enquiry }: JobPostFormProps) {
   const [formData, setFormData] = useState({
     clientName: "",
     clientPhone: "",
@@ -92,6 +96,18 @@ export default function JobPostForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Pre-fill form data from enquiry if available
+  useEffect(() => {
+    if (enquiry) {
+      setFormData((prev) => ({
+        ...prev,
+        clientName: enquiry.name || "",
+        clientPhone: enquiry.phoneNumber || "",
+        notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
+      }));
+    }
+  }, [enquiry]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

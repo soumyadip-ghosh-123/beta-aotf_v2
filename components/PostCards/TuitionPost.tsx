@@ -4,13 +4,12 @@ import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { useState } from "react";
 import { Chip } from "@heroui/chip";
-import { FaMapMarkerAlt } from "react-icons/fa";
+import { FaMapMarkerAlt, FaShare } from "react-icons/fa";
 import { BsCurrencyRupee } from "react-icons/bs";
 import { LuNotebookText } from "react-icons/lu";
 import { FaArrowRight } from "react-icons/fa";
 import { FaEye } from "react-icons/fa";
 import { MdDoneAll } from "react-icons/md";
-import { FaShareFromSquare } from "react-icons/fa6";
 import { SlCalender } from "react-icons/sl";
 import { FaBookOpen } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -55,12 +54,12 @@ const getBoardName = (board?: number): string => {
 
 const getFrequencyText = (freq: number): string => {
   const frequencies: Record<number, string> = {
-    1: "Once/Week",
-    2: "Twice/Week",
-    3: "Thrice/Week",
-    4: "4 times/Week",
-    5: "5 times/Week",
-    6: "6 times/Week",
+    1: "1 day /Week",
+    2: "2 days /Week",
+    3: "3 days /Week",
+    4: "4 days /Week",
+    5: "5 days /Week",
+    6: "6 days /Week",
     7: "Daily",
   };
   return frequencies[freq] || "";
@@ -121,17 +120,17 @@ const TuitionPost = ({
   );
   const router = useRouter();
   return (
-    <Card className="max-w-md w-full mx-auto pt-3 mb-4">
-      <CardHeader className="justify-between z-0">
+    <Card className="max-w-lg w-full mx-auto">
+      <CardHeader className="justify-between">
         <User
           avatarProps={{
             src: `${createdByUserId.avatar || ""}`,
             alt: "Creator Avatar",
           }}
-          description={`Admin • Posted ${getTimeAgo(createdAt)}`}
+          description={`Posted ${getTimeAgo(createdAt)}`}
           name={createdByUserId.name || "Admin"}
         />
-        <Chip radius="sm" className="bg-default-200">
+        <Chip radius="sm" size="sm" className="bg-default-200">
           {applicants.length} Applicant{applicants.length !== 1 ? "s" : ""}
         </Chip>
       </CardHeader>
@@ -144,9 +143,9 @@ const TuitionPost = ({
           {chips.map((chip) => (
             <Chip
               key={chip}
-              radius="sm"
-              variant="faded"
               size="sm"
+              radius="sm"
+              variant="shadow"
               className="bg-default-100 text-sm font-medium"
             >
               {chip}
@@ -155,12 +154,12 @@ const TuitionPost = ({
         </div>
 
         {location && (
-          <div className="flex items-start gap-3 group my-2">
+          <div className="flex items-center gap-3 group my-2">
             <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
               <FaMapMarkerAlt size={20} />
             </div>
-            <div className="flex flex-col pt-0.5">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 Location
               </span>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
@@ -170,12 +169,12 @@ const TuitionPost = ({
           </div>
         )}
         {monthlyBudget && (
-          <div className="flex items-start gap-3 group my-2">
+          <div className="flex items-center gap-3 group my-2">
             <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
               <BsCurrencyRupee size={20} />
             </div>
-            <div className="flex flex-col pt-0.5">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 Monthly Budget
               </span>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
@@ -234,12 +233,12 @@ const TuitionPost = ({
             className="bg-default-200"
             onClick={() => router.push(`/posts/${postId}`)}
           >
-            View Details
+            View
             <FaEye />
           </Button>
           <Button size="sm" color="secondary">
             Share
-            <FaShareFromSquare />
+            <FaShare />
           </Button>
           <Button
             size="sm"
@@ -247,7 +246,7 @@ const TuitionPost = ({
             isDisabled={isApplied}
             onClick={() => setIsApplied(true)}
           >
-            {isApplied ? "Applied" : "Apply Now"}
+            {isApplied ? "Applied" : "Apply"}
             {isApplied ? <MdDoneAll /> : <FaArrowRight />}
           </Button>
         </div>

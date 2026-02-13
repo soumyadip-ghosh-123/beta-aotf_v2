@@ -64,68 +64,87 @@ const JobPost = ({
   ].filter(Boolean);
   const router = useRouter();
   return (
-    <Card className="max-w-md w-full mx-auto pt-3 mb-4">
+    <Card className="max-w-lg w-full mx-auto">
       {/* HEADER */}
       <CardHeader className="justify-between">
-        <User
-          name={companyName}
-          description={`${companyType} • ${designation}`}
-        />
-        <Chip radius="sm" color={status === 1 ? "success" : "default"}>
+        <User name={companyName} description={`${companyType}`} />
+        <Chip
+          radius="sm"
+          size="sm"
+          color={status === 1 ? "success" : "default"}
+        >
           {formatStatus(status)}
         </Chip>
       </CardHeader>
 
       {/* BODY */}
-      <CardBody className="px-3 text-small text-default-500">
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+      <CardBody className="px-3 py-0 text-small text-default-500">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-snug">
           {designation}
         </h1>
 
         {/* Chips */}
-        <div className="flex gap-2 mb-3 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {chips.map((chip, i) => (
-            <Chip key={i} radius="sm" variant="faded">
+            <Chip
+              key={chip}
+              radius="sm"
+              variant="shadow"
+              size="sm"
+              className="bg-default-100 text-sm font-medium"
+            >
               {chip}
             </Chip>
           ))}
         </div>
 
         {/* Location */}
-        <div className="flex gap-3 my-2">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <FaMapMarkerAlt />
+        <div className="flex items-center gap-3 my-2">
+          <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+            <FaMapMarkerAlt size={20} />
           </div>
           <div>
-            <p className="text-xs text-default-400 uppercase">Location</p>
-            <p className="text-sm font-medium">{location}</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Location
+            </p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
+              {location}
+            </p>
           </div>
         </div>
 
         {/* Salary */}
-        <div className="flex gap-3 my-2">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <BsCurrencyRupee />
+        <div className="flex items-center gap-3 my-2">
+          <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+            <BsCurrencyRupee size={20} />
           </div>
           <div>
-            <p className="text-xs text-default-400 uppercase">Salary</p>
-            <p className="text-sm font-medium">{salary}</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Salary
+            </p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
+              {salary}
+            </p>
           </div>
         </div>
 
         {/* Timing */}
-        <div className="flex gap-3 my-2">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-            <FaClock />
+        <div className="flex items-center gap-3 my-2">
+          <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+            <FaClock size={20} />
           </div>
           <div>
-            <p className="text-xs text-default-400 uppercase">Working Hours</p>
-            <p className="text-sm font-medium">{timing}</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Working Hours
+            </p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
+              {timing}
+            </p>
           </div>
         </div>
 
         {/* Qualification */}
-        <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border p-3 rounded-lg">
+        <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
           <p className="text-xs font-bold uppercase text-amber-700 mb-1">
             Required Qualification
           </p>
@@ -141,7 +160,7 @@ const JobPost = ({
             className="bg-default-200"
             onClick={() => router.push(`/posts/${jobId}`)}
           >
-            View Details
+            View
             <FaEye />
           </Button>
 

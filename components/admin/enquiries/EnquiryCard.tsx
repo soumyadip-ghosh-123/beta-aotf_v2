@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -13,6 +14,12 @@ import {
   useDisclosure,
 } from "@heroui/modal";
 import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
+import {
   User,
   Phone,
   MessageSquare,
@@ -20,6 +27,8 @@ import {
   ShieldCheck,
   RotateCcw,
   TrendingUp,
+  Briefcase,
+  GraduationCap,
 } from "lucide-react";
 import { FaPhone } from "react-icons/fa";
 import { Select, SelectItem } from "@heroui/select";
@@ -59,11 +68,20 @@ type EnquiryCardProps = {
   onStatusUpdated?: () => void;
 };
 
-export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardProps) {
+export default function EnquiryCard({
+  enquiry,
+  onStatusUpdated,
+}: EnquiryCardProps) {
+  const router = useRouter();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleCreatePost = (type: "job" | "tuition") => {
+    // Navigate to the create form page with enquiry ID and type
+    router.push(`/admin/enquiries/${enquiry._id}?type=${type}`);
+  };
 
   const handleStatusUpdate = async (onClose: () => void) => {
     if (!selectedStatus) {
@@ -82,8 +100,8 @@ export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardPro
           action: `Status changed from ${enquiry.currentStatus} to ${selectedStatus}`,
           notes: notes || undefined,
           adminId: "000000000000000000000000", // TODO: from auth
-          adminName: "Admin",                  // TODO: from auth
-          adminRole: "super_admin",             // TODO: from auth
+          adminName: "Admin", // TODO: from auth
+          adminRole: "super_admin", // TODO: from auth
         }),
       });
 
@@ -92,7 +110,10 @@ export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardPro
         throw new Error(data.error || "Failed to update status");
       }
 
-      addToast({ description: "Status updated successfully", color: "success" });
+      addToast({
+        description: "Status updated successfully",
+        color: "success",
+      });
       setSelectedStatus("");
       setNotes("");
       onClose();
@@ -191,7 +212,7 @@ export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardPro
         </CardHeader>
 
         {/* Body */}
-        <CardBody className="space-y-5">
+        <CardBody className="py-0">
           {/* User Info */}
           <Section
             icon={<User size={18} />}
@@ -231,11 +252,34 @@ export default function EnquiryCard({ enquiry, onStatusUpdated }: EnquiryCardPro
               label="Attempt number"
               value={String(enquiry.lastAttemptNumber ?? 0)}
             />
-          </div>
-        </CardBody>
+          </div>        </CardBody>
         <CardFooter className="grid grid-cols-3 gap-2 justify-end">
-          {/* Action buttons can go here */}
-          <Button color="secondary">Create</Button>
+          {/* Create Dropdown */}
+          <Dropdown placement="top">
+            <DropdownTrigger>
+              <Button color="secondary">Create</Button>
+            </DropdownTrigger>
+            <DropdownMenu 
+              aria-label="Create Post Type"
+              onAction={(key) => handleCreatePost(key as "job" | "tuition")}
+            >
+              <DropdownItem
+                key="job"
+                startContent={<Briefcase size={18} />}
+                description="Create a job posting"
+              >
+                Job Post
+              </DropdownItem>
+              <DropdownItem
+                key="tuition"
+                startContent={<GraduationCap size={18} />}
+                description="Create a tuition posting"
+              >
+                Tuition Post
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+          
           <Button color="success" onPress={onOpen}>
             Update
           </Button>
@@ -257,7 +301,16 @@ const EnquiryModal = () => {
 function StatusChip({ status }: { status: EnquiryStatus }) {
   const config: Record<
     EnquiryStatus,
-    { color: "primary" | "warning" | "success" | "danger" | "secondary" | "default"; label: string }
+    {
+      color:
+        | "primary"
+        | "warning"
+        | "success"
+        | "danger"
+        | "secondary"
+        | "default";
+      label: string;
+    }
   > = {
     new: { color: "primary", label: "NEW" },
     in_progress: { color: "warning", label: "IN PROGRESS" },
@@ -267,7 +320,10 @@ function StatusChip({ status }: { status: EnquiryStatus }) {
     closed: { color: "default", label: "CLOSED" },
   };
 
-  const c = config[status] ?? { color: "default" as const, label: status.toUpperCase() };
+  const c = config[status] ?? {
+    color: "default" as const,
+    label: status.toUpperCase(),
+  };
 
   return (
     <Chip color={c.color} variant="flat" size="sm">
@@ -294,13 +350,11 @@ function Section({
   multiline?: boolean;
 }) {
   return (
-    <div className={`grid ${subValue && "grid-cols-2"} gap-3`}>
+    <div className={`grid ${subValue ? "grid-cols-2" : ""} gap-3`}>
       <div className="flex gap-3 items-start">
         <div className="text-primary">{icon}</div>
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-medium">{title}</p>
-          </div>
+          <p className="text-sm font-medium">{title}</p>
           <p
             className={`text-sm text-default-600 ${
               multiline ? "leading-relaxed" : ""

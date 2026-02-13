@@ -18,7 +18,7 @@ import {
 import {
   JobCandidateCard,
   JobCandidate,
-} from "@/components/applicaionCards/JobCandidateCard";
+} from "@/components/applicationCards/JobCandidateCard";
 import {
   ArrowLeft,
   Users,

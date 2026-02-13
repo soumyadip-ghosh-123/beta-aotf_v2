@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Input, Textarea } from "@heroui/input";
@@ -24,6 +24,7 @@ import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
 import { CustomCheckbox } from "@/components/ui/CustomCheckbox";
+import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 
 type ClassType = "in-person" | "online" | "both";
 type PreferredTime = "AM" | "PM";
@@ -101,7 +102,11 @@ const frequencies = [
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function TuitionPostForm() {
+interface TuitionPostFormProps {
+  enquiry?: Enquiry | null;
+}
+
+export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
   const [formData, setFormData] = useState({
     guardianName: "",
     guardianPhone: "",
@@ -119,6 +124,18 @@ export default function TuitionPostForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Pre-fill form data from enquiry if available
+  useEffect(() => {
+    if (enquiry) {
+      setFormData((prev) => ({
+        ...prev,
+        guardianName: enquiry.name || "",
+        guardianPhone: enquiry.phoneNumber || "",
+        notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
+      }));
+    }
+  }, [enquiry]);
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {

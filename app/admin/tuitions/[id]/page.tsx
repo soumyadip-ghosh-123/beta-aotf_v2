@@ -18,7 +18,7 @@ import {
 import {
   CandidateCard,
   Candidate,
-} from "@/components/applicaionCards/TuitionCandidateCard";
+} from "@/components/applicationCards/TuitionCandidateCard";
 import {
   ArrowLeft,
   Users,
