@@ -2,6 +2,7 @@
 import JobPostForm from "@/components/admin/postforms/jobPostForm";
 import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
+import LottiePlayer from "@/components/LottiePlayer";
 export default function PricingPage() {
   const jobPostData = {
     jobId: "JOB-081225001",
@@ -48,7 +49,8 @@ export default function PricingPage() {
     <div className="w-full flex flex-col items-center justify-center gap-4">
       {/* <TuitionPostForm /> */}
 
-      <JobPostForm />
+      {/* <JobPostForm /> */}
+      {/* <LottiePlayer size={400} /> */}
     </div>
   );
 }
