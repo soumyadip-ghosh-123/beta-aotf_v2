@@ -5,28 +5,24 @@ import {
   checkRateLimit,
   getClientIp,
 } from "@/lib/api-utils";
-import {
-  createEnquirySchema,
-  listEnquiriesSchema,
-} from "@/lib/validations/enquiry";
-import { createEnquiry, listEnquiries } from "@/lib/services/enquiry.service";
+import { createPostSchema, listPostsSchema } from "@/lib/validations/post";
+import { createPost, listPosts } from "@/lib/services/post.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 
-/** 5 enquiry submissions per IP per minute */
-const submitLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
+/** 10 post creations per IP per minute */
+const createLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 
 /** 60 reads per IP per minute */
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 
 /**
- * POST /api/enquiry
- * User-facing: submit a new enquiry.
+ * POST /api/posts
+ * Admin-facing: create a new tuition post.
  *
- * Request body:
- *   { name: string, phoneNumber: string, query: string }
+ * Request body: CreatePostInput
  *
  * Success 201:
- *   { message: string, enquiryId: string }
+ *   { message: string, post: IPost }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -36,33 +32,34 @@ export async function POST(request: NextRequest) {
 
     // Rate limit
     const ip = getClientIp(request);
-    const rateLimitBlock = checkRateLimit(submitLimiter, ip);
+    const rateLimitBlock = checkRateLimit(createLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
     const body = await request.json();
-    const input = createEnquirySchema.parse(body);
-    const enquiryId = await createEnquiry(input);
+    const input = createPostSchema.parse(body);
+    const post = await createPost(input);
 
     return NextResponse.json(
-      { message: "Enquiry submitted successfully", enquiryId },
+      { message: "Post created successfully", post },
       { status: 201 },
     );
   } catch (error) {
-    return handleApiError(error, "POST /api/enquiry");
+    return handleApiError(error, "POST /api/posts");
   }
 }
 
 /**
- * GET /api/enquiry
- * Admin-facing: list enquiries with pagination & optional status filter.
+ * GET /api/posts
+ * Public/Admin: list posts with pagination, status filter, and search.
  *
  * Query params:
- *   status? — one of the 6 statuses or "all" (default "all")
+ *   status? — one of the post statuses or "all" (default "all")
  *   page?   — 1-based page number (default 1)
  *   limit?  — items per page, max 100 (default 20)
+ *   search? — search term
  *
  * Success 200:
- *   { enquiries: EnrichedEnquiry[], pagination: { page, limit, total, totalPages } }
+ *   { posts: IPost[], pagination: { page, limit, total, totalPages } }
  */
 export async function GET(request: NextRequest) {
   try {
@@ -72,15 +69,20 @@ export async function GET(request: NextRequest) {
     if (rateLimitBlock) return rateLimitBlock;
 
     const { searchParams } = new URL(request.url);
-    const input = listEnquiriesSchema.parse({
+    const input = listPostsSchema.parse({
       status: searchParams.get("status") ?? undefined,
       page: searchParams.get("page") ?? undefined,
       limit: searchParams.get("limit") ?? undefined,
+      search: searchParams.get("search") ?? undefined,
     });
 
-    const result = await listEnquiries(input);
-    return NextResponse.json(result);
+    const result = await listPosts(input);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    });
   } catch (error) {
-    return handleApiError(error, "GET /api/enquiry");
+    return handleApiError(error, "GET /api/posts");
   }
 }

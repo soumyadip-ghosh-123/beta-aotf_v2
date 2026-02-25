@@ -14,64 +14,45 @@ import { SlCalender } from "react-icons/sl";
 import { FaBookOpen } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
+export interface StudentProp {
+  className: string;
+  board: string;
+  subjects: string[];
+  subjectsNormalized?: string[];
+}
+
 interface TuitionPostProps {
   postId: string;
-  enquiryId?: string[];
+  enquiryId?: string;
   guardianName?: string;
   guardianPhone?: string;
-  subject: string;
-  className: string;
-  board?: 1 | 2 | 3 | 4 | 5 | 6;
+  students: StudentProp[];
   preferredTime?: string;
   preferredDays?: string[];
-  frequencyPerWeek: 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  classType: 1 | 2 | 3;
+  frequencyPerWeek: number;
+  classType: "online" | "offline" | "both";
   location?: string;
   monthlyBudget?: number;
   notes?: string;
-  status: 1 | 2 | 3 | 4;
+  status: "open" | "matched" | "closed" | "cancelled" | "hold";
   createdAt: Date;
   updatedAt: Date;
-  applicants: string[];
-  createdByUserId: { name?: string; avatar?: string };
-  editedAt?: Date;
-  editedByUserId?: string;
-  editedByName?: string;
+  applicants?: string[];
+  createdByUserId?: { name?: string; avatar?: string };
 }
 
-// map numeric values to strings
-const getBoardName = (board?: number): string => {
-  const boards: Record<number, string> = {
-    1: "CBSE",
-    2: "ICSE",
-    3: "ISC",
-    4: "IB",
-    5: "WB-Bengali version",
-    6: "WB-English Version",
-  };
-  return board ? boards[board] || "" : "";
-};
-
 const getFrequencyText = (freq: number): string => {
-  const frequencies: Record<number, string> = {
-    1: "1 day /Week",
-    2: "2 days /Week",
-    3: "3 days /Week",
-    4: "4 days /Week",
-    5: "5 days /Week",
-    6: "6 days /Week",
-    7: "Daily",
-  };
-  return frequencies[freq] || "";
+  if (freq === 7) return "Daily";
+  return `${freq} day${freq !== 1 ? "s" : ""} /Week`;
 };
 
-const getClassTypeText = (type: number): string => {
-  const types: Record<number, string> = {
-    1: "In-Person",
-    2: "Online",
-    3: "Both",
+const getClassTypeText = (type: string): string => {
+  const types: Record<string, string> = {
+    offline: "In-Person",
+    online: "Online",
+    both: "Both",
   };
-  return types[type] || "";
+  return types[type] || type;
 };
 
 const getTimeAgo = (date: Date): string => {
@@ -93,9 +74,7 @@ const TuitionPost = ({
   enquiryId,
   guardianName,
   guardianPhone,
-  subject,
-  className,
-  board,
+  students,
   preferredTime,
   preferredDays,
   frequencyPerWeek,
@@ -106,18 +85,22 @@ const TuitionPost = ({
   status,
   createdAt,
   updatedAt,
-  applicants,
-  createdByUserId,
-  editedAt,
-  editedByUserId,
-  editedByName,
+  applicants = [],
+  createdByUserId = {},
 }: TuitionPostProps) => {
   const [isApplied, setIsApplied] = useState(false);
 
-  const boardName = getBoardName(board);
-  const chips = ["Class - " + className, "Board - " + boardName].filter(
-    Boolean
-  );
+  // Derive display values from students array (defensive fallback)
+  const safeStudents = students ?? [];
+  const allSubjects = safeStudents.flatMap((s) => s.subjects);
+  const subjectDisplay = allSubjects.join(", ") || "N/A";
+  const classDisplay = safeStudents.map((s) => s.className).join(", ");
+  const boardDisplay = safeStudents.map((s) => s.board).join(", ");
+
+  const chips = [
+    `Class - ${classDisplay}`,
+    `Board - ${boardDisplay}`,
+  ].filter(Boolean);
   const router = useRouter();
   return (
     <Card className="max-w-lg w-full mx-auto">
@@ -136,7 +119,7 @@ const TuitionPost = ({
       </CardHeader>
       <CardBody className="px-3 py-0 text-small text-default-400">
         <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-snug">
-          {subject}
+          {subjectDisplay}
         </h1>
         {/* 3 chips with map function */}
         <div className="flex gap-2">

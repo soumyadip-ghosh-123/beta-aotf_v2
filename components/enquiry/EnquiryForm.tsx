@@ -62,7 +62,7 @@ export default function EnquiryForm() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/enquiry", {
+      const res = await fetch("/api/v1/enquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

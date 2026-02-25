@@ -13,7 +13,7 @@ export default function EnquiriesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/enquiry");
+      const res = await fetch("/api/v1/enquiry");
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Failed to fetch");

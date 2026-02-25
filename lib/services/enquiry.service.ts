@@ -195,7 +195,8 @@ export async function listEnquiries(
 
 /**
  * Update the status of an enquiry (admin action).
- * Creates an enqStatus audit record and updates the enquiry document atomically.
+ * Creates an enqStatus audit record and updates the enquiry document atomically
+ * within a MongoDB transaction to prevent data inconsistency.
  * @throws NotFoundError when the enquiry ID doesn't exist.
  */
 export async function updateEnquiryStatus(
@@ -219,35 +220,52 @@ export async function updateEnquiryStatus(
 
   const now = new Date();
 
-  // Create audit record
-  await EnqStatus.create({
-    enquiryId: enquiry._id,
-    attemptNumber,
-    adminId: input.adminId,
-    adminName: input.adminName,
-    adminRole: input.adminRole,
-    fromStatus,
-    toStatus: input.toStatus,
-    action: input.action,
-    notes: input.notes || undefined,
-    actionAt: now,
-  });
+  // Use a transaction to ensure both writes succeed or both fail
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      // Create audit record
+      await EnqStatus.create(
+        [
+          {
+            enquiryId: enquiry._id,
+            attemptNumber,
+            adminId: input.adminId,
+            adminName: input.adminName,
+            adminRole: input.adminRole,
+            fromStatus,
+            toStatus: input.toStatus,
+            action: input.action,
+            notes: input.notes || undefined,
+            actionAt: now,
+          },
+        ],
+        { session },
+      );
 
-  // Build update payload
-  const updateFields: Record<string, unknown> = {
-    currentStatus: input.toStatus,
-    lastActionByAdminId: input.adminId,
-    lastActionAt: now,
-  };
+      // Build update payload
+      const updateFields: Record<string, unknown> = {
+        currentStatus: input.toStatus,
+        lastActionByAdminId: input.adminId,
+        lastActionAt: now,
+      };
 
-  if (fromStatus === "new" && !enquiry.firstResponseAt) {
-    updateFields.firstResponseAt = now;
+      if (fromStatus === "new" && !enquiry.firstResponseAt) {
+        updateFields.firstResponseAt = now;
+      }
+      if (input.toStatus === "resolved") {
+        updateFields.resolvedAt = now;
+      }
+
+      await Enquiry.findByIdAndUpdate(
+        enquiryDocId,
+        { $set: updateFields },
+        { session },
+      );
+    });
+  } finally {
+    await session.endSession();
   }
-  if (input.toStatus === "resolved") {
-    updateFields.resolvedAt = now;
-  }
-
-  await Enquiry.findByIdAndUpdate(enquiryDocId, { $set: updateFields });
 
   return { fromStatus, toStatus: input.toStatus, attemptNumber };
 }

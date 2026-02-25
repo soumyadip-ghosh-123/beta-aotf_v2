@@ -92,7 +92,7 @@ export default function EnquiryCard({
     setIsUpdating(true);
     try {
       // TODO: Replace with actual admin info from auth session
-      const res = await fetch(`/api/enquiry/${enquiry._id}/status`, {
+      const res = await fetch(`/api/v1/enquiry/${enquiry._id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -19,7 +19,7 @@ const submitLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 
 /**
- * POST /api/enquiry
+ * POST /api/v1/enquiry
  * User-facing: submit a new enquiry.
  *
  * Request body:
@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    return handleApiError(error, "POST /api/enquiry");
+    return handleApiError(error, "POST /api/v1/enquiry");
   }
 }
 
 /**
- * GET /api/enquiry
+ * GET /api/v1/enquiry
  * Admin-facing: list enquiries with pagination & optional status filter.
  *
  * Query params:
@@ -81,6 +81,6 @@ export async function GET(request: NextRequest) {
     const result = await listEnquiries(input);
     return NextResponse.json(result);
   } catch (error) {
-    return handleApiError(error, "GET /api/enquiry");
+    return handleApiError(error, "GET /api/v1/enquiry");
   }
 }

@@ -22,22 +22,26 @@ import {
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
 
+export interface TuitionPostStudent {
+  className: string;
+  board: string;
+  subjects: string[];
+  subjectsNormalized?: string[];
+}
+
 export interface TuitionPost {
   id: string;
-  title: string;
-  subtitle: string;
   guardian: string;
   guardianPhone: string;
-  className: string;
-  subject: string;
-  board: string;
+  students: TuitionPostStudent[];
   location: string;
   budget: number;
-  classType: string;
-  frequency: string;
+  classType: "online" | "offline" | "both";
+  frequency: number;
   preferredDays: string[];
+  preferredTime?: string;
   notes: string;
-  status: "open" | "closed" | "filled";
+  status: "open" | "matched" | "closed" | "cancelled" | "hold";
   type: "post";
   applicantCount: number;
   applicationStats: {
@@ -49,6 +53,8 @@ export interface TuitionPost {
     withdrawn: number;
     total: number;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface TuitionPostCardProps {
@@ -71,9 +77,12 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
       case "open":
         return "success";
       case "closed":
+      case "cancelled":
         return "danger";
-      case "filled":
+      case "matched":
         return "warning";
+      case "hold":
+        return "secondary";
       default:
         return "default";
     }
@@ -81,29 +90,30 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
 
   const getClassTypeLabel = (type: string) => {
     switch (type) {
-      case "in-person":
+      case "offline":
         return "In-Person";
       case "online":
         return "Online";
-      case "hybrid":
-        return "Hybrid";
+      case "both":
+        return "Both";
       default:
         return type;
     }
   };
 
-  const getFrequencyLabel = (freq: string) => {
-    const map: Record<string, string> = {
-      one: "1 day/week",
-      two: "2 days/week",
-      three: "3 days/week",
-      four: "4 days/week",
-      five: "5 days/week",
-      six: "6 days/week",
-      daily: "Daily",
-    };
-    return map[freq] || freq;
+  const getFrequencyLabel = (freq: number) => {
+    if (freq === 7) return "Daily";
+    return `${freq} day${freq !== 1 ? "s" : ""}/week`;
   };
+
+  // Derive display values from students array
+  const safeStudents = post.students ?? [];
+  const allSubjects = safeStudents.flatMap((s) => s.subjects);
+  const subjectDisplay = allSubjects.join(", ") || "N/A";
+  const classDisplay = safeStudents.map((s) => s.className).join(", ");
+  const boardDisplay = safeStudents.map((s) => s.board).join(", ");
+  const title = `${subjectDisplay} - Class ${classDisplay}`;
+  const subtitle = `${boardDisplay} • ${post.location}`;
 
   return (
     <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-300 ">
@@ -146,7 +156,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <div>
               <span className="text-default-500">Class:</span>{" "}
               <span className="font-medium text-default-700">
-                {post.className}
+                {classDisplay}
               </span>
             </div>
           </div>
@@ -154,7 +164,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <CheckCircle size={16} className="text-default-400" />
             <div>
               <span className="text-default-500">Board:</span>{" "}
-              <span className="font-medium text-default-700">{post.board}</span>
+              <span className="font-medium text-default-700">{boardDisplay}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -162,7 +172,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <div>
               <span className="text-default-500">Subject:</span>{" "}
               <span className="font-medium text-default-700">
-                {post.subject}
+                {subjectDisplay}
               </span>
             </div>
           </div>

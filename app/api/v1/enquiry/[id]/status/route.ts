@@ -21,7 +21,7 @@ const mutateLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 type RouteParams = { params: Promise<{ id: string }> };
 
 /**
- * PATCH /api/enquiry/[id]/status
+ * PATCH /api/v1/enquiry/[id]/status
  * Admin-facing: update an enquiry's status and create an audit trail record.
  *
  * Request body:
@@ -54,12 +54,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...result,
     });
   } catch (error) {
-    return handleApiError(error, "PATCH /api/enquiry/[id]/status");
+    return handleApiError(error, "PATCH /api/v1/enquiry/[id]/status");
   }
 }
 
 /**
- * GET /api/enquiry/[id]/status
+ * GET /api/v1/enquiry/[id]/status
  * Admin-facing: retrieve the full status-change history for an enquiry.
  *
  * Success 200:
@@ -78,6 +78,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const statusHistory = await getEnquiryStatusHistory(id);
     return NextResponse.json({ statusHistory });
   } catch (error) {
-    return handleApiError(error, "GET /api/enquiry/[id]/status");
+    return handleApiError(error, "GET /api/v1/enquiry/[id]/status");
   }
 }

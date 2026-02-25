@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Select, SelectItem } from "@heroui/select";
 import { DateRangePicker } from "@heroui/date-picker";
@@ -9,6 +9,7 @@ import { Divider } from "@heroui/divider";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
+import { Spinner } from "@heroui/spinner";
 import {
   Modal,
   ModalContent,
@@ -21,101 +22,48 @@ import {
   TuitionPostCard,
   TuitionPost,
 } from "@/components/admin/postcards/TuitionPostCard";
-import { Calendar, Filter, X, Search, AlertTriangle } from "lucide-react";
+import { Calendar, Filter, X, Search, AlertTriangle, Plus, RefreshCw } from "lucide-react";
 
-// Sample data - replace with actual API call
-const samplePosts: TuitionPost[] = [
-  {
-    id: "P-05022600",
-    title: "All Subjects - Class 9",
-    subtitle: "WB-English Version • Rajabazar, Sealdah",
-    guardian: "MD Faiyaz uddin",
-    guardianPhone: "8910222010",
-    className: "9",
-    subject: "All Subjects",
-    board: "WB-English Version",
-    location: "Rajabazar, Sealdah",
-    budget: 3000,
-    classType: "in-person",
-    frequency: "four",
-    preferredDays: [],
-    notes: "",
-    status: "open",
+/** Map a DB post (from API) to the TuitionPost interface used by the card. */
+function mapApiPost(p: Record<string, any>): TuitionPost {
+  return {
+    id: p.postId,
+    guardian: p.guardianName,
+    guardianPhone: p.guardianPhone,
+    students: (p.students ?? []).map((s: any) => ({
+      className: s.className,
+      board: s.board,
+      subjects: s.subjects ?? [],
+      subjectsNormalized: s.subjectsNormalized,
+    })),
+    location: p.location,
+    budget: p.monthlyBudget ?? 0,
+    classType: p.classType,
+    frequency: p.frequencyPerWeek ?? 0,
+    preferredDays: p.preferredDays ?? [],
+    preferredTime: p.preferredTime,
+    notes: p.notes ?? "",
+    status: p.status ?? "open",
     type: "post",
-    applicantCount: 6,
+    // Applicant data will come from the applications collection later
+    applicantCount: 0,
     applicationStats: {
-      pending: 6,
+      pending: 0,
       DC: 0,
       GC: 0,
       approved: 0,
       declined: 0,
       withdrawn: 0,
-      total: 6,
+      total: 0,
     },
-  },
-  {
-    id: "P-05022601",
-    title: "Mathematics - Class 10",
-    subtitle: "CBSE Board • Salt Lake",
-    guardian: "Priya Sharma",
-    guardianPhone: "9876543210",
-    className: "10",
-    subject: "Mathematics",
-    board: "CBSE",
-    location: "Salt Lake, Sector V",
-    budget: 5000,
-    classType: "online",
-    frequency: "three",
-    preferredDays: ["Monday", "Wednesday", "Friday"],
-    notes: "Need experienced teacher for board exam preparation",
-    status: "open",
-    type: "post",
-    applicantCount: 12,
-    applicationStats: {
-      pending: 8,
-      DC: 0,
-      GC: 0,
-      approved: 3,
-      declined: 1,
-      withdrawn: 0,
-      total: 12,
-    },
-  },
-  {
-    id: "P-04022600",
-    title: "Science - Class 8",
-    subtitle: "ICSE Board • Park Street",
-    guardian: "Rajesh Kumar",
-    guardianPhone: "9123456789",
-    className: "8",
-    subject: "Science",
-    board: "ICSE",
-    location: "Park Street, Central Kolkata",
-    budget: 4000,
-    classType: "in-person",
-    frequency: "five",
-    preferredDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    notes: "Prefer female teacher",
-    status: "filled",
-    type: "post",
-    applicantCount: 8,
-    applicationStats: {
-      pending: 0,
-      DC: 0,
-      GC: 0,
-      approved: 1,
-      declined: 6,
-      withdrawn: 0,
-      total: 8,
-    },
-  },
-];
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
 
 const Page = () => {
   const router = useRouter();
-  const currentYear = 2026;
-  const currentMonth = 2; // February
-  const currentDay = 10;
+  const currentYear = new Date().getFullYear();
 
   // Generate years (last 5 years)
   const years = useMemo(
@@ -124,7 +72,7 @@ const Page = () => {
         const year = currentYear - i;
         return { key: year.toString(), label: year.toString() };
       }),
-    []
+    [currentYear]
   );
 
   // Generate months
@@ -161,33 +109,53 @@ const Page = () => {
   const [postToCancel, setPostToCancel] = useState<TuitionPost | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Filter posts based on selected filters
-  const filteredPosts = useMemo(() => {
-    let filtered = [...samplePosts];
+  // ── Data fetching state ──────────────────────────────────────────────
+  const [posts, setPosts] = useState<TuitionPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0, limit: 50 });
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((post) => {
-        return (
-          post.id.toLowerCase().includes(query) ||
-          post.title.toLowerCase().includes(query) ||
-          post.guardian.toLowerCase().includes(query) ||
-          post.guardianPhone.includes(query) ||
-          post.className.toLowerCase().includes(query) ||
-          post.subject.toLowerCase().includes(query) ||
-          post.board.toLowerCase().includes(query) ||
-          post.location.toLowerCase().includes(query) ||
-          post.status.toLowerCase().includes(query)
-        );
-      });
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    setFetchError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set("limit", "100"); // fetch enough for client-side filtering
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
+      const res = await fetch(`/api/v1/posts?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to fetch posts (${res.status})`);
+      }
+      const data = await res.json();
+      const mapped: TuitionPost[] = (data.posts ?? []).map(mapApiPost);
+      setPosts(mapped);
+      setPagination(data.pagination ?? { page: 1, total: mapped.length, totalPages: 1, limit: 100 });
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : "Failed to fetch posts");
+    } finally {
+      setIsLoading(false);
     }
+  }, [searchQuery]);
 
-    // Filter by dropdown selection (year, month, day)
+  // Fetch on mount and when searchQuery changes (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPosts();
+    }, searchQuery ? 400 : 0); // debounce search, instant on mount
+    return () => clearTimeout(timer);
+  }, [fetchPosts, searchQuery]);
+
+  // Client-side date filtering on already-fetched posts
+  const filteredPosts = useMemo(() => {
+    let filtered = [...posts];
+
+    // Filter by dropdown selection (year, month, day) from postId
     if (selectedYear || selectedMonth || selectedDay) {
       filtered = filtered.filter((post) => {
-        // Extract date from post ID (format: P-DDMMYY00)
+        // Extract date from post ID (format: P-DDMMYYNN)
         const dateStr = post.id.split("-")[1];
+        if (!dateStr || dateStr.length < 6) return true;
         const day = parseInt(dateStr.substring(0, 2));
         const month = parseInt(dateStr.substring(2, 4));
         const year = 2000 + parseInt(dateStr.substring(4, 6));
@@ -204,6 +172,7 @@ const Page = () => {
     if (dateRange?.start && dateRange?.end) {
       filtered = filtered.filter((post) => {
         const dateStr = post.id.split("-")[1];
+        if (!dateStr || dateStr.length < 6) return true;
         const day = parseInt(dateStr.substring(0, 2));
         const month = parseInt(dateStr.substring(2, 4));
         const year = 2000 + parseInt(dateStr.substring(4, 6));
@@ -224,7 +193,7 @@ const Page = () => {
       });
     }
     return filtered;
-  }, [selectedYear, selectedMonth, selectedDay, dateRange, searchQuery]);
+  }, [posts, selectedYear, selectedMonth, selectedDay, dateRange]);
 
   const handleClearFilters = () => {
     setSelectedYear("");
@@ -241,12 +210,23 @@ const Page = () => {
     setPostToCancel(post);
     onOpen();
   };
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (postToCancel) {
-      console.log("Cancelling post:", postToCancel.id);
-      // Implement actual cancel functionality here
-      // For example: call API to cancel the post
-      // await cancelPost(postToCancel.id);
+      try {
+        const res = await fetch(`/api/v1/posts/${postToCancel.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "cancelled" }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          console.error("Cancel failed:", data.error);
+        }
+        // Refresh the list after cancelling
+        fetchPosts();
+      } catch (err) {
+        console.error("Cancel error:", err);
+      }
     }
     onClose();
     setPostToCancel(null);
@@ -266,12 +246,33 @@ const Page = () => {
       <div className="space-y-3">
         {/* Header */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-default-900">
-            Tuition Posts Management
-          </h1>
-          <p className="text-default-500">
-            Filter and manage all tuition posts
-          </p>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-default-900">
+              Tuition Posts Management
+            </h1>
+            <Button
+              color="primary"
+              startContent={<Plus size={18} />}
+              onPress={() => router.push("/admin/tuitions/create")}
+            >
+              Create Post
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-default-500">
+              Filter and manage all tuition posts
+            </p>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              onPress={() => fetchPosts()}
+              isLoading={isLoading}
+              aria-label="Refresh posts"
+            >
+              <RefreshCw size={16} />
+            </Button>
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -409,7 +410,22 @@ const Page = () => {
             </h2>
           </div>
 
-          {filteredPosts.length === 0 ? (
+          {isLoading ? (
+            <Card>
+              <CardBody className="py-12 flex items-center justify-center">
+                <Spinner size="lg" label="Loading posts..." />
+              </CardBody>
+            </Card>
+          ) : fetchError ? (
+            <Card>
+              <CardBody className="py-12 text-center space-y-3">
+                <p className="text-danger">{fetchError}</p>
+                <Button size="sm" color="primary" variant="flat" onPress={fetchPosts}>
+                  Retry
+                </Button>
+              </CardBody>
+            </Card>
+          ) : filteredPosts.length === 0 ? (
             <Card>
               <CardBody className="py-12 text-center">
                 <p className="text-default-400">
@@ -456,12 +472,12 @@ const Page = () => {
                         <span className="text-primary">{postToCancel.id}</span>
                       </p>
                       <p className="text-sm">
-                        <span className="font-semibold">Title:</span>{" "}
-                        {postToCancel.title}
-                      </p>
-                      <p className="text-sm">
                         <span className="font-semibold">Guardian:</span>{" "}
                         {postToCancel.guardian}
+                      </p>
+                      <p className="text-sm">
+                        <span className="font-semibold">Location:</span>{" "}
+                        {postToCancel.location}
                       </p>
                       <p className="text-sm">
                         <span className="font-semibold">Status:</span>{" "}
@@ -470,7 +486,7 @@ const Page = () => {
                           color={
                             postToCancel.status === "open"
                               ? "success"
-                              : postToCancel.status === "filled"
+                              : postToCancel.status === "matched"
                                 ? "warning"
                                 : "danger"
                           }
