@@ -11,7 +11,6 @@ import {
   MapPin,
   Briefcase,
   Calendar,
-  DollarSign,
   Users,
   Share2,
   Eye,
@@ -22,29 +21,38 @@ import {
 import { FaRupeeSign } from "react-icons/fa";
 
 export interface JobPost {
-  id: string;
+  id: string; // jobId
+  workType: "job" | "project";
   title: string;
-  company: string;
-  companyPhone: string;
-  designation: string;
-  experience: string;
+  clientName: string;
+  phoneNumber: string;
+  companyType: "individual" | "company";
+  locationType: "remote" | "onsite" | "hybrid";
   location: string;
-  salary: string;
-  jobType: string;
-  locationType: string;
   timing: string;
-  qualification: string;
-  status: "open" | "closed" | "filled";
-  type: "job";
-  applicantCount: number;
-  applicationStats: {
+  experience?: string;
+  gender: "male" | "female" | "both" | "all";
+  salary?: string;
+  requiredQualification?: string;
+  projectType?: "one-time" | "ongoing";
+  budget?: string;
+  duration?: string;
+  brief?: string;
+  status: "open" | "closed" | "hold" | "cancelled";
+  commissionBasis: "first_month" | "project_value";
+  academyCommissionPercentage: number;
+  // Applicant data (will come from applications collection later)
+  applicantCount?: number;
+  applicationStats?: {
     pending: number;
     approved: number;
     declined: number;
     withdrawn: number;
     total: number;
   };
-  postedDate: string;
+  postedDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface JobPostCardProps {
@@ -54,6 +62,16 @@ interface JobPostCardProps {
   onView?: (post: JobPost) => void;
   onEdit?: (post: JobPost) => void;
 }
+
+const formatLocationType = (type: string) =>
+  ({ remote: "Remote", onsite: "On-Site", hybrid: "Hybrid" })[type] ?? type;
+
+const formatWorkType = (type: string) =>
+  ({ job: "Job", project: "Project" })[type] ?? type;
+
+const formatCommissionBasis = (type: string) =>
+  ({ first_month: "First Month", project_value: "Project Value" })[type] ??
+  type;
 
 export const JobPostCard: React.FC<JobPostCardProps> = ({
   post,
@@ -68,8 +86,10 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
         return "success";
       case "closed":
         return "danger";
-      case "filled":
+      case "hold":
         return "warning";
+      case "cancelled":
+        return "default";
       default:
         return "default";
     }
@@ -82,14 +102,24 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
           <div className="flex flex-col gap-1 flex-1">
             <div className="flex items-center justify-between gap-2">
               <p className="text-md font-bold text-primary">{post.id}</p>
-              <Chip
-                size="sm"
-                color={getStatusColor(post.status)}
-                variant="flat"
-                className="capitalize"
-              >
-                {post.status}
-              </Chip>
+              <div className="flex items-center gap-1">
+                <Chip
+                  size="sm"
+                  color="secondary"
+                  variant="flat"
+                  className="capitalize"
+                >
+                  {formatWorkType(post.workType)}
+                </Chip>
+                <Chip
+                  size="sm"
+                  color={getStatusColor(post.status)}
+                  variant="flat"
+                  className="capitalize"
+                >
+                  {post.status}
+                </Chip>
+              </div>
             </div>
           </div>
         </div>
@@ -98,7 +128,6 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
       <Divider />
 
       <CardBody className="gap-3 py-4">
-        {" "}
         <Button
           isIconOnly
           aria-label="Edit post"
@@ -108,27 +137,35 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
         >
           <Edit size={16} />
         </Button>
+
         {/* Job Details */}
         <div className="space-y-3">
           <div>
             <h3 className="text-lg font-bold text-default-900">
-              {post.designation}
+              {post.title}
             </h3>
-            <p className="text-sm text-default-500">{post.company}</p>
+            <p className="text-sm text-default-500">
+              {post.clientName}{" "}
+              <span className="text-xs text-default-400 capitalize">
+                ({post.companyType})
+              </span>
+            </p>
           </div>
 
           <Divider />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Briefcase size={16} className="text-default-400" />
-              <div>
-                <span className="text-default-500">Experience:</span>{" "}
-                <span className="font-medium text-default-700">
-                  {post.experience}
-                </span>
+            {post.experience && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase size={16} className="text-default-400" />
+                <div>
+                  <span className="text-default-500">Experience:</span>{" "}
+                  <span className="font-medium text-default-700">
+                    {post.experience}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex items-center gap-2 text-sm">
               <MapPin size={16} className="text-default-400" />
               <div>
@@ -138,21 +175,34 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <FaRupeeSign size={16} className="text-default-400" />
-              <div>
-                <span className="text-default-500">Salary:</span>{" "}
-                <span className="font-medium text-success-600">
-                  {post.salary}
-                </span>
+            {post.workType === "job" && post.salary && (
+              <div className="flex items-center gap-2 text-sm">
+                <FaRupeeSign size={16} className="text-default-400" />
+                <div>
+                  <span className="text-default-500">Salary:</span>{" "}
+                  <span className="font-medium text-success-600">
+                    {post.salary}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
+            {post.workType === "project" && post.budget && (
+              <div className="flex items-center gap-2 text-sm">
+                <FaRupeeSign size={16} className="text-default-400" />
+                <div>
+                  <span className="text-default-500">Budget:</span>{" "}
+                  <span className="font-medium text-success-600">
+                    {post.budget}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-sm">
               <Clock size={16} className="text-default-400" />
               <div>
                 <span className="text-default-500">Type:</span>{" "}
                 <span className="font-medium text-default-700">
-                  {post.jobType}
+                  {formatLocationType(post.locationType)}
                 </span>
               </div>
             </div>
@@ -170,28 +220,53 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 </span>
               </div>
             </div>
-            <div className="flex items-start gap-2 text-sm">
-              <Briefcase size={16} className="text-default-400 mt-0.5" />
-              <div>
-                <span className="text-default-500">Qualification:</span>{" "}
-                <span className="font-medium text-default-700">
-                  {post.qualification}
-                </span>
+            {post.requiredQualification && (
+              <div className="flex items-start gap-2 text-sm">
+                <Briefcase size={16} className="text-default-400 mt-0.5" />
+                <div>
+                  <span className="text-default-500">Qualification:</span>{" "}
+                  <span className="font-medium text-default-700">
+                    {post.requiredQualification}
+                  </span>
+                </div>
               </div>
+            )}
+            {post.workType === "project" && post.duration && (
+              <div className="flex items-start gap-2 text-sm">
+                <Clock size={16} className="text-default-400 mt-0.5" />
+                <div>
+                  <span className="text-default-500">Duration:</span>{" "}
+                  <span className="font-medium text-default-700">
+                    {post.duration}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Divider />
+
+          {/* Client Contact */}
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-default-700">
+              Client Contact
+            </p>
+            <div className="flex items-center gap-2 text-sm pl-2">
+              <Phone size={16} className="text-default-400" />
+              <span className="text-default-600">{post.phoneNumber}</span>
             </div>
           </div>
 
           <Divider />
 
-          {/* Company Contact */}
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold text-default-700">
-              Company Contact
-            </p>
-            <div className="flex items-center gap-2 text-sm pl-2">
-              <Phone size={16} className="text-default-400" />
-              <span className="text-default-600">{post.companyPhone}</span>
-            </div>
+          {/* Commission Info */}
+          <div className="flex items-center gap-2 text-sm">
+            <FaRupeeSign size={14} className="text-default-400" />
+            <span className="text-default-500">Commission:</span>{" "}
+            <span className="font-medium text-default-700">
+              {post.academyCommissionPercentage}% (
+              {formatCommissionBasis(post.commissionBasis)})
+            </span>
           </div>
 
           <Divider />
@@ -205,7 +280,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 </span>
               </div>
               <Chip size="sm" color="primary" variant="flat">
-                {post.applicantCount} Total
+                {post.applicantCount ?? 0} Total
               </Chip>
             </div>
 
@@ -213,19 +288,19 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
               <div className="flex flex-col items-center p-2 bg-warning-50 rounded-lg">
                 <p className="text-xs text-warning-600">Pending</p>
                 <p className="text-lg font-bold text-warning-700">
-                  {post.applicationStats.pending}
+                  {post.applicationStats?.pending ?? 0}
                 </p>
               </div>
               <div className="flex flex-col items-center p-2 bg-success-50 rounded-lg">
                 <p className="text-xs text-success-600">Approved</p>
                 <p className="text-lg font-bold text-success-700">
-                  {post.applicationStats.approved}
+                  {post.applicationStats?.approved ?? 0}
                 </p>
               </div>
               <div className="flex flex-col items-center p-2 bg-danger-50 rounded-lg">
                 <p className="text-xs text-danger-600">Declined</p>
                 <p className="text-lg font-bold text-danger-700">
-                  {post.applicationStats.declined}
+                  {post.applicationStats?.declined ?? 0}
                 </p>
               </div>
             </div>

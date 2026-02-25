@@ -37,24 +37,22 @@ const page = () => {
     createdByUserId: { name: "Soumyadip", avatar: "" },
   };
   const jobPostData = {
-    jobId: "JOB-081225001",
-    companyName: "Google LLC",
+    jobId: "J-08122500",
+    clientName: "Google LLC",
     phoneNumber: "8697159284",
-    companyType: "Steel Industries",
-    designation: "HR for Payroll, PF & ESIC",
+    companyType: "company" as const,
+    title: "HR for Payroll, PF & ESIC",
+    workType: "job" as const,
     experience: "Minimum 5 Years",
-
-    locationType: 1, // ✅ literal preserved
+    locationType: "onsite" as const,
     location: "Chandni Metro Station, Kolkata",
-    gender: 1,
-    status: 1,
-    jobType: 1,
-
+    gender: "all" as const,
+    status: "open" as const,
     timing: "10:00 AM - 7:00 PM",
     salary: "₹70,000 CTC + PF",
     requiredQualification: "Degree in HR / Finance or related field",
-    createdAt: new Date(),
-  } as const;
+    createdAt: new Date().toISOString(),
+  };
   return (
     <div className="w-full">
       <BackButton title="Dashboard" />

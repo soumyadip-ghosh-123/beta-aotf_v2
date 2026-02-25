@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import {
   Modal,
   ModalContent,
@@ -27,77 +28,35 @@ import {
   XCircle,
   AlertCircle,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
-// Sample data - replace with actual API call
-const sampleCandidates: JobCandidate[] = [
-  {
-    id: "JC001",
-    name: "Rahul Sharma",
-    email: "rahul.s@example.com",
-    phone: "9876543210",
-    avatar: undefined,
-    qualification: "B.Tech in Computer Science",
-    experience: "4 years",
-    location: "Salt Lake, Kolkata",
-    status: "approved",
-    appliedDate: "2026-02-06",
-    skills: ["React", "Node.js", "TypeScript", "MongoDB", "AWS"],
-  },
-  {
-    id: "JC002",
-    name: "Priya Patel",
-    email: "priya.p@example.com",
-    phone: "9876543211",
-    avatar: undefined,
-    qualification: "M.Tech in Software Engineering",
-    experience: "5 years",
-    location: "Park Street, Kolkata",
-    status: "pending",
-    appliedDate: "2026-02-07",
-    skills: ["Java", "Spring Boot", "Microservices", "Docker"],
-  },
-  {
-    id: "JC003",
-    name: "Amit Kumar",
-    email: "amit.k@example.com",
-    phone: "9876543212",
-    avatar: undefined,
-    qualification: "B.Tech in IT",
-    experience: "3 years",
-    location: "New Town, Kolkata",
-    status: "pending",
-    appliedDate: "2026-02-08",
-    skills: ["Python", "Django", "PostgreSQL", "Redis"],
-  },
-  {
-    id: "JC004",
-    name: "Sneha Das",
-    email: "sneha.d@example.com",
-    phone: "9876543213",
-    avatar: undefined,
-    qualification: "MCA",
-    experience: "2 years",
-    location: "Howrah, Kolkata",
-    status: "pending",
-    appliedDate: "2026-02-09",
-    skills: ["Angular", "Node.js", "MySQL"],
-  },
-  {
-    id: "JC005",
-    name: "Vikram Singh",
-    email: "vikram.s@example.com",
-    phone: "9876543214",
-    avatar: undefined,
-    qualification: "B.Sc in Computer Science",
-    experience: "1 year",
-    location: "Jadavpur, Kolkata",
-    status: "withdrawn",
-    appliedDate: "2026-02-10",
-    skills: ["HTML", "CSS", "JavaScript", "React"],
-  },
-];
+interface JobPostData {
+  _id: string;
+  jobId: string;
+  workType: string;
+  title: string;
+  clientName: string;
+  phoneNumber: string;
+  companyType: string;
+  locationType: string;
+  location: string;
+  timing: string;
+  experience?: string;
+  gender: string;
+  salary?: string;
+  requiredQualification?: string;
+  projectType?: string;
+  budget?: string;
+  duration?: string;
+  brief?: string;
+  status: string;
+  commissionBasis: string;
+  academyCommissionPercentage: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function ViewJobPostPage({
   params,
@@ -108,18 +67,33 @@ export default function ViewJobPostPage({
   const { id: postId } = React.use(params);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isClearing, setIsClearing] = useState<boolean>(false);
-  const [candidates, setCandidates] = useState<JobCandidate[]>(sampleCandidates);
+  const [candidates, setCandidates] = useState<JobCandidate[]>([]);
+  const [postData, setPostData] = useState<JobPostData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Sample post data - replace with actual API call
-  const postData = {
-    id: postId,
-    title: "Senior Software Engineer",
-    company: "Tech Solutions Pvt Ltd",
-    designation: "Senior Software Engineer",
-    location: "Salt Lake, Kolkata",
-    status: "open",
-    salary: "₹8-12 LPA",
-  };
+  useEffect(() => {
+    const fetchJob = async () => {
+      setIsLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch(`/api/v1/jobs/${postId}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Failed to fetch job (${res.status})`);
+        }
+        const { job } = await res.json();
+        setPostData(job);
+      } catch (err) {
+        setFetchError(
+          err instanceof Error ? err.message : "Failed to fetch job"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [postId]);
 
   const handleViewDetails = (candidate: JobCandidate) => {
     router.push(`/admin/jobs/${postId}/candidate/${candidate.id}`);
@@ -213,6 +187,36 @@ export default function ViewJobPostPage({
   };
   return (
     <div className="container mx-auto px-4 max-w-7xl">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-20">
+          <Spinner size="lg" />
+        </div>
+      )}
+
+      {/* Error State */}
+      {fetchError && (
+        <>
+          <Button
+            size="sm"
+            variant="light"
+            startContent={<ArrowLeft size={18} />}
+            onPress={() => router.push("/admin/jobs")}
+            className="mb-4"
+          >
+            Back to Posts
+          </Button>
+          <Card className="bg-danger-50">
+            <CardBody className="py-10 text-center">
+              <p className="text-danger">{fetchError}</p>
+            </CardBody>
+          </Card>
+        </>
+      )}
+
+      {/* Main Content */}
+      {!isLoading && !fetchError && postData && (
+        <>
       {/* Header with Back and Clear All Buttons */}
       <div className="space-y-3 mb-3">
         <div className="flex items-center justify-between">
@@ -224,17 +228,28 @@ export default function ViewJobPostPage({
           >
             Back to Posts
           </Button>
-          {candidates.length > 0 && (
+          <div className="flex gap-2">
             <Button
               size="sm"
-              color="danger"
+              color="primary"
               variant="flat"
-              startContent={<Trash2 size={18} />}
-              onPress={onOpen}
+              startContent={<Pencil size={18} />}
+              onPress={() => router.push(`/admin/jobs/${postId}/edit`)}
             >
-              Clear All Candidates ({candidates.length})
+              Edit
             </Button>
-          )}
+            {candidates.length > 0 && (
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                startContent={<Trash2 size={18} />}
+                onPress={onOpen}
+              >
+                Clear All Candidates ({candidates.length})
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -243,22 +258,32 @@ export default function ViewJobPostPage({
               <div className="flex flex-col w-full">
                 <div className="flex justify-between">
                   <p className="text-sm text-default-400">
-                    Post ID: {postData.id}
+                    Post ID: {postData.jobId}
                   </p>
-                  <Chip
-                    size="sm"
-                    color={postData.status === "open" ? "success" : "danger"}
-                    variant="flat"
-                    className="capitalize"
-                  >
-                    {postData.status}
-                  </Chip>
+                  <div className="flex gap-2">
+                    <Chip
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      className="capitalize"
+                    >
+                      {postData.workType}
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      color={postData.status === "open" ? "success" : postData.status === "hold" ? "warning" : "danger"}
+                      variant="flat"
+                      className="capitalize"
+                    >
+                      {postData.status}
+                    </Chip>
+                  </div>
                 </div>
                 <div className="flex-1">
                   <h1 className="text-lg font-bold text-default-900">
-                    {postData.designation}
+                    {postData.title}
                   </h1>
-                  <p className="text-xs text-default-500">{postData.company}</p>
+                  <p className="text-xs text-default-500">{postData.clientName}</p>
                 </div>
               </div>
 
@@ -271,10 +296,26 @@ export default function ViewJobPostPage({
                     {postData.location}
                   </span>
                 </div>
-                <div className="flex flex-col text-right">
-                  <span className="text-xs text-default-500">Salary</span>
+                <div className="flex flex-col">
+                  <span className="text-xs text-default-500">
+                    {postData.workType === "job" ? "Salary" : "Budget"}
+                  </span>
                   <span className="font-medium text-success-600">
-                    {postData.salary}
+                    {postData.workType === "job"
+                      ? postData.salary || "Not specified"
+                      : postData.budget || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-default-500">Timing</span>
+                  <span className="font-medium text-default-900">
+                    {postData.timing}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-default-500">Commission</span>
+                  <span className="font-medium text-default-900">
+                    {postData.academyCommissionPercentage}%
                   </span>
                 </div>
               </div>
@@ -444,6 +485,8 @@ export default function ViewJobPostPage({
           </ModalFooter>
         </ModalContent>
       </Modal>
+        </>
+      )}
     </div>
   );
 }

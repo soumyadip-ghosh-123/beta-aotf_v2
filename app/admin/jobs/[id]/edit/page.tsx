@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
@@ -8,6 +8,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import { addToast } from "@heroui/toast";
 import {
   ArrowLeft,
@@ -17,103 +18,129 @@ import {
   Building2,
   Phone,
   MapPin,
-  DollarSign,
   Clock,
   GraduationCap,
+  FileText,
+  User,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
 
-// Sample data - replace with actual API call
-const getJobPostData = (id: string) => {
-  const posts: Record<string, any> = {
-    "J-05022600": {
-      id: "J-05022600",
-      company: "Tech Solutions Pvt Ltd",
-      companyPhone: "9876543210",
-      designation: "Senior Software Engineer",
-      experience: "3-5 years",
-      location: "Salt Lake, Kolkata",
-      salary: "₹8-12 LPA",
-      jobType: "Full-time",
-      locationType: "Hybrid",
-      timing: "10:00 AM - 7:00 PM",
-      qualification: "B.Tech/M.Tech in Computer Science",
-      description: "",
-      status: "open",
-    },
-    "J-04022600": {
-      id: "J-04022600",
-      company: "Digital Marketing Hub",
-      companyPhone: "9123456789",
-      designation: "Marketing Manager",
-      experience: "5+ years",
-      location: "Park Street, Kolkata",
-      salary: "₹10-15 LPA",
-      jobType: "Full-time",
-      locationType: "On-site",
-      timing: "9:00 AM - 6:00 PM",
-      qualification: "MBA in Marketing",
-      description:
-        "Looking for an experienced marketing professional to lead our team",
-      status: "open",
-    },
-    "J-03022600": {
-      id: "J-03022600",
-      company: "Analytics Pro",
-      companyPhone: "9998887776",
-      designation: "Senior Data Analyst",
-      experience: "2-4 years",
-      location: "New Town, Kolkata",
-      salary: "₹6-9 LPA",
-      jobType: "Full-time",
-      locationType: "Remote",
-      timing: "Flexible",
-      qualification: "B.Sc/M.Sc in Statistics or related field",
-      description: "Seeking a data analyst with strong statistical background",
-      status: "filled",
-    },
-  };
+const WORK_TYPES = [
+  { key: "job", label: "Job" },
+  { key: "project", label: "Project" },
+];
 
-  return posts[id] || null;
-};
+const COMPANY_TYPES = [
+  { key: "individual", label: "Individual" },
+  { key: "company", label: "Company" },
+];
+
+const LOCATION_TYPES = [
+  { key: "remote", label: "Remote" },
+  { key: "onsite", label: "On-Site" },
+  { key: "hybrid", label: "Hybrid" },
+];
+
+const GENDER_PREFERENCES = [
+  { key: "male", label: "Male" },
+  { key: "female", label: "Female" },
+  { key: "both", label: "Both" },
+  { key: "all", label: "All" },
+];
+
+const PROJECT_TYPES = [
+  { key: "one-time", label: "One-Time" },
+  { key: "ongoing", label: "Ongoing" },
+];
+
+const COMMISSION_BASIS = [
+  { key: "first_month", label: "First Month Salary" },
+  { key: "project_value", label: "Project Value" },
+];
+
+const JOB_STATUSES = [
+  { key: "open", label: "Open" },
+  { key: "closed", label: "Closed" },
+  { key: "hold", label: "Hold" },
+  { key: "cancelled", label: "Cancelled" },
+];
 
 export default function EditJobPostPage() {
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
 
-  const existingPost = getJobPostData(postId);
-
-  const [formData, setFormData] = useState({
-    company: existingPost?.company || "",
-    companyPhone: existingPost?.companyPhone || "",
-    designation: existingPost?.designation || "",
-    experience: existingPost?.experience || "",
-    location: existingPost?.location || "",
-    salary: existingPost?.salary || "",
-    jobType: existingPost?.jobType || "Full-time",
-    locationType: existingPost?.locationType || "On-site",
-    timing: existingPost?.timing || "",
-    qualification: existingPost?.qualification || "",
-    description: existingPost?.description || "",
-    status: existingPost?.status || "open",
-  });
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  if (!existingPost) {
-    return (
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <Card>
-          <CardBody>
-            <p className="text-center text-danger">Post not found</p>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
+  const [formData, setFormData] = useState({
+    workType: "job",
+    title: "",
+    clientName: "",
+    phoneNumber: "",
+    companyType: "company",
+    locationType: "onsite",
+    location: "",
+    timing: "",
+    experience: "",
+    gender: "all",
+    salary: "",
+    requiredQualification: "",
+    projectType: "",
+    budget: "",
+    duration: "",
+    brief: "",
+    status: "open",
+    commissionBasis: "first_month",
+    academyCommissionPercentage: "",
+  });
 
-  const handleChange = (field: string, value: any) => {
+  useEffect(() => {
+    const fetchJob = async () => {
+      setIsLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch(`/api/v1/jobs/${postId}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Failed to fetch job (${res.status})`);
+        }
+        const { job } = await res.json();
+        setFormData({
+          workType: job.workType || "job",
+          title: job.title || "",
+          clientName: job.clientName || "",
+          phoneNumber: job.phoneNumber || "",
+          companyType: job.companyType || "company",
+          locationType: job.locationType || "onsite",
+          location: job.location || "",
+          timing: job.timing || "",
+          experience: job.experience || "",
+          gender: job.gender || "all",
+          salary: job.salary || "",
+          requiredQualification: job.requiredQualification || "",
+          projectType: job.projectType || "",
+          budget: job.budget || "",
+          duration: job.duration || "",
+          brief: job.brief || "",
+          status: job.status || "open",
+          commissionBasis: job.commissionBasis || "first_month",
+          academyCommissionPercentage:
+            job.academyCommissionPercentage?.toString() || "",
+        });
+      } catch (err) {
+        setFetchError(
+          err instanceof Error ? err.message : "Failed to fetch job"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [postId]);
+
+  const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -124,11 +151,61 @@ export default function EditJobPostPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const payload: Record<string, unknown> = {
+        workType: formData.workType,
+        title: formData.title.trim(),
+        clientName: formData.clientName.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        companyType: formData.companyType,
+        locationType: formData.locationType,
+        location: formData.location.trim(),
+        timing: formData.timing.trim(),
+        gender: formData.gender,
+        status: formData.status,
+        commissionBasis: formData.commissionBasis,
+        academyCommissionPercentage: parseInt(
+          formData.academyCommissionPercentage,
+          10
+        ),
+      };
 
-      // TODO: Replace with actual API call
-      // await updateJobPost(postId, formData);
+      // Optional fields
+      if (formData.experience.trim())
+        payload.experience = formData.experience.trim();
+      if (formData.salary.trim()) payload.salary = formData.salary.trim();
+      if (formData.requiredQualification.trim())
+        payload.requiredQualification =
+          formData.requiredQualification.trim();
+      if (formData.brief.trim()) payload.brief = formData.brief.trim();
+
+      // Project-specific fields
+      if (formData.workType === "project") {
+        if (formData.projectType)
+          payload.projectType = formData.projectType;
+        if (formData.budget.trim()) payload.budget = formData.budget.trim();
+        if (formData.duration.trim())
+          payload.duration = formData.duration.trim();
+      }
+
+      const res = await fetch(`/api/v1/jobs/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.fieldErrors) {
+          const messages = Object.entries(data.fieldErrors)
+            .map(
+              ([field, errors]) =>
+                `${field}: ${(errors as string[]).join(", ")}`
+            )
+            .join("; ");
+          throw new Error(messages || data.error || "Validation failed");
+        }
+        throw new Error(data.error || "Failed to update job");
+      }
 
       addToast({
         description: "Job post updated successfully!",
@@ -138,7 +215,8 @@ export default function EditJobPostPage() {
       router.push(`/admin/jobs/${postId}`);
     } catch (error) {
       addToast({
-        description: "Failed to update job post",
+        description:
+          error instanceof Error ? error.message : "Failed to update job post",
         color: "danger",
       });
     } finally {
@@ -150,22 +228,34 @@ export default function EditJobPostPage() {
     router.push(`/admin/jobs/${postId}`);
   };
 
-  const jobTypes = [
-    "Full-time",
-    "Part-time",
-    "Contract",
-    "Internship",
-    "Freelance",
-  ];
-  const locationTypes = ["On-site", "Remote", "Hybrid"];
-  const experienceLevels = [
-    "0-1 years",
-    "1-2 years",
-    "2-4 years",
-    "3-5 years",
-    "5+ years",
-    "10+ years",
-  ];
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-4xl flex justify-center py-20">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Button
+          size="sm"
+          variant="light"
+          startContent={<ArrowLeft size={18} />}
+          onPress={() => router.push("/admin/jobs")}
+          className="mb-4"
+        >
+          Back to Posts
+        </Button>
+        <Card className="bg-danger-50">
+          <CardBody className="py-10 text-center">
+            <p className="text-danger">{fetchError}</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -193,7 +283,7 @@ export default function EditJobPostPage() {
             color={
               formData.status === "open"
                 ? "success"
-                : formData.status === "filled"
+                : formData.status === "hold"
                   ? "warning"
                   : "danger"
             }
@@ -207,52 +297,92 @@ export default function EditJobPostPage() {
 
       {/* Form */}
       <div className="space-y-6">
-        {/* Company Details */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 size={20} className="text-primary" />
-              <h2 className="text-xl font-bold">Company Details</h2>
-            </div>
-          </CardHeader>
-          <Divider />
-          <CardBody className="gap-4">
-            <Input
-              label="Company Name"
-              placeholder="Enter company name"
-              value={formData.company}
-              onChange={(e) => handleChange("company", e.target.value)}
-              startContent={
-                <Building2 size={18} className="text-default-400" />
-              }
-              isRequired
-            />
-            <Input
-              label="Company Phone"
-              placeholder="Enter phone number"
-              value={formData.companyPhone}
-              onChange={(e) => handleChange("companyPhone", e.target.value)}
-              startContent={<Phone size={18} className="text-default-400" />}
-              isRequired
-            />
-          </CardBody>
-        </Card>
-
-        {/* Job Details */}
+        {/* Work Type */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Briefcase size={20} className="text-primary" />
-              <h2 className="text-xl font-bold">Job Details</h2>
+              <h2 className="text-xl font-bold">Work Type</h2>
+            </div>
+          </CardHeader>
+          <Divider />
+          <CardBody className="gap-4">
+            <Select
+              label="Work Type"
+              placeholder="Select work type"
+              selectedKeys={formData.workType ? [formData.workType] : []}
+              onChange={(e) => handleChange("workType", e.target.value)}
+              isRequired
+            >
+              {WORK_TYPES.map((type) => (
+                <SelectItem key={type.key}>{type.label}</SelectItem>
+              ))}
+            </Select>
+          </CardBody>
+        </Card>
+
+        {/* Client Details */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 size={20} className="text-primary" />
+              <h2 className="text-xl font-bold">Client Details</h2>
             </div>
           </CardHeader>
           <Divider />
           <CardBody className="gap-4">
             <Input
-              label="Designation"
-              placeholder="Enter job designation"
-              value={formData.designation}
-              onChange={(e) => handleChange("designation", e.target.value)}
+              label="Client Name"
+              placeholder="Enter client or company name"
+              value={formData.clientName}
+              onChange={(e) => handleChange("clientName", e.target.value)}
+              startContent={
+                <User size={18} className="text-default-400" />
+              }
+              isRequired
+            />
+            <Input
+              label="Phone Number"
+              placeholder="Enter phone number"
+              value={formData.phoneNumber}
+              onChange={(e) => handleChange("phoneNumber", e.target.value)}
+              startContent={<Phone size={18} className="text-default-400" />}
+              isRequired
+              maxLength={10}
+            />
+            <Select
+              label="Company Type"
+              placeholder="Select company type"
+              selectedKeys={
+                formData.companyType ? [formData.companyType] : []
+              }
+              onChange={(e) => handleChange("companyType", e.target.value)}
+              isRequired
+            >
+              {COMPANY_TYPES.map((type) => (
+                <SelectItem key={type.key}>{type.label}</SelectItem>
+              ))}
+            </Select>
+          </CardBody>
+        </Card>
+
+        {/* Job / Project Details */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileText size={20} className="text-primary" />
+              <h2 className="text-xl font-bold">
+                {formData.workType === "project" ? "Project" : "Job"} Details
+              </h2>
+            </div>
+          </CardHeader>
+          <Divider />
+          <CardBody className="gap-4">
+            <Input
+              label="Title"
+              placeholder="Enter job/project title"
+              value={formData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
               startContent={
                 <Briefcase size={18} className="text-default-400" />
               }
@@ -260,114 +390,194 @@ export default function EditJobPostPage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Experience Required"
-                placeholder="Select experience level"
-                selectedKeys={formData.experience ? [formData.experience] : []}
-                onChange={(e) => handleChange("experience", e.target.value)}
-                isRequired
-              >
-                {experienceLevels.map((exp) => (
-                  <SelectItem key={exp}>{exp}</SelectItem>
-                ))}
-              </Select>
-
               <Input
-                label="Location"
-                placeholder="Enter job location"
-                value={formData.location}
-                onChange={(e) => handleChange("location", e.target.value)}
-                startContent={<MapPin size={18} className="text-default-400" />}
-                isRequired
+                label="Experience"
+                placeholder="e.g. 3-5 years"
+                value={formData.experience}
+                onChange={(e) => handleChange("experience", e.target.value)}
+              />
+              <Input
+                label="Required Qualification"
+                placeholder="e.g. B.Tech/M.Tech"
+                value={formData.requiredQualification}
+                onChange={(e) =>
+                  handleChange("requiredQualification", e.target.value)
+                }
+                startContent={
+                  <GraduationCap size={18} className="text-default-400" />
+                }
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Salary Range"
-                placeholder="e.g., ₹8-12 LPA"
-                value={formData.salary}
-                onChange={(e) => handleChange("salary", e.target.value)}
-                startContent={
-                  <FaRupeeSign size={18} className="text-default-400" />
-                }
+              <Select
+                label="Gender Preference"
+                placeholder="Select gender preference"
+                selectedKeys={formData.gender ? [formData.gender] : []}
+                onChange={(e) => handleChange("gender", e.target.value)}
                 isRequired
-              />
+              >
+                {GENDER_PREFERENCES.map((gp) => (
+                  <SelectItem key={gp.key}>{gp.label}</SelectItem>
+                ))}
+              </Select>
 
-              <Input
-                label="Timing"
-                placeholder="e.g., 10:00 AM - 7:00 PM"
-                value={formData.timing}
-                onChange={(e) => handleChange("timing", e.target.value)}
-                startContent={<Clock size={18} className="text-default-400" />}
-                isRequired
-              />
+              {formData.workType === "job" && (
+                <Input
+                  label="Salary"
+                  placeholder="e.g. ₹8-12 LPA"
+                  value={formData.salary}
+                  onChange={(e) => handleChange("salary", e.target.value)}
+                  startContent={
+                    <FaRupeeSign size={18} className="text-default-400" />
+                  }
+                />
+              )}
             </div>
 
-            <Input
-              label="Qualification"
-              placeholder="Enter required qualifications"
-              value={formData.qualification}
-              onChange={(e) => handleChange("qualification", e.target.value)}
-              startContent={
-                <GraduationCap size={18} className="text-default-400" />
-              }
-              isRequired
+            {/* Project-specific fields */}
+            {formData.workType === "project" && (
+              <>
+                <Divider />
+                <p className="text-sm font-medium text-default-600">
+                  Project-Specific Details
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Project Type"
+                    placeholder="Select project type"
+                    selectedKeys={
+                      formData.projectType ? [formData.projectType] : []
+                    }
+                    onChange={(e) =>
+                      handleChange("projectType", e.target.value)
+                    }
+                    isRequired
+                  >
+                    {PROJECT_TYPES.map((pt) => (
+                      <SelectItem key={pt.key}>{pt.label}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    label="Budget"
+                    placeholder="e.g. ₹50,000"
+                    value={formData.budget}
+                    onChange={(e) => handleChange("budget", e.target.value)}
+                    startContent={
+                      <FaRupeeSign
+                        size={18}
+                        className="text-default-400"
+                      />
+                    }
+                  />
+                </div>
+                <Input
+                  label="Duration"
+                  placeholder="e.g. 3 months, 6 weeks"
+                  value={formData.duration}
+                  onChange={(e) => handleChange("duration", e.target.value)}
+                  startContent={
+                    <Clock size={18} className="text-default-400" />
+                  }
+                />
+              </>
+            )}
+
+            <Textarea
+              label="Brief"
+              placeholder="Job description, responsibilities, requirements..."
+              value={formData.brief}
+              onChange={(e) => handleChange("brief", e.target.value)}
+              minRows={4}
             />
           </CardBody>
         </Card>
 
-        {/* Job Type & Location */}
+        {/* Location & Timing */}
         <Card>
           <CardHeader>
-            <h2 className="text-xl font-bold">Job Type & Location</h2>
+            <div className="flex items-center gap-2">
+              <MapPin size={20} className="text-primary" />
+              <h2 className="text-xl font-bold">Location & Timing</h2>
+            </div>
           </CardHeader>
           <Divider />
           <CardBody className="gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Job Type"
-                placeholder="Select job type"
-                selectedKeys={formData.jobType ? [formData.jobType] : []}
-                onChange={(e) => handleChange("jobType", e.target.value)}
-                isRequired
-              >
-                {jobTypes.map((type) => (
-                  <SelectItem key={type}>{type}</SelectItem>
-                ))}
-              </Select>
-
               <Select
                 label="Location Type"
                 placeholder="Select location type"
                 selectedKeys={
                   formData.locationType ? [formData.locationType] : []
                 }
-                onChange={(e) => handleChange("locationType", e.target.value)}
+                onChange={(e) =>
+                  handleChange("locationType", e.target.value)
+                }
                 isRequired
               >
-                {locationTypes.map((type) => (
-                  <SelectItem key={type}>{type}</SelectItem>
+                {LOCATION_TYPES.map((type) => (
+                  <SelectItem key={type.key}>{type.label}</SelectItem>
                 ))}
               </Select>
+              <Input
+                label="Location"
+                placeholder="Enter location"
+                value={formData.location}
+                onChange={(e) => handleChange("location", e.target.value)}
+                startContent={
+                  <MapPin size={18} className="text-default-400" />
+                }
+                isRequired
+              />
             </div>
+            <Input
+              label="Timing"
+              placeholder="e.g. 10:00 AM - 7:00 PM"
+              value={formData.timing}
+              onChange={(e) => handleChange("timing", e.target.value)}
+              startContent={<Clock size={18} className="text-default-400" />}
+              isRequired
+            />
           </CardBody>
         </Card>
 
-        {/* Job Description */}
+        {/* Commission Details */}
         <Card>
           <CardHeader>
-            <h2 className="text-xl font-bold">Job Description</h2>
+            <div className="flex items-center gap-2">
+              <FaRupeeSign size={18} className="text-primary" />
+              <h2 className="text-xl font-bold">Commission Details</h2>
+            </div>
           </CardHeader>
           <Divider />
           <CardBody className="gap-4">
-            <Textarea
-              label="Description"
-              placeholder="Enter job description and requirements..."
-              value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-              minRows={6}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Commission Basis"
+                placeholder="Select commission basis"
+                selectedKeys={
+                  formData.commissionBasis ? [formData.commissionBasis] : []
+                }
+                onChange={(e) =>
+                  handleChange("commissionBasis", e.target.value)
+                }
+                isRequired
+              >
+                {COMMISSION_BASIS.map((cb) => (
+                  <SelectItem key={cb.key}>{cb.label}</SelectItem>
+                ))}
+              </Select>
+              <Input
+                label="Academy Commission %"
+                placeholder="e.g. 10"
+                type="number"
+                value={formData.academyCommissionPercentage}
+                onChange={(e) =>
+                  handleChange("academyCommissionPercentage", e.target.value)
+                }
+                isRequired
+              />
+            </div>
           </CardBody>
         </Card>
 
@@ -385,9 +595,9 @@ export default function EditJobPostPage() {
               onChange={(e) => handleChange("status", e.target.value)}
               isRequired
             >
-              <SelectItem key="open">Open</SelectItem>
-              <SelectItem key="closed">Closed</SelectItem>
-              <SelectItem key="filled">Filled</SelectItem>
+              {JOB_STATUSES.map((s) => (
+                <SelectItem key={s.key}>{s.label}</SelectItem>
+              ))}
             </Select>
           </CardBody>
         </Card>
