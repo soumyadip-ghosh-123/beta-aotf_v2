@@ -17,7 +17,7 @@
   left: 20vw;
   right: 20vw;
   width: 60vw;
-  background: #fff;
+  background: #444;
   z-index: 999;
   box-shadow: 0 0 15px 0 #000;
   /*animation: fromRight 0.5s;*/
@@ -27,6 +27,7 @@
   grid-template-rows: 52px 1fr 56px;
   min-width: 950px;
   border-radius: 5px;
+  user-select: none;
   max-height: 80vh;
   min-height: 500px;
 }
@@ -47,9 +48,10 @@
   padding: 14px 20px 10px 20px;
   font-size: 20px;
   border-bottom: 0;
-  background: #fff;
+  background: #222;
+  user-select: none;
   z-index: 3;
-  color: #000;
+  color: #eee;
   text-align: center;
 }
 
@@ -60,15 +62,14 @@
   margin-top: 11px;
   position: relative;
   left: 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0), #4caf50, purple, red, orange, #2196f3, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0), #4caf50, palevioletred, red, orange, #2196f3, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0));
   width: 100%;
 }
 
 .modal-content {
   /*padding: 5px 20px 20px 20px;*/
   min-height: 100px;
-  background: #eee;
-  color: #000;
+  color: #eee;
   overflow: auto;
   max-height: 500px;
 }
@@ -79,8 +80,8 @@
 
 .modal-content-confirm {
   min-height: 0px;
-  background: #eee;
-  color: #000;
+  background: #444;
+  color: #eee;
   padding: 30px;
   padding-bottom: 40px;
   font-size: 13px;
@@ -92,8 +93,8 @@
   padding: 12px 14px 8px 14px;
   text-align: right;
   font-size: 14px;
-  color: #000;
-  background: #fff;
+  color: #eee;
+  background: #222;
 }
 
 .modal .im-tabs-tablist {
@@ -104,11 +105,11 @@
   margin: 2px;
   border-radius: 2px;
   border: 0px solid #fff;
-  background: #dfdfdf;
+  background: #393939;
 }
 
 .modal-content .im-cat-header {
-  border: 1px solid #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-content .im-tabs-area {
@@ -178,7 +179,7 @@
 }
 
 .im-items-selection:hover {
-  background: #2196f3;
+  background: #222;
   color: #fff;
   cursor: pointer;
 }
@@ -190,7 +191,7 @@
 .im-diagram-items-modal {
   position: sticky;
   top: 0px;
-  background: #eee;
+  background: #444;
   box-shadow: 0 0 8px -4px #000;
   padding-top: 4px;
   padding-bottom: 4px;

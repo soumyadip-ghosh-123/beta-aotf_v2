@@ -1,10 +1,13 @@
 input {
-  border-radius: 2px;
-  padding: 0 2px;
-  font-family: "Open Sans";
-  min-width: 40px;
-  width: auto;
-  }
+border-radius: 2px;
+padding: 0 2px;
+font-family: "Open Sans";
+background: #646464;
+color: #fff;
+min-width: 40px;
+width: auto;
+}
+
 .im-search-bar {
   height: 20px;
   display: grid;
@@ -15,9 +18,9 @@ input {
   padding-top: 2px;
   padding-bottom: 2px;
   border-radius: 100px;
-  border: 1px solid #ccc;
+  border: 0px solid #646464;
   margin: 7px 7px;
-  background: #fff;
+  background: #646464;
 }
 
 .im-search-fixed-width {
@@ -45,7 +48,7 @@ input {
 }
 
 .im-search-bar input::placeholder {
-  color: #666;
+  color: #000;
   font-style: italic;
 }
 

@@ -7,41 +7,47 @@
 
 .im-list-item:hover {
   background: #2196f3;
+  /*color: #fff;*/
   background: rgba(0, 0, 0, 0.02);
 }
 
 .im-list-item > div {
+  /*background: rgba(255, 255, 255, 0.2);*/
   padding: 3px 10px 3px 10px;
   font-size: 13px;
   text-decoration: none;
   display: block;
-  color: #000;
+  color: #eee;
   border-bottom: 1px solid transparent;
+  /*transition: color 0.3s;*/
   margin-right: auto;
   flex: 1;
   overflow: hidden;
+  /*transition: background-color 0.4s;*/
   cursor: pointer;
   border-radius: 2px;
 }
+
+
 
 .im-list-item-nochk a {
   padding: 3px 10px 3px 26px;
 }
 
 .im-list-item:hover {
-  background: #333;
+  background: #2196f3;
   color: #fff;
 }
 
 .im-list-item i {
-  color: #666;
+  color: #ccc;
 }
 
 .im-list-item:hover,
 .im-list-item:hover a,
 .im-list-item:hover div,
 .im-list-item:hover i {
-  background: #2196f3;
+  background: #111;
   color: #fff;
   /*color: #fff;*/
 }
@@ -49,7 +55,7 @@
 li.sel-item,
 .sel-item-list-multi {
   color: black;
-  background: #0267b7;
+  background: #333;
   color: #fff;
 }
 
@@ -84,5 +90,5 @@ li.sel-item-list-multi div i {
 }
 
 .im-list-btn i {
-  color: #666;
+  color: #ccc;
 }

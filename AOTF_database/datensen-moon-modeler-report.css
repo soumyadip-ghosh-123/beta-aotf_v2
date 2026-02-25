@@ -4,17 +4,17 @@
 }
 
 #mm-main-navs {
-    background: #ddd;
+    background: #333;
     z-index: 6;
 }
 
 #mm-nav-expander {
     display: none;
-    background: linear-gradient(180deg, #fff, #ddd);
+    background: #222;
 }
 
 #mm-nav-expander i {
-    color: black;
+    color: white;
     cursor: pointer;
 }
 
@@ -28,19 +28,20 @@
     display: flex;
     flex-direction: row;
     box-shadow: 0px 0px 5px -2px #000;
-    background: linear-gradient(180deg, #fff, #ddd);
+    border-bottom: 1px solid rgba(0,0,0,0.2);
+    background: linear-gradient(180deg, #222, #222);
 }
 
 .mm-nav-a {
     display: inline-block;
     padding: 10px 20px;
     text-decoration: none; 
-    color: #333;
+    color: white;
     cursor: pointer;
 }
 
 .mm-nav-active {
-    background: #2196f3;
+    background: rgb(3, 169, 244);
     color: white;
 }
 
@@ -65,7 +66,7 @@
 }
 
 .tob {
-    color: #333;
+    color: white;
     padding-top: 20px;
     padding-left: 20px;
 }
@@ -86,8 +87,8 @@
     left: 0;
     right: 0;    
     margin: auto;
-    background: #fff;
-    box-shadow: 0 0 20px -10px #333;
+    background: #333;
+    box-shadow: 0 0 20px -10px #000;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -121,11 +122,11 @@
 #mm-content {
     height: 100%;
     width: 100%;
-    background: #ededed;
+    background: #333;
 }
 
 #mm-side {
-    background: #ddd;
+    background: #404040;
     overflow: hidden;
 }
 
@@ -152,14 +153,14 @@
 
 
 .mm-sidenav-item-active > div {
-    background: #2196f3;
+    background: #222;
     color: #fff;  
     cursor: pointer;
 }
 
 .mm-detail:not(.mm-display-none) {
-    /*display: grid;    */  
- }
+    /*display: grid;*/    
+}
 
 .mm-detail {
     padding: 20px 30px 20px 30px;
@@ -173,16 +174,15 @@
 }
 
 .mm-props{
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.1);
     padding: 15px;   
 }
 
 .mm-subtitle {
-    color:orangered;
+    color:darkorange;
     margin: 2px 8px;
-    font-size: 14px;
+    font-size: 12px;
     text-transform: uppercase;
-    
 
 }
 
@@ -235,7 +235,7 @@
 }
 
 .mm-d-c {
-    color: #666;
+    color: #999;
     display: inline-block;
     font-size: 12px;
     font-weight: 300;
@@ -244,20 +244,20 @@
 }
 
 .mm-d-v {
-    color: #222;
+    color: #fff;
     display: inline-block;
     font-size: 14px;
     font-weight: 300;
     padding: 1px 8px;
     align-self: end;
-    background: rgba(0,0,0,0.08);
+    background: rgba(0,0,0,0.15);
     height: auto;
     margin: 1px 1px 0 1px;
     min-height: 20px;
 }
 
 .mm-d-c-i {
-    color: #666;
+    color: #999;
     display: block;
     font-size: 10px;
     font-weight: 300;
@@ -269,7 +269,7 @@
 }
 
 .mm-d-v-i {
-    color: #333;
+    color: #fff;
     display: inline-block;
     font-size: 24px;
     font-weight: 300;
@@ -288,7 +288,7 @@
 }
 
 .mm-d-c-l {
-    color: #666;
+    color: #999;
     display: block;
     font-size: 10px;
     font-weight: 300;
@@ -300,7 +300,7 @@
 }
 
 .mm-d-v-l {
-    color: #333;
+    color: #fff;
     display: inline-block;
     font-size: 14px;
     font-weight: 300;
@@ -321,7 +321,7 @@
     content: " ";
     width: 4px;
     height: 4px;
-    background: orangered;
+    background: darkorange;
     position: absolute;
     left: 8px;
     top: 10px;
@@ -335,7 +335,7 @@
 
 .mm-spacer-xs {
     height: 0;
-    background: #ddd;
+    background: #333;
     display: none;
 }
 
@@ -347,17 +347,18 @@
     display: grid;
     grid-template-rows: 52px 1fr 56px;
     border-radius: 5px;
+    user-select: none;
     max-height: 85vh;
     max-width: 60vw;
 }
 
 .mm-no {
-    color: #444;
+    color: rgba(255,255,255,0.6);
     font-style: italic;
 }
 
 .mm-yes {
-    color: #222;
+    color: rgba(255,255,255,1);
 }
 
 .mm-props .mm-d-v {
@@ -368,6 +369,7 @@
 .im-btn-default {
     padding: 8px 16px;
     border: 1px solid transparent;
+  
     font-size: 12px;
     border-radius: 20px;
     text-transform: uppercase;
@@ -379,7 +381,7 @@
   
 
 a, a.active, a.visited {
-    color:#2196f3;
+    color:rgb(3, 169, 244);
     text-decoration: none;
 }
 
@@ -388,7 +390,7 @@ a, a.active, a.visited {
     min-width: 50vh;
     width: 80vw;
     margin: 50px auto;
-    color: #333;
+    color: #eee;
 }
 
 .mm-header-1 {
@@ -410,19 +412,19 @@ a, a.active, a.visited {
 }
 
 pre {
-    background: rgba(0,0,0,0.03);
+    background: rgba(0,0,0,0.1);
     padding: 10px 20px;
     margin: 1px 0;
     white-space: pre-wrap;
 }
 
 .mm-description {
-    color: purple
+    color: yellowgreen;
 }
 
 #mm-search {
-    background: rgba(0,0,0,0.05);
-    box-shadow: 0px 0 3px -2px #000;
+    background: rgba(0,0,0,0.1);
+    box-shadow: 0 0 10px -3px #000;
     z-index: 2;
 }
 

@@ -7,13 +7,13 @@ textarea::-webkit-scrollbar {
 
 div::-webkit-scrollbar-thumb,
 textarea::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #2d2d2d;
   border-radius: 0px;
 }
 
 div::-webkit-scrollbar-track,
 textarea::-webkit-scrollbar-track {
-  background: #eee;
+  background: #585858;
   border-radius: 0px;
 }
 
@@ -24,6 +24,6 @@ textarea::-webkit-scrollbar-corner {
 
 div,
 textarea {
-  scrollbar-color: #ccc #eee;
+  scrollbar-color: #202020 #585858;
   /*scrollbar-width: thin;*/
 }
