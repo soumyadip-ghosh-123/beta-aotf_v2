@@ -2,11 +2,11 @@
 
 import React from "react";
 import { Card, CardBody } from "@heroui/card";
-import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
+import { Checkbox } from "@heroui/checkbox";
 import { User } from "@heroui/user";
-import { Phone, MapPin, GraduationCap, Eye, Briefcase } from "lucide-react";
+import { Phone, Eye } from "lucide-react";
 
 export interface JobCandidate {
   id: string;
@@ -14,32 +14,36 @@ export interface JobCandidate {
   email: string;
   phone: string;
   avatar?: string;
-  qualification: string;
-  experience: string;
-  location: string;
-  status: "pending" | "approved" | "declined" | "withdrawn";
+  status: "applied" | "approved" | "decline" | "auto_declined" | "withdrawn";
   appliedDate: string;
-  skills?: string[];
+  coverLetter?: string;
 }
 
 interface JobCandidateCardProps {
   candidate: JobCandidate;
   onViewDetails: (candidate: JobCandidate) => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (id: string, selected: boolean) => void;
 }
 
 export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
   candidate,
   onViewDetails,
+  selectionMode = false,
+  isSelected = false,
+  onSelectionChange,
 }) => {
   const getStatusColor = (
     status: string
   ): "default" | "primary" | "secondary" | "success" | "warning" | "danger" => {
     switch (status) {
-      case "pending":
+      case "applied":
         return "warning";
       case "approved":
         return "success";
-      case "declined":
+      case "decline":
+      case "auto_declined":
         return "danger";
       case "withdrawn":
         return "default";
@@ -50,12 +54,14 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
-      case "pending":
-        return "Pending";
+      case "applied":
+        return "Applied";
       case "approved":
         return "Approved";
-      case "declined":
+      case "decline":
         return "Declined";
+      case "auto_declined":
+        return "Auto Declined";
       case "withdrawn":
         return "Withdrawn";
       default:
@@ -64,18 +70,30 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
   };
 
   return (
-    <Card className="w-full hover:shadow-md transition-shadow">
+    <Card className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}>
       <CardBody className="p-4">
         <div className="space-y-3">
           {/* Avatar */}
           <div className="flex justify-between gap-3 w-full">
-            <User
-              avatarProps={{
-                src: candidate.avatar,
-              }}
-              name={candidate.name}
-              description={`Email: ${candidate.email}`}
-            />
+            <div className="flex items-center gap-2">
+              {selectionMode && (
+                <Checkbox
+                  isSelected={isSelected}
+                  onValueChange={(val) =>
+                    onSelectionChange?.(candidate.id, val)
+                  }
+                  color="danger"
+                  size="sm"
+                />
+              )}
+              <User
+                avatarProps={{
+                  src: candidate.avatar,
+                }}
+                name={candidate.name}
+                description={`Email: ${candidate.email}`}
+              />
+            </div>
             <Chip
               size="sm"
               color={getStatusColor(candidate.status)}
@@ -87,39 +105,10 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-3">
-              <div className="flex items-center gap-2 text-default-600">
-                <Phone size={14} />
-                <span>{candidate.phone}</span>
-              </div>
-              <div className="flex items-center gap-2 text-default-600">
-                <GraduationCap size={14} />
-                <span>{candidate.qualification}</span>
-              </div>
-              <div className="flex items-center gap-2 text-default-600">
-                <MapPin size={14} />
-                <span>{candidate.location}</span>
-              </div>
-              <div className="flex items-center gap-2 text-default-600">
-                <Briefcase size={14} />
-                <span>{candidate.experience}</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-default-600 mb-3">
+              <Phone size={14} />
+              <span>{candidate.phone}</span>
             </div>
-
-            {candidate.skills && candidate.skills.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {candidate.skills.slice(0, 3).map((skill) => (
-                  <Chip key={skill} size="sm" variant="flat" color="primary">
-                    {skill}
-                  </Chip>
-                ))}
-                {candidate.skills.length > 3 && (
-                  <Chip size="sm" variant="flat">
-                    +{candidate.skills.length - 3} more
-                  </Chip>
-                )}
-              </div>
-            )}
 
             <div className="flex items-center justify-between">
               <p className="text-xs text-default-400">

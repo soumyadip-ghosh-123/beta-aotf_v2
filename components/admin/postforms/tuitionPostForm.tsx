@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Input, Textarea } from "@heroui/input";
@@ -9,6 +10,7 @@ import { RadioGroup, Radio } from "@heroui/radio";
 import { Checkbox, CheckboxGroup } from "@heroui/checkbox";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
+import { Spinner } from "@heroui/spinner";
 import { NumberInput } from "@heroui/number-input";
 import {
   BookOpen,
@@ -103,10 +105,21 @@ const frequencies = [
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface TuitionPostFormProps {
+  mode?: "create" | "edit";
+  postId?: string;
   enquiry?: Enquiry | null;
 }
 
-export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
+export default function TuitionPostForm({
+  mode = "create",
+  postId,
+  enquiry,
+}: TuitionPostFormProps) {
+  const router = useRouter();
+  const isEditMode = mode === "edit";
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(isEditMode);
+  const [notFound, setNotFound] = useState(false);
   const [formData, setFormData] = useState({
     guardianName: "",
     guardianPhone: "",
@@ -119,23 +132,68 @@ export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
     preferredDays: [] as string[],
     preferredLocation: "",
     notes: "",
+    status: "open",
   });
   const [missingSubjectInput, setMissingSubjectInput] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Pre-fill form data from enquiry if available
+  // Fetch post data for edit mode
   useEffect(() => {
-    if (enquiry) {
-      setFormData((prev) => ({
-        ...prev,
-        guardianName: enquiry.name || "",
-        guardianPhone: enquiry.phoneNumber || "",
-        notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
-      }));
-    }
-  }, [enquiry]);
+    if (!isEditMode || !postId) return;
+    const fetchPost = async () => {
+      try {
+        const res = await fetch(`/api/v1/posts/${postId}`);
+        if (!res.ok) {
+          setNotFound(true);
+          return;
+        }
+        const { post } = await res.json();
+        const classTypeReverseMap: Record<string, ClassType> = {
+          offline: "in-person",
+          online: "online",
+          both: "both",
+        };
+        setFormData({
+          guardianName: post.guardianName || "",
+          guardianPhone: post.guardianPhone || "",
+          students: post.students?.length
+            ? post.students.map((s: any) => ({
+                class: s.className || "",
+                subject: s.subjects?.[0] || "",
+                board: s.board || "",
+              }))
+            : [{ class: "", subject: "", board: "" }],
+          missingSubjects: [],
+          remuneration: post.monthlyBudget?.toString() || "",
+          classType: classTypeReverseMap[post.classType] || "in-person",
+          frequency: post.frequencyPerWeek?.toString() || "",
+          preferredTime: (post.preferredTime || "AM") as PreferredTime,
+          preferredDays: post.preferredDays || [],
+          preferredLocation: post.location || "",
+          notes: post.notes || "",
+          status: post.status || "open",
+        });
+      } catch {
+        setNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPost();
+  }, [isEditMode, postId]);
+
+  // Pre-fill form data from enquiry if available (create mode only)
+  useEffect(() => {
+    if (isEditMode || !enquiry) return;
+    setFormData((prev) => ({
+      ...prev,
+      guardianName: enquiry.name || "",
+      guardianPhone: enquiry.phoneNumber || "",
+      notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
+    }));
+  }, [enquiry, isEditMode]);
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -280,66 +338,178 @@ export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
       return isValid;
     }
   };
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     if (!validate()) {
       addToast({ description: "Please fix the errors", color: "danger" });
+      setIsSubmitting(false);
       return;
     }
 
-    // Show success animation
-    setShowSuccess(true);
+    try {
+      // Map classType: "in-person" → "offline" for the API
+      const classTypeMap: Record<string, string> = {
+        "in-person": "offline",
+        online: "online",
+        both: "both",
+      };
 
-    // Debug log - show all form data
-    console.log("=== TUITION POST SUBMISSION DEBUG ===");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("Form Data:", JSON.stringify(formData, null, 2));
-    console.log("Guardian Name:", formData.guardianName);
-    console.log("Guardian Phone:", formData.guardianPhone);
-    console.log("Students:", formData.students);
-    console.log("Missing Subjects:", formData.missingSubjects);
-    console.log("Remuneration:", formData.remuneration || "Not specified");
-    console.log("Class Type:", formData.classType);
-    console.log("Frequency/Week:", formData.frequency || "Not specified");
-    console.log("Preferred Time:", formData.preferredTime);
-    console.log("Preferred Days:", formData.preferredDays);
-    console.log("Preferred Location:", formData.preferredLocation);
-    console.log("Additional Notes:", formData.notes || "None");
-    console.log("=====================================");
+      // Map students: each entry becomes a student with subjects as single-item array
+      const mappedStudents = formData.students.map((s) => ({
+        className: s.class.trim(),
+        board: s.board.trim(),
+        subjects: [s.subject.trim()],
+      }));
 
-    addToast({
-      description: "Tuition post created successfully",
-      color: "success",
-    });
+      const payload: Record<string, unknown> = {
+        guardianName: formData.guardianName.trim(),
+        guardianPhone: formData.guardianPhone.trim(),
+        students: mappedStudents,
+        classType: classTypeMap[formData.classType] || "offline",
+        frequencyPerWeek: parseInt(formData.frequency || "3", 10),
+        preferredDays: formData.preferredDays,
+        preferredTime: formData.preferredTime,
+        location: formData.preferredLocation.trim(),
+        monthlyBudget: parseInt(formData.remuneration || "0", 10),
+        status: "open" as const,
+      };
 
-    // Reset form after 2 seconds
-    setTimeout(() => {
-      setShowSuccess(false);
-      setFormData({
-        guardianName: "",
-        guardianPhone: "",
-        students: [{ class: "", subject: "", board: "" }],
-        missingSubjects: [],
-        remuneration: "",
-        classType: "in-person",
-        frequency: "",
-        preferredTime: "AM",
-        preferredDays: [],
-        preferredLocation: "",
-        notes: "",
+      // Optional fields
+      const notesParts: string[] = [];
+      if (formData.notes?.trim()) notesParts.push(formData.notes.trim());
+      if (formData.missingSubjects.length > 0)
+        notesParts.push(
+          `Missing subjects: ${formData.missingSubjects.join(", ")}`
+        );
+      if (notesParts.length > 0) payload.notes = notesParts.join("\n");
+
+      // Include enquiryId if available (create mode only)
+      if (!isEditMode && enquiry?._id) payload.enquiryId = enquiry._id;
+
+      // Include status for edit mode
+      if (isEditMode) payload.status = formData.status;
+
+      const url = isEditMode ? `/api/v1/posts/${postId}` : "/api/v1/posts";
+      const res = await fetch(url, {
+        method: isEditMode ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-    }, 2000);
+
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.fieldErrors) {
+          const messages = Object.entries(data.fieldErrors)
+            .map(
+              ([field, errors]) =>
+                `${field}: ${(errors as string[]).join(", ")}`
+            )
+            .join("; ");
+          throw new Error(messages || data.error || "Validation failed");
+        }
+        throw new Error(
+          data.error ||
+            (isEditMode ? "Failed to update post" : "Failed to create post")
+        );
+      }
+
+      const data = await res.json();
+
+      // Show success animation
+      setShowSuccess(true);
+      addToast({
+        description: isEditMode
+          ? "Tuition post updated successfully!"
+          : `Post ${data.post.postId} created successfully!`,
+        color: "success",
+      });
+
+      // Navigate after showing success
+      setTimeout(() => {
+        router.push(
+          isEditMode ? `/admin/tuitions/${postId}` : "/admin/tuitions"
+        );
+        router.refresh();
+      }, 2000);
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error
+          ? error.message
+          : isEditMode
+            ? "Failed to update post"
+            : "Failed to create post",
+        color: "danger",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Edit mode: loading state
+  if (isEditMode && isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Edit mode: not found state
+  if (isEditMode && notFound) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-3 text-center">
+        <p className="text-danger text-lg">Post not found</p>
+        <Button
+          variant="light"
+          className="mt-4"
+          onPress={() => router.push("/admin/tuitions")}
+        >
+          Back to Tuitions
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen max-w-3xl mx-auto p-3">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 justify-center">
-          {/* <BookOpen className="text-primary" size={24} /> */}
-          <h3 className="text-xl font-bold">Create Tuition</h3>
+          <h3 className="text-xl font-bold">
+            {isEditMode ? "Edit Tuition" : "Create Tuition"}
+          </h3>
         </div>
         <p className="text-sm text-default-500 text-center">
-          Fill in the details
+          {isEditMode ? "Update the details below" : "Fill in the details"}
         </p>
       </div>
+      {showSuccess ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center animate-in zoom-in duration-500">
+              <CheckCircle
+                size={64}
+                className="text-success animate-in zoom-in duration-700 delay-200"
+              />
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-success animate-in fade-in duration-500 delay-300">
+            {isEditMode ? "Tuition Post Updated!" : "Tuition Post Created!"}
+          </h3>
+          <p className="text-default-500 animate-in fade-in duration-500 delay-400">
+            {isEditMode
+              ? "Your tuition post has been successfully updated."
+              : "Your tuition post has been successfully created."}
+          </p>
+        </div>
+      ) : isSubmitting ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Spinner size="lg" color="primary" />
+          <p className="text-default-500">
+            {isEditMode ? "Updating tuition post..." : "Creating tuition post..."}
+          </p>
+        </div>
+      ) : (
       <div className="flex justify-center">
         <Stepper
           onFinalStepCompleted={handleSubmit}
@@ -659,30 +829,29 @@ export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
                 variant="bordered"
                 minRows={4}
               />
+
+              {isEditMode && (
+                <Select
+                  label="Post Status"
+                  placeholder="Select status"
+                  selectedKeys={formData.status ? [formData.status] : []}
+                  onChange={(e: any) => handleChange("status", e.target.value)}
+                  variant="bordered"
+                  isRequired
+                >
+                  <SelectItem key="open">Open</SelectItem>
+                  <SelectItem key="matched">Matched</SelectItem>
+                  <SelectItem key="closed">Closed</SelectItem>
+                  <SelectItem key="cancelled">Cancelled</SelectItem>
+                  <SelectItem key="hold">Hold</SelectItem>
+                </Select>
+              )}
             </div>
           </Step>
 
           {/* Step 5: Review & Confirm */}
           <Step>
             <div className="space-y-4">
-              {showSuccess ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center animate-in zoom-in duration-500">
-                      <CheckCircle
-                        size={64}
-                        className="text-success animate-in zoom-in duration-700 delay-200"
-                      />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-success animate-in fade-in duration-500 delay-300">
-                    Tuition Post Created!
-                  </h3>
-                  <p className="text-default-500 animate-in fade-in duration-500 delay-400">
-                    Your tuition post has been successfully created.
-                  </p>
-                </div>
-              ) : (
                 <>
                   <h4 className="text-lg font-semibold text-default-700">
                     Review Your Tuition Post
@@ -881,15 +1050,15 @@ export default function TuitionPostForm({ enquiry }: TuitionPostFormProps) {
                     <p className="text-sm text-warning-700">
                       <strong>Note:</strong> Please review all information
                       carefully before confirming. Once submitted, the tuition
-                      post will be created.
+                      post will be {isEditMode ? "updated" : "created"}.
                     </p>
                   </div>
                 </>
-              )}
             </div>
           </Step>
         </Stepper>
       </div>
+      )}
     </div>
   );
 }

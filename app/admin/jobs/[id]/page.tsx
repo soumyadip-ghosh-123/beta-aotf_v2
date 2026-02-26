@@ -28,7 +28,8 @@ import {
   XCircle,
   AlertCircle,
   Trash2,
-  Pencil,
+  MousePointerClick,
+  X,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
@@ -71,19 +72,42 @@ export default function ViewJobPostPage({
   const [postData, setPostData] = useState<JobPostData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const fetchJobAndApplications = async () => {
       setIsLoading(true);
       setFetchError(null);
       try {
-        const res = await fetch(`/api/v1/jobs/${postId}`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `Failed to fetch job (${res.status})`);
+        // Fetch job details and applications in parallel
+        const [jobRes, appsRes] = await Promise.all([
+          fetch(`/api/v1/jobs/${postId}`),
+          fetch(`/api/v1/jobs/${postId}/applications`),
+        ]);
+
+        if (!jobRes.ok) {
+          const data = await jobRes.json().catch(() => ({}));
+          throw new Error(data.error || `Failed to fetch job (${jobRes.status})`);
         }
-        const { job } = await res.json();
+        const { job } = await jobRes.json();
         setPostData(job);
+
+        if (appsRes.ok) {
+          const appsData = await appsRes.json();
+          const mapped: JobCandidate[] = (appsData.applications ?? []).map(
+            (app: Record<string, any>) => ({
+              id: app.applicationId ?? app._id,
+              name: app.applicantSnapshot?.name ?? "Unknown",
+              email: app.applicantSnapshot?.email ?? "",
+              phone: app.applicantSnapshot?.phone ?? "",
+              status: app.status === "applied" ? "applied" : app.status,
+              appliedDate: app.appliedAt ?? app.createdAt,
+              coverLetter: app.coverLetter,
+            })
+          );
+          setCandidates(mapped);
+        }
       } catch (err) {
         setFetchError(
           err instanceof Error ? err.message : "Failed to fetch job"
@@ -92,7 +116,7 @@ export default function ViewJobPostPage({
         setIsLoading(false);
       }
     };
-    fetchJob();
+    fetchJobAndApplications();
   }, [postId]);
 
   const handleViewDetails = (candidate: JobCandidate) => {
@@ -102,29 +126,73 @@ export default function ViewJobPostPage({
   const handleBack = () => {
     router.push("/admin/jobs");
   };
-  const handleClearAllCandidates = async () => {
+
+  const handleSelectionChange = (id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === candidates.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(candidates.map((c) => c.id)));
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  /** Delete selected or all applications via API */
+  const handleDeleteApplications = async () => {
     setIsClearing(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const isSelectiveDelete =
+        selectionMode && selectedIds.size > 0 && selectedIds.size < candidates.length;
 
-      // TODO: Replace with actual API call
-      // await clearAllCandidates(postId);
+      const body: Record<string, unknown> = {};
+      if (isSelectiveDelete) {
+        body.applicationIds = Array.from(selectedIds);
+      }
 
-      const clearedCount = candidates.length;
-      
-      // Clear all candidates from state
-      setCandidates([]);
+      const res = await fetch(`/api/v1/jobs/${postId}/applications`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete applications");
+      }
+
+      const { deletedCount } = await res.json();
+
+      if (isSelectiveDelete) {
+        setCandidates((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+      } else {
+        setCandidates([]);
+      }
+
+      setSelectedIds(new Set());
+      setSelectionMode(false);
 
       addToast({
-        description: `All candidates cleared successfully! ${clearedCount} candidate(s) removed.`,
+        description: `${deletedCount} application(s) removed successfully.`,
         color: "success",
       });
 
       onClose();
     } catch (error) {
       addToast({
-        description: "Failed to clear candidates",
+        description:
+          error instanceof Error ? error.message : "Failed to delete applications",
         color: "danger",
       });
     } finally {
@@ -136,17 +204,19 @@ export default function ViewJobPostPage({
     const hasApproved = candidates.some((c) => c.status === "approved");
 
     const approved = candidates.filter((c) => c.status === "approved");
-    const pending = candidates.filter((c) => c.status === "pending");
-    const declined = candidates.filter((c) => c.status === "declined");
+    const applied = candidates.filter((c) => c.status === "applied");
+    const declined = candidates.filter(
+      (c) => c.status === "decline" || c.status === "auto_declined"
+    );
     const withdrawn = candidates.filter((c) => c.status === "withdrawn");
 
     // Determine waiting list label and candidates
     let waitingListLabel = "Waiting List";
-    let waitingListCandidates = pending;
+    let waitingListCandidates = applied;
 
     if (hasApproved) {
       waitingListLabel = "Declined Candidates";
-      waitingListCandidates = [...pending, ...declined];
+      waitingListCandidates = [...applied, ...declined];
     }
 
     return {
@@ -229,25 +299,58 @@ export default function ViewJobPostPage({
             Back to Posts
           </Button>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              color="primary"
-              variant="flat"
-              startContent={<Pencil size={18} />}
-              onPress={() => router.push(`/admin/jobs/${postId}/edit`)}
-            >
-              Edit
-            </Button>
-            {candidates.length > 0 && (
-              <Button
-                size="sm"
-                color="danger"
-                variant="flat"
-                startContent={<Trash2 size={18} />}
-                onPress={onOpen}
-              >
-                Clear All Candidates ({candidates.length})
-              </Button>
+            {candidates.length > 0 && !selectionMode && (
+              <>
+                <Button
+                  size="sm"
+                  color="danger"
+                  variant="flat"
+                  startContent={<MousePointerClick size={18} />}
+                  onPress={() => setSelectionMode(true)}
+                >
+                  Select &amp; Delete
+                </Button>
+                <Button
+                  size="sm"
+                  color="danger"
+                  variant="solid"
+                  startContent={<Trash2 size={18} />}
+                  onPress={onOpen}
+                >
+                  Delete All ({candidates.length})
+                </Button>
+              </>
+            )}
+            {selectionMode && (
+              <>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={toggleSelectAll}
+                >
+                  {selectedIds.size === candidates.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </Button>
+                <Button
+                  size="sm"
+                  color="danger"
+                  variant="solid"
+                  startContent={<Trash2 size={18} />}
+                  isDisabled={selectedIds.size === 0}
+                  onPress={onOpen}
+                >
+                  Delete ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="light"
+                  startContent={<X size={18} />}
+                  onPress={exitSelectionMode}
+                >
+                  Cancel
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -360,6 +463,9 @@ export default function ViewJobPostPage({
                   key={candidate.id}
                   candidate={candidate}
                   onViewDetails={handleViewDetails}
+                  selectionMode={selectionMode}
+                  isSelected={selectedIds.has(candidate.id)}
+                  onSelectionChange={handleSelectionChange}
                 />
               ))}
             </div>
@@ -402,6 +508,9 @@ export default function ViewJobPostPage({
                         key={candidate.id}
                         candidate={candidate}
                         onViewDetails={handleViewDetails}
+                        selectionMode={selectionMode}
+                        isSelected={selectedIds.has(candidate.id)}
+                        onSelectionChange={handleSelectionChange}
                       />
                     )
                   )}
@@ -434,6 +543,9 @@ export default function ViewJobPostPage({
                       key={candidate.id}
                       candidate={candidate}
                       onViewDetails={handleViewDetails}
+                      selectionMode={selectionMode}
+                      isSelected={selectedIds.has(candidate.id)}
+                      onSelectionChange={handleSelectionChange}
                     />
                   ))}
                 </div>
@@ -456,19 +568,29 @@ export default function ViewJobPostPage({
         )}
       </div>
 
-      {/* Clear All Candidates Confirmation Modal */}
+      {/* Delete Applications Confirmation Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-            Clear All Candidates
+            {selectionMode && selectedIds.size > 0 && selectedIds.size < candidates.length
+              ? "Delete Selected Applications"
+              : "Delete All Applications"}
           </ModalHeader>
           <ModalBody>
             <p>
-              Are you sure you want to clear <strong>all {candidates.length} candidate(s)</strong> from this job post?
+              {selectionMode && selectedIds.size > 0 && selectedIds.size < candidates.length ? (
+                <>
+                  Are you sure you want to delete <strong>{selectedIds.size} selected application(s)</strong> from this job post?
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete <strong>all {candidates.length} application(s)</strong> from this job post?
+                </>
+              )}
             </p>
             <p className="text-sm text-danger">
-              ⚠️ This action cannot be undone. All candidates will be permanently
-              removed from this post.
+              ⚠️ This action cannot be undone. The application(s) will be permanently
+              removed.
             </p>
           </ModalBody>
           <ModalFooter>
@@ -477,10 +599,12 @@ export default function ViewJobPostPage({
             </Button>
             <Button
               color="danger"
-              onPress={handleClearAllCandidates}
+              onPress={handleDeleteApplications}
               isLoading={isClearing}
             >
-              Clear All
+              {selectionMode && selectedIds.size > 0 && selectedIds.size < candidates.length
+                ? `Delete ${selectedIds.size} Selected`
+                : "Delete All"}
             </Button>
           </ModalFooter>
         </ModalContent>

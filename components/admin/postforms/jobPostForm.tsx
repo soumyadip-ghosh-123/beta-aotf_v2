@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { RadioGroup, Radio } from "@heroui/radio";
@@ -8,6 +9,7 @@ import { addToast } from "@heroui/toast";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
 import {
   User,
   Phone,
@@ -23,11 +25,15 @@ import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 
+type WorkType = "job" | "project";
 type LocationType = "on-site" | "remote" | "hybrid";
 type GenderPreference = "male" | "female" | "both" | "all" | "others";
+type CommissionBasis = "first_month" | "project_value";
+type ProjectType = "one-time" | "ongoing";
 
 // Zod validation schema
 const jobPostSchema = z.object({
+  workType: z.enum(["job", "project"]),
   clientName: z
     .string()
     .min(2, "Client name must be at least 2 characters")
@@ -37,7 +43,7 @@ const jobPostSchema = z.object({
     .string()
     .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
   companyName: z.string().optional(),
-  companyType: z.string().optional(),
+  companyType: z.enum(["individual", "company"]).optional(),
   designation: z.string().min(2, "Designation is required"),
   experience: z.string().optional(),
   locationType: z.enum(["on-site", "remote", "hybrid"]),
@@ -49,19 +55,35 @@ const jobPostSchema = z.object({
   requiredQualifications: z.string().optional(),
   skillsRequired: z.string().optional(),
   notes: z.string().optional(),
+  commissionBasis: z.enum(["first_month", "project_value"]),
+  academyCommissionPercentage: z.coerce
+    .number()
+    .int("Commission percentage must be a whole number")
+    .min(0, "Commission percentage cannot be negative")
+    .max(100, "Commission percentage cannot exceed 100"),
+  projectType: z.enum(["one-time", "ongoing"]).optional(),
+  budget: z.string().optional(),
+  duration: z.string().optional(),
 });
 
 const companyTypes = [
-  { key: "it", label: "IT/Software" },
-  { key: "manufacturing", label: "Manufacturing" },
-  { key: "consulting", label: "Consulting" },
-  { key: "healthcare", label: "Healthcare" },
-  { key: "education", label: "Education" },
-  { key: "finance", label: "Finance/Banking" },
-  { key: "retail", label: "Retail" },
-  { key: "hospitality", label: "Hospitality" },
-  { key: "construction", label: "Construction" },
-  { key: "others", label: "Others" },
+  { key: "individual", label: "Individual" },
+  { key: "company", label: "Company" },
+];
+
+const workTypes = [
+  { key: "job", label: "Job" },
+  { key: "project", label: "Project" },
+];
+
+const commissionBasisTypes = [
+  { key: "first_month", label: "First Month Salary" },
+  { key: "project_value", label: "Project Value" },
+];
+
+const projectTypes = [
+  { key: "one-time", label: "One-Time" },
+  { key: "ongoing", label: "Ongoing" },
 ];
 
 const experienceLevels = [
@@ -72,11 +94,23 @@ const experienceLevels = [
 ];
 
 interface JobPostFormProps {
+  mode?: "create" | "edit";
+  postId?: string;
   enquiry?: Enquiry | null;
 }
 
-export default function JobPostForm({ enquiry }: JobPostFormProps) {
+export default function JobPostForm({
+  mode = "create",
+  postId,
+  enquiry,
+}: JobPostFormProps) {
+  const router = useRouter();
+  const isEditMode = mode === "edit";
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(isEditMode);
+  const [notFound, setNotFound] = useState(false);
   const [formData, setFormData] = useState({
+    workType: "job" as WorkType,
     clientName: "",
     clientPhone: "",
     companyName: "",
@@ -92,22 +126,83 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
     requiredQualifications: "",
     skillsRequired: "",
     notes: "",
+    commissionBasis: "first_month" as CommissionBasis,
+    academyCommissionPercentage: "" as string,
+    projectType: "" as string,
+    budget: "",
+    duration: "",
+    status: "open",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Pre-fill form data from enquiry if available
+  // Fetch job data for edit mode
   useEffect(() => {
-    if (enquiry) {
-      setFormData((prev) => ({
-        ...prev,
-        clientName: enquiry.name || "",
-        clientPhone: enquiry.phoneNumber || "",
-        notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
-      }));
-    }
-  }, [enquiry]);
+    if (!isEditMode || !postId) return;
+    const fetchJob = async () => {
+      try {
+        const res = await fetch(`/api/v1/jobs/${postId}`);
+        if (!res.ok) {
+          setNotFound(true);
+          return;
+        }
+        const { job } = await res.json();
+        const locationTypeReverseMap: Record<string, LocationType> = {
+          onsite: "on-site",
+          remote: "remote",
+          hybrid: "hybrid",
+        };
+        const genderReverseMap: Record<string, GenderPreference> = {
+          male: "male",
+          female: "female",
+          both: "both",
+          all: "all",
+        };
+        setFormData({
+          workType: (job.workType || "job") as WorkType,
+          clientName: job.clientName || "",
+          clientPhone: job.phoneNumber || "",
+          companyName: "",
+          companyType: job.companyType || "",
+          designation: job.title || "",
+          experience: job.experience || "",
+          locationType: locationTypeReverseMap[job.locationType] || "on-site",
+          location: job.location || "",
+          genderPreference: genderReverseMap[job.gender] || "all",
+          timing: job.timing || "",
+          salary: job.salary || "",
+          travelRequirements: "",
+          requiredQualifications: job.requiredQualification || "",
+          skillsRequired: "",
+          notes: job.brief || "",
+          commissionBasis: (job.commissionBasis || "first_month") as CommissionBasis,
+          academyCommissionPercentage:
+            job.academyCommissionPercentage?.toString() || "",
+          projectType: job.projectType || "",
+          budget: job.budget || "",
+          duration: job.duration || "",
+          status: job.status || "open",
+        });
+      } catch {
+        setNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [isEditMode, postId]);
+
+  // Pre-fill form data from enquiry if available (create mode only)
+  useEffect(() => {
+    if (isEditMode || !enquiry) return;
+    setFormData((prev) => ({
+      ...prev,
+      clientName: enquiry.name || "",
+      clientPhone: enquiry.phoneNumber || "",
+      notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
+    }));
+  }, [enquiry, isEditMode]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -118,7 +213,14 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
 
   const validate = () => {
     try {
-      jobPostSchema.parse(formData);
+      // Convert empty strings to undefined for optional enum fields
+      const dataToValidate = {
+        ...formData,
+        companyType: formData.companyType || undefined,
+        projectType: formData.projectType || undefined,
+        experience: formData.experience || undefined,
+      };
+      jobPostSchema.parse(dataToValidate);
       setErrors({});
       return true;
     } catch (error) {
@@ -172,8 +274,31 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
           });
           break;
 
-        case 4: // Additional Details (no required fields)
-          return true;
+        case 4: // Work & Commission Details
+          const step4Schema = z.object({
+            workType: jobPostSchema.shape.workType,
+            commissionBasis: jobPostSchema.shape.commissionBasis,
+            academyCommissionPercentage:
+              jobPostSchema.shape.academyCommissionPercentage,
+          });
+          step4Schema.parse({
+            workType: formData.workType,
+            commissionBasis: formData.commissionBasis,
+            academyCommissionPercentage:
+              formData.academyCommissionPercentage || "0",
+          });
+          // Check projectType if workType is project
+          if (formData.workType === "project" && !formData.projectType) {
+            newErrors.projectType =
+              "Project type is required for project work type";
+            setErrors(newErrors);
+            addToast({
+              description: "Please fill in all required fields correctly",
+              color: "danger",
+            });
+            return false;
+          }
+          break;
 
         case 5: // Review step (no validation needed)
           return true;
@@ -204,77 +329,204 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
       return isValid;
     }
   };
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
     if (!validate()) {
       addToast({ description: "Please fix the errors", color: "danger" });
+      setIsSubmitting(false);
       return;
     }
 
-    // Show success animation
-    setShowSuccess(true);
+    try {
+      // Map form fields to API payload
+      const locationTypeMap: Record<string, string> = {
+        "on-site": "onsite",
+        remote: "remote",
+        hybrid: "hybrid",
+      };
 
-    // Debug log - show all form data
-    console.log("=== JOB POST SUBMISSION DEBUG ===");
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("Form Data:", JSON.stringify(formData, null, 2));
-    console.log("Client Name:", formData.clientName);
-    console.log("Client Phone:", formData.clientPhone);
-    console.log("Company Name:", formData.companyName || "Not specified");
-    console.log("Company Type:", formData.companyType || "Not specified");
-    console.log("Designation:", formData.designation);
-    console.log("Experience:", formData.experience || "Not specified");
-    console.log("Location Type:", formData.locationType);
-    console.log("Location:", formData.location);
-    console.log("Gender Preference:", formData.genderPreference);
-    console.log("Timing:", formData.timing || "Not specified");
-    console.log("Salary:", formData.salary || "Not specified");
-    console.log("Travel Requirements:", formData.travelRequirements || "None");
-    console.log(
-      "Required Qualifications:",
-      formData.requiredQualifications || "None"
-    );
-    console.log("Skills Required:", formData.skillsRequired || "None");
-    console.log("Additional Notes:", formData.notes || "None");
-    console.log("=====================================");
+      const genderMap: Record<string, string> = {
+        male: "male",
+        female: "female",
+        both: "both",
+        all: "all",
+        others: "all",
+      };
 
-    addToast({
-      description: "Job post created successfully",
-      color: "success",
-    });
+      const payload: Record<string, unknown> = {
+        workType: formData.workType,
+        title: formData.designation.trim(),
+        clientName: formData.clientName.trim(),
+        phoneNumber: formData.clientPhone.trim(),
+        companyType: formData.companyType || "company",
+        locationType: locationTypeMap[formData.locationType] || "onsite",
+        location: formData.location.trim(),
+        gender: genderMap[formData.genderPreference] || "all",
+        commissionBasis: formData.commissionBasis,
+        academyCommissionPercentage: parseInt(
+          formData.academyCommissionPercentage || "0",
+          10
+        ),
+        status: "open" as const,
+      };
 
-    // Reset form after 2 seconds
-    setTimeout(() => {
-      setShowSuccess(false);
-      setFormData({
-        clientName: "",
-        clientPhone: "",
-        companyName: "",
-        companyType: "",
-        designation: "",
-        experience: "",
-        locationType: "on-site",
-        location: "",
-        genderPreference: "all",
-        timing: "",
-        salary: "",
-        travelRequirements: "",
-        requiredQualifications: "",
-        skillsRequired: "",
-        notes: "",
+      // Optional fields
+      if (formData.timing?.trim()) payload.timing = formData.timing.trim();
+      if (formData.experience?.trim())
+        payload.experience = formData.experience.trim();
+      if (formData.salary?.trim()) payload.salary = formData.salary.trim();
+      if (formData.requiredQualifications?.trim())
+        payload.requiredQualification =
+          formData.requiredQualifications.trim();
+
+      // Build brief from multiple text fields
+      const briefParts: string[] = [];
+      if (formData.companyName?.trim())
+        briefParts.push(`Company: ${formData.companyName.trim()}`);
+      if (formData.skillsRequired?.trim())
+        briefParts.push(`Skills: ${formData.skillsRequired.trim()}`);
+      if (formData.travelRequirements?.trim())
+        briefParts.push(
+          `Travel Requirements: ${formData.travelRequirements.trim()}`
+        );
+      if (formData.notes?.trim()) briefParts.push(formData.notes.trim());
+      if (briefParts.length > 0) payload.brief = briefParts.join("\n\n");
+
+      // Project-specific fields
+      if (formData.workType === "project") {
+        if (formData.projectType) payload.projectType = formData.projectType;
+        if (formData.budget?.trim()) payload.budget = formData.budget.trim();
+        if (formData.duration?.trim())
+          payload.duration = formData.duration.trim();
+      }
+
+      // Include enquiryId if available (create mode only)
+      if (!isEditMode && enquiry?._id) payload.enquiryId = enquiry._id;
+
+      // Include status for edit mode
+      if (isEditMode) payload.status = formData.status;
+
+      const url = isEditMode ? `/api/v1/jobs/${postId}` : "/api/v1/jobs";
+      const res = await fetch(url, {
+        method: isEditMode ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-    }, 2000);
+
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.fieldErrors) {
+          const messages = Object.entries(data.fieldErrors)
+            .map(
+              ([field, errors]) =>
+                `${field}: ${(errors as string[]).join(", ")}`
+            )
+            .join("; ");
+          throw new Error(messages || data.error || "Validation failed");
+        }
+        throw new Error(
+          data.error ||
+            (isEditMode ? "Failed to update job" : "Failed to create job")
+        );
+      }
+
+      const data = await res.json();
+
+      // Show success animation
+      setShowSuccess(true);
+      addToast({
+        description: isEditMode
+          ? "Job post updated successfully!"
+          : `Job ${data.job.jobId} created successfully!`,
+        color: "success",
+      });
+
+      // Navigate after showing success
+      setTimeout(() => {
+        router.push(
+          isEditMode ? `/admin/jobs/${postId}` : "/admin/jobs"
+        );
+        router.refresh();
+      }, 2000);
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error
+          ? error.message
+          : isEditMode
+            ? "Failed to update job"
+            : "Failed to create job",
+        color: "danger",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Edit mode: loading state
+  if (isEditMode && isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // Edit mode: not found state
+  if (isEditMode && notFound) {
+    return (
+      <div className="w-full max-w-3xl mx-auto p-3 text-center">
+        <p className="text-danger text-lg">Job post not found</p>
+        <Button
+          variant="light"
+          className="mt-4"
+          onPress={() => router.push("/admin/jobs")}
+        >
+          Back to Jobs
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen max-w-3xl mx-auto p-3">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 justify-center">
-          <h3 className="text-xl font-bold">Create Job Post</h3>
+          <h3 className="text-xl font-bold">
+            {isEditMode ? "Edit Job Post" : "Create Job Post"}
+          </h3>
         </div>
         <p className="text-sm text-default-500 text-center">
-          Fill in the job details
+          {isEditMode ? "Update the details below" : "Fill in the job details"}
         </p>
       </div>
+      {showSuccess ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center animate-in zoom-in duration-500">
+              <CheckCircle
+                size={64}
+                className="text-success animate-in zoom-in duration-700 delay-200"
+              />
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-success animate-in fade-in duration-500 delay-300">
+            {isEditMode ? "Job Post Updated!" : "Job Post Created!"}
+          </h3>
+          <p className="text-default-500 animate-in fade-in duration-500 delay-400">
+            {isEditMode
+              ? "Your job post has been successfully updated."
+              : "Your job post has been successfully created."}
+          </p>
+        </div>
+      ) : isSubmitting ? (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Spinner size="lg" color="primary" />
+          <p className="text-default-500">
+            {isEditMode ? "Updating job post..." : "Creating job post..."}
+          </p>
+        </div>
+      ) : (
       <div className="flex justify-center">
         <Stepper
           onFinalStepCompleted={handleSubmit}
@@ -469,14 +721,10 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
                 />
                 <Input
                   label="Salary Range"
-                  placeholder="e.g., 50000-80000"
+                  placeholder="e.g., 50000-80000 or 50k/month"
                   type="text"
                   value={formData.salary}
-                  onChange={(e) => {
-                    // Allow numbers, hyphens, and forward slashes
-                    const value = e.target.value.replace(/[^\d\-\/]/g, "");
-                    handleChange("salary", value);
-                  }}
+                  onChange={(e) => handleChange("salary", e.target.value)}
                   variant="bordered"
                   startContent={
                     <FaRupeeSign size={18} className="text-default-400" />
@@ -509,12 +757,101 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
             </div>
           </Step>
 
-          {/* Step 4: Additional Details */}
+          {/* Step 4: Work & Commission Details */}
           <Step>
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-default-700">
-                Additional Information
+                Work & Commission Details
               </h4>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-default-700">
+                  Work Type <span className="text-danger">*</span>
+                </label>
+                <RadioGroup
+                  value={formData.workType}
+                  onValueChange={(value) => handleChange("workType", value)}
+                  orientation="horizontal"
+                >
+                  <Radio value="job">Job</Radio>
+                  <Radio value="project">Project</Radio>
+                </RadioGroup>
+              </div>
+
+              {formData.workType === "project" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Select
+                    label="Project Type"
+                    placeholder="Select type"
+                    selectedKeys={
+                      formData.projectType ? [formData.projectType] : []
+                    }
+                    onChange={(e: any) =>
+                      handleChange("projectType", e.target.value)
+                    }
+                    variant="bordered"
+                    isRequired
+                  >
+                    {projectTypes.map((type) => (
+                      <SelectItem key={type.key}>{type.label}</SelectItem>
+                    ))}
+                  </Select>
+                  <Input
+                    label="Budget"
+                    placeholder="e.g., 50000"
+                    value={formData.budget}
+                    onChange={(e) => handleChange("budget", e.target.value)}
+                    variant="bordered"
+                    startContent={
+                      <FaRupeeSign size={18} className="text-default-400" />
+                    }
+                  />
+                  <Input
+                    label="Duration"
+                    placeholder="e.g., 3 months"
+                    value={formData.duration}
+                    onChange={(e) => handleChange("duration", e.target.value)}
+                    variant="bordered"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-default-700">
+                  Commission Basis <span className="text-danger">*</span>
+                </label>
+                <RadioGroup
+                  value={formData.commissionBasis}
+                  onValueChange={(value) =>
+                    handleChange("commissionBasis", value)
+                  }
+                  orientation="horizontal"
+                >
+                  <Radio value="first_month">First Month Salary</Radio>
+                  <Radio value="project_value">Project Value</Radio>
+                </RadioGroup>
+              </div>
+
+              <Input
+                label="Academy Commission Percentage"
+                placeholder="e.g., 10"
+                type="tel"
+                value={formData.academyCommissionPercentage}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (parseInt(value || "0", 10) <= 100) {
+                    handleChange("academyCommissionPercentage", value);
+                  }
+                }}
+                isRequired
+                isInvalid={!!errors.academyCommissionPercentage}
+                errorMessage={errors.academyCommissionPercentage}
+                variant="bordered"
+                endContent={
+                  <span className="text-default-400 text-sm">%</span>
+                }
+                description="Enter a value between 0 and 100"
+              />
 
               <Textarea
                 label="Travel Requirements"
@@ -533,30 +870,28 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
                 variant="bordered"
                 minRows={4}
               />
+
+              {isEditMode && (
+                <Select
+                  label="Post Status"
+                  placeholder="Select status"
+                  selectedKeys={formData.status ? [formData.status] : []}
+                  onChange={(e: any) => handleChange("status", e.target.value)}
+                  variant="bordered"
+                  isRequired
+                >
+                  <SelectItem key="open">Open</SelectItem>
+                  <SelectItem key="closed">Closed</SelectItem>
+                  <SelectItem key="hold">Hold</SelectItem>
+                  <SelectItem key="cancelled">Cancelled</SelectItem>
+                </Select>
+              )}
             </div>
           </Step>
 
           {/* Step 5: Review & Confirm */}
           <Step>
             <div className="space-y-4">
-              {showSuccess ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center animate-in zoom-in duration-500">
-                      <CheckCircle
-                        size={64}
-                        className="text-success animate-in zoom-in duration-700 delay-200"
-                      />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-success animate-in fade-in duration-500 delay-300">
-                    Job Post Created!
-                  </h3>
-                  <p className="text-default-500 animate-in fade-in duration-500 delay-400">
-                    Your job post has been successfully created.
-                  </p>
-                </div>
-              ) : (
                 <>
                   <h4 className="text-lg font-semibold text-default-700">
                     Review Your Job Post
@@ -738,6 +1073,83 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
                           </div>
                         </>
                       )}
+
+                      <div className="border-t border-divider" />
+
+                      {/* Work & Commission */}
+                      <div>
+                        <p className="text-sm font-semibold text-default-700 mb-2">
+                          Work & Commission
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-default-500">
+                              Work Type:
+                            </span>{" "}
+                            <Chip
+                              size="sm"
+                              variant="flat"
+                              color="primary"
+                              className="capitalize"
+                            >
+                              {formData.workType}
+                            </Chip>
+                          </div>
+                          <div>
+                            <span className="text-default-500">
+                              Commission Basis:
+                            </span>{" "}
+                            <Chip size="sm" variant="flat">
+                              {commissionBasisTypes.find(
+                                (c) => c.key === formData.commissionBasis
+                              )?.label || formData.commissionBasis}
+                            </Chip>
+                          </div>
+                          <div>
+                            <span className="text-default-500">
+                              Commission %:
+                            </span>{" "}
+                            <span className="font-medium text-success">
+                              {formData.academyCommissionPercentage || "0"}%
+                            </span>
+                          </div>
+                          {formData.workType === "project" &&
+                            formData.projectType && (
+                              <div>
+                                <span className="text-default-500">
+                                  Project Type:
+                                </span>{" "}
+                                <Chip
+                                  size="sm"
+                                  variant="flat"
+                                  className="capitalize"
+                                >
+                                  {projectTypes.find(
+                                    (p) => p.key === formData.projectType
+                                  )?.label || formData.projectType}
+                                </Chip>
+                              </div>
+                            )}
+                          {formData.budget && (
+                            <div>
+                              <span className="text-default-500">Budget:</span>{" "}
+                              <span className="font-medium">
+                                ₹{formData.budget}
+                              </span>
+                            </div>
+                          )}
+                          {formData.duration && (
+                            <div>
+                              <span className="text-default-500">
+                                Duration:
+                              </span>{" "}
+                              <span className="font-medium">
+                                {formData.duration}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </CardBody>
                   </Card>
 
@@ -745,15 +1157,15 @@ export default function JobPostForm({ enquiry }: JobPostFormProps) {
                     <p className="text-sm text-warning-700">
                       <strong>Note:</strong> Please review all information
                       carefully before confirming. Once submitted, the job post
-                      will be created.
+                      will be {isEditMode ? "updated" : "created"}.
                     </p>
                   </div>
                 </>
-              )}
             </div>
           </Step>
         </Stepper>
       </div>
+      )}
     </div>
   );
 }
