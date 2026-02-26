@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Post, { type PostStatus, type IPost } from "@/lib/models/Post";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { escapeRegex } from "@/lib/utils";
 import type {
   CreatePostInput,
   UpdatePostInput,
@@ -144,7 +145,10 @@ export async function listPosts(
     filter.status = status;
   }
   if (search) {
-    const searchRegex = mongoose.trusted({ $regex: search, $options: "i" });
+    const searchRegex = mongoose.trusted({
+      $regex: escapeRegex(search),
+      $options: "i",
+    });
     filter.$or = mongoose.trusted([
       { postId: searchRegex },
       { guardianName: searchRegex },

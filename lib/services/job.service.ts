@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Job, { type IJob } from "@/lib/models/Job";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { escapeRegex } from "@/lib/utils";
 import type {
   CreateJobInput,
   UpdateJobInput,
@@ -137,7 +138,10 @@ export async function listJobs(input: ListJobsInput): Promise<PaginatedJobs> {
     filter.status = status;
   }
   if (search) {
-    const searchRegex = mongoose.trusted({ $regex: search, $options: "i" });
+    const searchRegex = mongoose.trusted({
+      $regex: escapeRegex(search),
+      $options: "i",
+    });
     filter.$or = mongoose.trusted([
       { jobId: searchRegex },
       { title: searchRegex },

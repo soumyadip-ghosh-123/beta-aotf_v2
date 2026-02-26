@@ -48,7 +48,10 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline/eval in dev
+              // Next.js HMR requires unsafe-eval in dev; drop it in production
+              isProd
+                ? "script-src 'self' 'unsafe-inline'"
+                : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'", // HeroUI uses inline styles
               "img-src 'self' data: https: blob:", // allow remote images
               "font-src 'self' data:",

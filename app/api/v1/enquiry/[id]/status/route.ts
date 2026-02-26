@@ -4,6 +4,7 @@ import {
   checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
+  checkJsonContentType,
 } from "@/lib/api-utils";
 import { updateStatusSchema, objectIdSchema } from "@/lib/validations/enquiry";
 import {
@@ -35,6 +36,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // CSRF origin check
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
+
+    // Content-Type check
+    const ctBlock = checkJsonContentType(request);
+    if (ctBlock) return ctBlock;
 
     // Rate limit
     const ip = getClientIp(request);

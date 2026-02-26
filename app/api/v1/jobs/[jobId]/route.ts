@@ -4,6 +4,7 @@ import {
   checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
+  checkJsonContentType,
 } from "@/lib/api-utils";
 import { updateJobSchema } from "@/lib/validations/job";
 import {
@@ -12,6 +13,7 @@ import {
   deleteJob,
 } from "@/lib/services/job.service";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { jobIdParamSchema } from "@/lib/validations/api-route";
 
 /** 60 reads per IP per minute */
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
@@ -33,7 +35,7 @@ export async function GET(
     const rateLimitBlock = checkRateLimit(readLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { jobId } = await params;
+    const { jobId } = jobIdParamSchema.parse(await params);
     const job = await getJobByJobId(jobId);
     return NextResponse.json(
       { job },
@@ -60,12 +62,16 @@ export async function PATCH(
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
 
+    // Content-Type check
+    const ctBlock = checkJsonContentType(request);
+    if (ctBlock) return ctBlock;
+
     // Rate limit
     const ip = getClientIp(request);
     const rateLimitBlock = checkRateLimit(mutateLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { jobId } = await params;
+    const { jobId } = jobIdParamSchema.parse(await params);
     const body = await request.json();
     const input = updateJobSchema.parse(body);
     const job = await updateJob(jobId, input);
@@ -96,7 +102,7 @@ export async function DELETE(
     const rateLimitBlockDel = checkRateLimit(mutateLimiter, ipDel);
     if (rateLimitBlockDel) return rateLimitBlockDel;
 
-    const { jobId } = await params;
+    const { jobId } = jobIdParamSchema.parse(await params);
     await deleteJob(jobId);
 
     return NextResponse.json({ message: "Job deleted successfully" });

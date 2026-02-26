@@ -169,7 +169,10 @@ export const listJobsSchema = z.object({
     .default("all"),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(200).optional().default(20),
-  search: z.string().optional(),
+  search: z
+    .string()
+    .max(200, "Search term must be at most 200 characters")
+    .optional(),
 });
 
 export type ListJobsInput = z.infer<typeof listJobsSchema>;

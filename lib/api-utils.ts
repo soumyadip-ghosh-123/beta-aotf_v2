@@ -80,6 +80,25 @@ export function getClientIp(request: NextRequest): string {
   );
 }
 
+// ─── Content-Type Validation ────────────────────────────────────────────
+
+/**
+ * Verify that a mutation request carries the `application/json` content type.
+ * Returns `null` if OK, or a 415 Unsupported Media Type response to return.
+ */
+export function checkJsonContentType(
+  request: NextRequest,
+): NextResponse | null {
+  const ct = request.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    return NextResponse.json(
+      { error: "Unsupported Media Type: expected application/json" },
+      { status: 415 },
+    );
+  }
+  return null;
+}
+
 // ─── Rate-Limit Response Helper ─────────────────────────────────────────
 
 import type { createRateLimiter } from "@/lib/rate-limit";
@@ -168,6 +187,11 @@ export function handleApiError(
       { error: error.message },
       { status: error.statusCode },
     );
+  }
+
+  // ── Malformed JSON request bodies ──────────────────────────────────
+  if (error instanceof SyntaxError) {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   // ── Mongoose duplicate key ─────────────────────────────────────────

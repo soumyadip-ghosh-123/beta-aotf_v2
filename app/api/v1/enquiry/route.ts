@@ -4,6 +4,7 @@ import {
   checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
+  checkJsonContentType,
 } from "@/lib/api-utils";
 import {
   createEnquirySchema,
@@ -33,6 +34,10 @@ export async function POST(request: NextRequest) {
     // CSRF origin check
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
+
+    // Content-Type check
+    const ctBlock = checkJsonContentType(request);
+    if (ctBlock) return ctBlock;
 
     // Rate limit
     const ip = getClientIp(request);

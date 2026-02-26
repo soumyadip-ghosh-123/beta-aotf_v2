@@ -4,6 +4,7 @@ import {
   checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
+  checkJsonContentType,
 } from "@/lib/api-utils";
 import {
   getApplicationsByJobIdPublic,
@@ -11,6 +12,11 @@ import {
   deleteApplicationsByIds,
 } from "@/lib/services/application.service";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { ValidationError } from "@/lib/errors";
+import {
+  jobIdParamSchema,
+  deleteApplicationsBodySchema,
+} from "@/lib/validations/api-route";
 
 /** 60 reads per IP per minute */
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
@@ -29,7 +35,7 @@ export async function GET(
     const rateLimitBlock = checkRateLimit(readLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { jobId } = await params;
+    const { jobId } = jobIdParamSchema.parse(await params);
     const result = await getApplicationsByJobIdPublic(jobId);
 
     return NextResponse.json(
@@ -69,9 +75,25 @@ export async function DELETE(
     const rateLimitBlock = checkRateLimit(writeLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { jobId } = await params;
-    const body = await request.json().catch(() => ({}));
-    const applicationIds: string[] | undefined = body.applicationIds;
+    const { jobId } = jobIdParamSchema.parse(await params);
+
+    // Enforce Content-Type when a body is present
+    const hasBody = (request.headers.get("content-length") ?? "0") !== "0";
+    if (hasBody) {
+      const ctBlock = checkJsonContentType(request);
+      if (ctBlock) return ctBlock;
+    }
+
+    let body: unknown = {};
+    try {
+      body = await request.json();
+    } catch {
+      if (hasBody) {
+        throw new ValidationError("Invalid JSON body");
+      }
+    }
+
+    const { applicationIds } = deleteApplicationsBodySchema.parse(body);
 
     let deletedCount: number;
 

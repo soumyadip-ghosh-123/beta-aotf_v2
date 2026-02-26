@@ -4,6 +4,7 @@ import {
   checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
+  checkJsonContentType,
 } from "@/lib/api-utils";
 import { updatePostSchema } from "@/lib/validations/post";
 import {
@@ -12,6 +13,7 @@ import {
   deletePost,
 } from "@/lib/services/post.service";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { postIdParamSchema } from "@/lib/validations/api-route";
 
 /** 60 reads per IP per minute */
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
@@ -33,7 +35,7 @@ export async function GET(
     const rateLimitBlock = checkRateLimit(readLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { postId } = await params;
+    const { postId } = postIdParamSchema.parse(await params);
     const post = await getPostByPostId(postId);
     return NextResponse.json(
       { post },
@@ -60,12 +62,16 @@ export async function PATCH(
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
 
+    // Content-Type check
+    const ctBlock = checkJsonContentType(request);
+    if (ctBlock) return ctBlock;
+
     // Rate limit
     const ip = getClientIp(request);
     const rateLimitBlock = checkRateLimit(mutateLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
-    const { postId } = await params;
+    const { postId } = postIdParamSchema.parse(await params);
     const body = await request.json();
     const input = updatePostSchema.parse(body);
     const post = await updatePost(postId, input);
@@ -99,7 +105,7 @@ export async function DELETE(
     const rateLimitBlockDel = checkRateLimit(mutateLimiter, ipDel);
     if (rateLimitBlockDel) return rateLimitBlockDel;
 
-    const { postId } = await params;
+    const { postId } = postIdParamSchema.parse(await params);
     await deletePost(postId);
 
     return NextResponse.json({ message: "Post deleted successfully" });
