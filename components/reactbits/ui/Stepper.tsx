@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { motion, AnimatePresence, Variants } from "motion/react";
 import { Button } from "@heroui/button";
+import { ArrowLeft, ArrowRight, CheckCheck } from "lucide-react";
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -16,6 +17,8 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   onStepChange?: (step: number) => void;
   onFinalStepCompleted?: () => void;
   validateStep?: (step: number) => boolean;
+  /** Silent check — no side effects (no toasts/errors). Used only for button colour. */
+  checkStep?: (step: number) => boolean;
   stepCircleContainerClassName?: string;
   stepContainerClassName?: string;
   contentClassName?: string;
@@ -38,6 +41,7 @@ export default function Stepper({
   onStepChange = () => {},
   onFinalStepCompleted = () => {},
   validateStep,
+  checkStep,
   stepCircleContainerClassName = "",
   stepContainerClassName = "",
   contentClassName = "",
@@ -156,15 +160,31 @@ export default function Stepper({
           {stepsArray[currentStep - 1]}
         </StepContentWrapper>{" "}
         {!isCompleted && (
-          <div className={`px-3 pb-8 ${footerClassName}`}>
+          <div className={`px-3 ${footerClassName}`}>
             <div
               className={`mt-5 flex ${currentStep !== 1 ? "justify-between" : "justify-end"}`}
             >
               {currentStep !== 1 && (
-                <Button onPress={handleBack}>{backButtonText}</Button>
-              )}
-              <Button onPress={isLastStep ? handleComplete : handleNext}>
+                <Button onPress={handleBack}>
+                  <ArrowLeft className="h-4 w-4" />
+                  {backButtonText}
+                </Button>
+              )}              <Button
+                onPress={isLastStep ? handleComplete : handleNext}
+                color={
+                  isLastStep
+                    ? "warning"
+                    : checkStep && checkStep(currentStep)
+                      ? "primary"
+                      : "default"
+                }
+              >
                 {isLastStep ? "Complete" : nextButtonText}
+                {isLastStep ? (
+                  <CheckCheck className="h-4 w-4" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -250,7 +270,7 @@ function SlideTransition({
 
 const stepVariants: Variants = {
   enter: (dir: number) => ({
-    x: dir >= 0 ? "-100%" : "100%",
+    x: dir >= 0 ? "100%" : "-100%",
     opacity: 0,
   }),
   center: {
@@ -258,7 +278,7 @@ const stepVariants: Variants = {
     opacity: 1,
   },
   exit: (dir: number) => ({
-    x: dir >= 0 ? "50%" : "-50%",
+    x: dir >= 0 ? "-50%" : "50%",
     opacity: 0,
   }),
 };

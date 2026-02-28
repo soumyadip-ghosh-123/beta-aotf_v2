@@ -13,6 +13,11 @@ import { MdDoneAll } from "react-icons/md";
 import { SlCalender } from "react-icons/sl";
 import { FaBookOpen } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import {
+  formatTuitionShare,
+  shareOnWhatsApp,
+  type TuitionShareData,
+} from "@/lib/utils/share";
 
 export interface StudentProp {
   className: string;
@@ -89,6 +94,7 @@ const TuitionPost = ({
   createdByUserId = {},
 }: TuitionPostProps) => {
   const [isApplied, setIsApplied] = useState(false);
+  const router = useRouter();
 
   // Derive display values from students array (defensive fallback)
   const safeStudents = students ?? [];
@@ -99,12 +105,27 @@ const TuitionPost = ({
 
   const chips = [
     `Class - ${classDisplay}`,
-    `Board - ${boardDisplay}`,
+    `Board - ${boardDisplay.toUpperCase()}`,
   ].filter(Boolean);
-  const router = useRouter();
+
+  const handleShare = () => {
+    const shareData: TuitionShareData = {
+      postId,
+      className: classDisplay || "N/A",
+      board: boardDisplay || "N/A",
+      subjects: allSubjects.join(", ") || "N/A",      monthlyBudget,
+      classType,
+      frequencyPerWeek,
+      preferredDays,
+      location,
+      notes,
+    };
+    shareOnWhatsApp(formatTuitionShare(shareData));
+  };
+
   return (
     <Card className="max-w-lg w-full mx-auto">
-      <CardHeader className="justify-between">
+      <CardHeader className="justify-between z-0">
         <User
           avatarProps={{
             src: `${createdByUserId.avatar || ""}`,
@@ -119,7 +140,7 @@ const TuitionPost = ({
       </CardHeader>
       <CardBody className="px-3 py-0 text-small text-default-400">
         <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-snug">
-          {subjectDisplay}
+          {subjectDisplay.toUpperCase() || "SUBJECTS NOT SPECIFIED"}
         </h1>
         {/* 3 chips with map function */}
         <div className="flex gap-2">
@@ -151,21 +172,25 @@ const TuitionPost = ({
             </div>
           </div>
         )}
-        {monthlyBudget && (
-          <div className="flex items-center gap-3 group my-2">
-            <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
-              <BsCurrencyRupee size={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Monthly Budget
-              </span>
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
-                ₹ {monthlyBudget.toLocaleString()}/month
-              </p>
-            </div>
+        <div className="flex items-center gap-3 group my-2">
+          <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
+            <BsCurrencyRupee size={20} />
           </div>
-        )}
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Monthly Budget
+            </span>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
+              {monthlyBudget ? (
+                <>
+                  ₹ {monthlyBudget.toLocaleString()}/month
+                </>
+              ) : (
+                "Not specified"
+              )}
+            </p>
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <Card className="w-full p-3 h-fit">
@@ -218,8 +243,7 @@ const TuitionPost = ({
           >
             View
             <FaEye />
-          </Button>
-          <Button size="sm" color="secondary">
+          </Button>          <Button size="sm" color="secondary" onClick={handleShare}>
             Share
             <FaShare />
           </Button>

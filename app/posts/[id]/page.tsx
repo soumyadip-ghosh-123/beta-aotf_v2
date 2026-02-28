@@ -81,7 +81,7 @@ export default async function PostDetailPage({
       : `${post.frequencyPerWeek} Days Per Week`;
 
   return (
-    <div className="w-full max-w-xl p-2">
+    <div className="w-full max-w-xl p-2 space-y-4">
       <BackButton title="Post Details" />
 
       {/* Post Header */}
@@ -159,7 +159,7 @@ export default async function PostDetailPage({
       )}
 
       {/* Post information */}
-      <Card className="w-full p-4 mb-4">
+      <Card className="w-full p-4">
         <CardHeader className="p-0">
           <PiClockCountdownFill
             size={30}
@@ -196,7 +196,7 @@ export default async function PostDetailPage({
       </Card>
 
       {/* location card */}
-      <Card className="w-full p-4 mb-4">
+      <Card className="w-full p-4">
         <CardHeader className="p-0">
           <LuMapPin size={30} className="text-primary inline-block mr-2" />
           <h3 className="text-lg font-bold">Location</h3>

@@ -20,21 +20,38 @@ const page = () => {
   const isCandidate = true; // Replace with actual logic to determine if user is a candidate
   const Mockdata = {
     postId: "P-25112500",
-    subject: "Science",
-    className: "8",
-    board: 2 as const, // ICSE = 2
-    preferredTime: "6 PM",
+    enquiryId: "E-25112501",
+    guardianName: "Rajesh Sharma",
+    guardianPhone: "9876543210",
+    students: [
+      {
+        className: "8",
+        board: "ICSE",
+        subjects: ["Mathematics", "Science"],
+        subjectsNormalized: ["mathematics", "science"],
+      },
+      {
+        className: "5",
+        board: "CBSE",
+        subjects: ["English"],
+        subjectsNormalized: ["english"],
+      },
+    ],
+    preferredTime: "6:00 PM - 7:30 PM",
     preferredDays: ["Mon", "Wed", "Fri"],
-    frequencyPerWeek: 2 as const, // twice = 2
-    classType: 1 as const, // in-person = 1
-    location: "Dhakuria near Metro Station",
-    monthlyBudget: 2000,
-    notes: "Only Female Teacher Required",
-    status: 1 as const, // open = 1
-    applicants: ["69254be157f77cfb98de0d6e", "69258aa32ef2dd07ebaae681"],
+    frequencyPerWeek: 3,
+    classType: "offline" as const,
+    location: "Dhakuria near Metro Station, Kolkata",
+    monthlyBudget: 3000,
+    notes: "Only Female Teacher Required. Must have prior experience.",
+    status: "open" as const,
     createdAt: new Date("2025-11-25T06:10:16.434Z"),
     updatedAt: new Date("2025-11-25T10:55:23.704Z"),
-    createdByUserId: { name: "Soumyadip", avatar: "" },
+    applicants: ["69254be157f77cfb98de0d6e", "69258aa32ef2dd07ebaae681"],
+    createdByUserId: {
+      name: "Soumyadip",
+      avatar: "",
+    },
   };
   const jobPostData = {
     jobId: "J-08122500",
@@ -74,10 +91,13 @@ const page = () => {
                 <span>Tuition</span>
               </div>
             }
+            className="w-full max-w-md"
           >
-            {[...Array(5)].map((_, index) => (
-              <TuitionPost key={index} {...Mockdata} />
-            ))}
+            <div className="space-y-3">
+              {[...Array(5)].map((_, index) => (
+                <TuitionPost key={index} {...Mockdata} />
+              ))}
+            </div>
           </Tab>
 
           {/* Always show Jobs tab for any Candidate */}
@@ -89,10 +109,13 @@ const page = () => {
                 <span>Jobs</span>
               </div>
             }
+            className="w-full max-w-md"
           >
-            {[...Array(7)].map((_, index) => (
-              <JobPost key={index} {...jobPostData} />
-            ))}
+            <div className="space-y-3">
+              {[...Array(7)].map((_, index) => (
+                <JobPost key={index} {...jobPostData} />
+              ))}
+            </div>
           </Tab>
         </Tabs>
       </div>

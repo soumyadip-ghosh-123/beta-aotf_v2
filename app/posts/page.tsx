@@ -1,4 +1,3 @@
-import { Pagination } from "@heroui/pagination";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
@@ -29,35 +28,30 @@ export default async function DocsPage({
         {posts.length === 0 ? (
           <p className="text-default-500 mt-10">No posts found</p>
         ) : (
-          posts.map((post) => (
-            <TuitionPost
-              key={post.postId}
-              postId={post.postId}
-              enquiryId={post.enquiryId?.toString()}
-              guardianName={post.guardianName}
-              guardianPhone={post.guardianPhone}
-              students={post.students}
-              preferredTime={post.preferredTime}
-              preferredDays={post.preferredDays}
-              frequencyPerWeek={post.frequencyPerWeek}
-              classType={post.classType}
-              location={post.location}
-              monthlyBudget={post.monthlyBudget}
-              notes={post.notes}
-              status={post.status}
-              createdAt={post.createdAt}
-              updatedAt={post.updatedAt}
-            />
-          ))
+          <div className="w-full max-w-md mt-6 space-y-4">
+            {posts.map((post) => (
+              <TuitionPost
+                key={post.postId}
+                postId={post.postId}
+                enquiryId={post.enquiryId?.toString()}
+                guardianName={post.guardianName}
+                guardianPhone={post.guardianPhone}
+                students={post.students}
+                preferredTime={post.preferredTime}
+                preferredDays={post.preferredDays}
+                frequencyPerWeek={post.frequencyPerWeek}
+                classType={post.classType}
+                location={post.location}
+                monthlyBudget={post.monthlyBudget}
+                notes={post.notes}
+                status={post.status}
+                createdAt={post.createdAt}
+                updatedAt={post.updatedAt}
+              />
+            ))}
+          </div>
         )}
       </div>
-      {pagination.totalPages > 1 && (
-        <Pagination
-          initialPage={page}
-          total={pagination.totalPages}
-          className="p-2 fixed bottom-4 left-1/2 transform -translate-x-1/2 backdrop-blur-md rounded-2xl"
-        />
-      )}
     </FilterSidebarProvider>
   );
 }

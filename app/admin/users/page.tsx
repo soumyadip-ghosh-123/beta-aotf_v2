@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -16,6 +16,7 @@ import {
 import { Select, SelectItem } from "@heroui/select";
 import { addToast } from "@heroui/toast";
 import { User, Mail, Phone, Calendar, UserPlus } from "lucide-react";
+import AdminSearchBar from "@/components/admin/ui/AdminSearchBar";
 
 type Role = "teacher" | "candidate";
 
@@ -72,6 +73,7 @@ const mockUsers: UserData[] = [
 export default function UsersPage() {
   const [selectedTab, setSelectedTab] = useState<Role>("teacher");
   const [users, setUsers] = useState<UserData[]>(mockUsers);
+  const [searchQuery, setSearchQuery] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [newUser, setNewUser] = useState({
     name: "",
@@ -80,7 +82,18 @@ export default function UsersPage() {
     role: "teacher" as Role,
   });
 
-  const filteredUsers = users.filter((user) => user.role === selectedTab);
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      if (user.role !== selectedTab) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        user.name.toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q) ||
+        user.phone.includes(q)
+      );
+    });
+  }, [users, selectedTab, searchQuery]);
 
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email || !newUser.phone) {
@@ -105,7 +118,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="w-full space-y-6 py-4">
+    <div className="w-full space-y-6 px-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Users Management</h1>
@@ -119,11 +132,12 @@ export default function UsersPage() {
           startContent={<UserPlus size={18} />}
           onPress={onOpen}
         ></Button>
-      </div>
-
-      <Tabs
+      </div>      <Tabs
         selectedKey={selectedTab}
-        onSelectionChange={(key) => setSelectedTab(key as Role)}
+        onSelectionChange={(key) => {
+          setSelectedTab(key as Role);
+          setSearchQuery("");
+        }}
         aria-label="User roles"
         color="primary"
         className="w-full justify-center"
@@ -137,6 +151,15 @@ export default function UsersPage() {
           title={`Candidates (${users.filter((u) => u.role === "candidate").length})`}
         />
       </Tabs>
+
+      <AdminSearchBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by name, email or phone…"
+        resultCount={filteredUsers.length}
+        resultLabel="user"
+        onClearAll={() => setSearchQuery("")}
+      />
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {filteredUsers.map((user) => (

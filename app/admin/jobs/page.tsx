@@ -2,13 +2,15 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Select, SelectItem } from "@heroui/select";
 import { Button } from "@heroui/button";
-import { Divider } from "@heroui/divider";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
+import AdminSearchBar, {
+  FilterConfig,
+} from "@/components/admin/ui/AdminSearchBar";
+import DateChips from "@/components/admin/ui/DateChips";
+
 import {
   Modal,
   ModalContent,
@@ -18,15 +20,7 @@ import {
   useDisclosure,
 } from "@heroui/modal";
 import { JobPostCard, JobPost } from "@/components/admin/postcards/JobPostCard";
-import {
-  Calendar,
-  Filter,
-  X,
-  Search,
-  AlertTriangle,
-  Plus,
-  RefreshCw,
-} from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
 /** Map a DB job (from API) to the JobPost interface used by the card. */
@@ -66,25 +60,19 @@ const Page = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Filter state
-  const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");  const [filterStatus, setFilterStatus] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
+  const [selectedDateChip, setSelectedDateChip] = useState("");
 
   // Cancel modal
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [cancelTarget, setCancelTarget] = useState<JobPost | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  // Current year for year filter
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) =>
-    (currentYear - i).toString()
-  );
-
   const months = [
     { key: "1", label: "January" },
     { key: "2", label: "February" },
@@ -112,9 +100,9 @@ const Page = () => {
     setFetchError(null);
     try {
       const params = new URLSearchParams();
-      if (filterStatus !== "all") params.set("status", filterStatus);
+      if (filterStatus) params.set("status", filterStatus);
       if (debouncedSearch) params.set("search", debouncedSearch);
-      params.set("limit", "200");
+      params.set("limit", "50");
 
       const res = await fetch(`/api/v1/jobs?${params.toString()}`);
       if (!res.ok) {
@@ -137,22 +125,33 @@ const Page = () => {
 
   // Client-side date filtering (extract date from jobId format J-DDMMYYNN)
   const filteredPosts = useMemo(() => {
-    if (!selectedYear && !selectedMonth && !selectedDay) return posts;
+    let filtered = [...posts];
 
-    return posts.filter((post) => {
-      // Try to parse date from jobId: J-DDMMYYNN
-      const jobId = post.id;
-      if (!jobId || jobId.length < 10) return true;
-      const day = parseInt(jobId.substring(2, 4), 10);
-      const month = parseInt(jobId.substring(4, 6), 10);
-      const year = parseInt("20" + jobId.substring(6, 8), 10);
+    if (selectedYear || selectedMonth || selectedDay) {
+      filtered = filtered.filter((post) => {
+        const jobId = post.id;
+        if (!jobId || jobId.length < 10) return true;
+        const day = parseInt(jobId.substring(2, 4), 10);
+        const month = parseInt(jobId.substring(4, 6), 10);
+        const year = parseInt("20" + jobId.substring(6, 8), 10);
 
-      if (selectedYear && year !== parseInt(selectedYear, 10)) return false;
-      if (selectedMonth && month !== parseInt(selectedMonth, 10)) return false;
-      if (selectedDay && day !== parseInt(selectedDay, 10)) return false;
-      return true;
-    });
-  }, [posts, selectedYear, selectedMonth, selectedDay]);
+        if (selectedYear && year !== parseInt(selectedYear, 10)) return false;
+        if (selectedMonth && month !== parseInt(selectedMonth, 10)) return false;
+        if (selectedDay && day !== parseInt(selectedDay, 10)) return false;
+        return true;
+      });
+    }
+
+    // Filter by selected date chip (compares against createdAt)
+    if (selectedDateChip) {
+      filtered = filtered.filter((post) => {
+        if (!post.createdAt) return false;
+        return post.createdAt.slice(0, 10) === selectedDateChip;
+      });
+    }
+
+    return filtered;
+  }, [posts, selectedYear, selectedMonth, selectedDay, selectedDateChip]);
 
   const handleViewPost = (post: JobPost) => {
     router.push(`/admin/jobs/${post.id}`);
@@ -160,6 +159,10 @@ const Page = () => {
 
   const handleEditPost = (post: JobPost) => {
     router.push(`/admin/jobs/${post.id}/edit`);
+  };
+
+  const handleSharePost = (_post: JobPost) => {
+    // Share is handled inside JobPostCard
   };
 
   const handleCancelPost = (post: JobPost) => {
@@ -180,7 +183,10 @@ const Page = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to cancel job post");
       }
-      addToast({ description: "Job post cancelled successfully!", color: "success" });
+      addToast({
+        description: "Job post cancelled successfully!",
+        color: "success",
+      });
       onClose();
       setCancelTarget(null);
       fetchJobs();
@@ -193,148 +199,96 @@ const Page = () => {
     } finally {
       setIsCancelling(false);
     }
-  };
-
-  const clearFilters = () => {
+  };  const clearFilters = () => {
     setSearchTerm("");
-    setFilterStatus("all");
+    setFilterStatus("");
     setSelectedYear("");
     setSelectedMonth("");
     setSelectedDay("");
+    setSelectedDateChip("");
   };
 
-  const hasActiveFilters =
-    searchTerm || filterStatus !== "all" || selectedYear || selectedMonth || selectedDay;
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === "status") setFilterStatus(value);
+    else if (key === "year") setSelectedYear(value);
+    else if (key === "month") setSelectedMonth(value);
+    else if (key === "day") setSelectedDay(value);
+  };
+
+  const jobFilterConfigs: FilterConfig[] = [
+    {
+      key: "status",
+      label: "Status",
+      placeholder: "All Statuses",
+      options: [
+        { key: "open", label: "Open" },
+        { key: "closed", label: "Closed" },
+        { key: "hold", label: "Hold" },
+        { key: "cancelled", label: "Cancelled" },
+      ],
+    },
+    {
+      key: "year",
+      label: "Year",
+      placeholder: "All Years",
+      options: Array.from({ length: 5 }, (_, i) => ({
+        key: String(currentYear - i),
+        label: String(currentYear - i),
+      })),
+    },
+    {
+      key: "month",
+      label: "Month",
+      placeholder: "All Months",
+      options: months.map((m) => ({ key: m.key, label: m.label })),
+    },
+    {
+      key: "day",
+      label: "Day",
+      placeholder: "All Days",
+      options: Array.from({ length: 31 }, (_, i) => ({
+        key: String(i + 1),
+        label: String(i + 1),
+      })),
+    },
+  ];
+
+  const jobFilterValues: Record<string, string> = {
+    status: filterStatus,
+    year: selectedYear,
+    month: selectedMonth,
+    day: selectedDay,
+  };
 
   return (
-    <div className="container mx-auto px-4 max-w-7xl">
+    <div className="container mx-auto px-4 max-w-7xl space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-default-900">Job Posts</h1>
-          <p className="text-sm text-default-500">
-            Manage and track all job postings
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="flat"
-            startContent={<RefreshCw size={16} />}
-            onPress={fetchJobs}
-            isLoading={isLoading}
-          >
-            Refresh
-          </Button>
-          <Button
-            size="sm"
-            color="primary"
-            startContent={<Plus size={16} />}
-            onPress={() => router.push("/admin/jobs/create")}
-          >
-            New Job
-          </Button>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-default-900">Job Posts</h1>
+        <Button
+          size="sm"
+          color="primary"
+          startContent={<Plus size={16} />}
+          onPress={() => router.push("/admin/jobs/create")}
+        >
+          New Job
+        </Button>
       </div>
 
-      {/* Search & Filters */}
-      <div className="space-y-3 mb-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Search jobs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            startContent={<Search size={18} className="text-default-400" />}
-            endContent={
-              searchTerm && (
-                <button onClick={() => setSearchTerm("")}>
-                  <X size={16} className="text-default-400" />
-                </button>
-              )
-            }
-            className="flex-1"
-            size="sm"
-          />
-          <Button
-            size="sm"
-            variant={showFilters ? "flat" : "bordered"}
-            startContent={<Filter size={16} />}
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            Filters
-          </Button>
-        </div>
+      {/* Centralised Search + Filter Bar */}      <AdminSearchBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        placeholder="Search by title, client, location…"
+        filters={jobFilterConfigs}
+        filterValues={jobFilterValues}
+        onFilterChange={handleFilterChange}
+        resultCount={filteredPosts.length}
+        resultLabel="job"
+        onClearAll={clearFilters}
+      />
 
-        {showFilters && (
-          <Card>
-            <CardBody className="gap-3">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Select
-                  label="Status"
-                  size="sm"
-                  selectedKeys={[filterStatus]}
-                  onChange={(e) => setFilterStatus(e.target.value || "all")}
-                >
-                  <SelectItem key="all">All Statuses</SelectItem>
-                  <SelectItem key="open">Open</SelectItem>
-                  <SelectItem key="closed">Closed</SelectItem>
-                  <SelectItem key="hold">Hold</SelectItem>
-                  <SelectItem key="cancelled">Cancelled</SelectItem>
-                </Select>
-
-                <Select
-                  label="Year"
-                  size="sm"
-                  selectedKeys={selectedYear ? [selectedYear] : []}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                >
-                  {years.map((y) => (
-                    <SelectItem key={y}>{y}</SelectItem>
-                  ))}
-                </Select>
-
-                <Select
-                  label="Month"
-                  size="sm"
-                  selectedKeys={selectedMonth ? [selectedMonth] : []}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                >
-                  {months.map((m) => (
-                    <SelectItem key={m.key}>{m.label}</SelectItem>
-                  ))}
-                </Select>
-
-                <Select
-                  label="Day"
-                  size="sm"
-                  selectedKeys={selectedDay ? [selectedDay] : []}
-                  onChange={(e) => setSelectedDay(e.target.value)}
-                >
-                  {Array.from({ length: 31 }, (_, i) => (
-                    <SelectItem key={String(i + 1)}>{String(i + 1)}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-
-              {hasActiveFilters && (
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="light"
-                    color="danger"
-                    startContent={<X size={14} />}
-                    onPress={clearFilters}
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
-              )}
-            </CardBody>
-          </Card>
-        )}
-      </div>
-
-      <Divider className="mb-4" />
+      {/* Date quick-filter chips */}
+      <DateChips selected={selectedDateChip} onChange={setSelectedDateChip} />
 
       {/* Loading */}
       {isLoading && (
@@ -345,7 +299,7 @@ const Page = () => {
 
       {/* Error */}
       {fetchError && !isLoading && (
-        <Card className="bg-danger-50 mb-4">
+        <Card className="bg-danger-50">
           <CardBody className="py-10 text-center">
             <p className="text-danger">{fetchError}</p>
             <Button size="sm" className="mt-3" onPress={fetchJobs}>
@@ -358,13 +312,6 @@ const Page = () => {
       {/* Results */}
       {!isLoading && !fetchError && (
         <>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-default-500">
-              {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""}{" "}
-              found
-            </p>
-          </div>
-
           {filteredPosts.length === 0 ? (
             <Card>
               <CardBody className="py-10 text-center">
@@ -377,6 +324,7 @@ const Page = () => {
                 <JobPostCard
                   key={post.id}
                   post={post}
+                  onShare={handleSharePost}
                   onView={handleViewPost}
                   onEdit={handleEditPost}
                   onCancel={handleCancelPost}

@@ -26,11 +26,10 @@ export const createPostSchema = z.object({
     .trim()
     .min(2, "Guardian name must be at least 2 characters")
     .max(100, "Guardian name must be at most 100 characters"),
-
   guardianPhone: z
     .string({ message: "Guardian phone is required" })
     .trim()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
+    .min(1, "Guardian phone is required"),
 
   enquiryId: z.string().optional(),
 
@@ -44,16 +43,9 @@ export const createPostSchema = z.object({
     .number()
     .int()
     .min(1, "Frequency must be at least 1")
-    .max(7, "Frequency cannot exceed 7"),
+    .max(7, "Frequency cannot exceed 7"),  preferredDays: z.array(z.string().trim().min(1)).optional().default([]),
 
-  preferredDays: z
-    .array(z.string().trim().min(1))
-    .min(1, "At least one preferred day is required"),
-
-  preferredTime: z
-    .string({ message: "Preferred time is required" })
-    .trim()
-    .min(1, "Preferred time is required"),
+  preferredTime: z.string().trim().optional(),
 
   location: z
     .string({ message: "Location is required" })

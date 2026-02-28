@@ -21,7 +21,7 @@ const TabContent = () => {
   };
   return (
     <div className="flex flex-col gap-4 p-2">
-      <TuitionPost {...Mockdata} />
+      {/* <TuitionPost {...Mockdata} /> */}
     </div>
   );
 };

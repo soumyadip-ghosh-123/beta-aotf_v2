@@ -19,6 +19,11 @@ import {
   Edit,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
+import {
+  formatJobShare,
+  shareOnWhatsApp,
+  type JobShareData,
+} from "@/lib/utils/share";
 
 export interface JobPost {
   id: string; // jobId
@@ -79,8 +84,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
   onCancel,
   onView,
   onEdit,
-}) => {
-  const getStatusColor = (status: string) => {
+}) => {  const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
         return "success";
@@ -93,6 +97,22 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
       default:
         return "default";
     }
+  };
+
+  const handleShare = () => {
+    const shareData: JobShareData = {
+      jobId: post.id,
+      title: post.title,
+      companyName: post.companyType === "company" ? post.clientName : undefined,
+      location: post.location,
+      salary: post.salary,
+      budget: post.budget,
+      requiredQualification: post.requiredQualification,
+      gender: post.gender,
+      workType: post.workType,
+    };
+    shareOnWhatsApp(formatJobShare(shareData));
+    onShare?.(post);
   };
 
   return (
@@ -127,7 +147,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
 
       <Divider />
 
-      <CardBody className="gap-3 py-4">
+      <CardBody className="gap-2 py-2">
         <Button
           isIconOnly
           aria-label="Edit post"
@@ -139,11 +159,9 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
         </Button>
 
         {/* Job Details */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div>
-            <h3 className="text-lg font-bold text-default-900">
-              {post.title}
-            </h3>
+            <h3 className="text-lg font-bold text-default-900">{post.title}</h3>
             <p className="text-sm text-default-500">
               {post.clientName}{" "}
               <span className="text-xs text-default-400 capitalize">
@@ -161,7 +179,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 <div>
                   <span className="text-default-500">Experience:</span>{" "}
                   <span className="font-medium text-default-700">
-                    {post.experience}
+                    {post.experience} years
                   </span>
                 </div>
               </div>
@@ -208,8 +226,6 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
             </div>
           </div>
 
-          <Divider />
-
           <div className="grid grid-cols-1 gap-2">
             <div className="flex items-start gap-2 text-sm">
               <Calendar size={16} className="text-default-400 mt-0.5" />
@@ -249,12 +265,9 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
           {/* Client Contact */}
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-default-700">
-              Client Contact
-            </p>
-            <div className="flex items-center gap-2 text-sm pl-2">
-              <Phone size={16} className="text-default-400" />
+              Client Contact:{" "}
               <span className="text-default-600">{post.phoneNumber}</span>
-            </div>
+            </p>
           </div>
 
           <Divider />
@@ -310,13 +323,12 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3">
-        <Button
+      <CardFooter className="gap-2 py-3">        <Button
           size="sm"
           color="primary"
           variant="solid"
           startContent={<Share2 size={16} />}
-          onPress={() => onShare?.(post)}
+          onPress={handleShare}
           className="flex-1"
         >
           Share

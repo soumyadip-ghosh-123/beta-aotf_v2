@@ -12,7 +12,7 @@ import { IoMdSearch } from "react-icons/io";
 import { FaAngleDown } from "react-icons/fa";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
-import { SlidersHorizontal } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useFilterSidebar } from "./filter-sidebar-context";
 
 const Search = () => {
@@ -20,10 +20,10 @@ const Search = () => {
   const isShowChip = false; // You can replace this with actual logic based on screen size
   const { open } = useFilterSidebar();
   return (
-    <div className="max-w-md w-full flex flex-col justify-center sticky top-17 z-10 mx-auto my-4 p-2 r backdrop-blur-xs">
+    <div className="max-w-md w-full flex flex-col justify-center sticky top-17 z-10 mx-auto p-1 r backdrop-blur-xs">
       <div className="flex w-full max-w-2xl items-center gap-2">
-        <Button isIconOnly aria-label="Like" color="primary" onPress={open}>
-          <SlidersHorizontal className="text-xl" />
+        <Button isIconOnly aria-label="Like"  onPress={open} variant="bordered" >
+          <Filter size={20}/>
         </Button>
         <Input
           type="text"

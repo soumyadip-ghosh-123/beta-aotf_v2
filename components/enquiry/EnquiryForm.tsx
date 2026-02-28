@@ -6,20 +6,8 @@ import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { addToast } from "@heroui/toast";
-import { z } from "zod";
 import { SendIcon } from "lucide-react";
-
-const schema = z.object({
-  name: z
-    .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name must be at most 50 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
-  phone: z
-    .string()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
-  query: z.string().min(1, "Please enter your query"),
-});
+import { enquiryFormSchema as schema } from "@/lib/validations/forms";
 
 export default function EnquiryForm() {
   const [role, setRole] = useState<"guardian" | "client">("guardian");

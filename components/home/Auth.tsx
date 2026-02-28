@@ -66,12 +66,11 @@ export default function Auth() {
                     type={isVisible ? "text" : "password"}
                     variant="bordered"
                   />
-                  <div className="flex w-full items-center justify-between px-1 py-2"></div>
                   <Link className="text-default-500" href="#" size="sm">
                     Forgot password?
                   </Link>
                   <Button className="w-full" color="primary" type="submit">
-                    Log In
+                    Log in
                   </Button>
                 </Form>
               </Tab>

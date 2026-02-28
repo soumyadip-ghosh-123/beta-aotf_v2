@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const input = listPostsSchema.parse({
       status: searchParams.get("status") ?? undefined,
       page: searchParams.get("page") ?? undefined,
-      limit: searchParams.get("limit") ?? undefined,
+      limit: searchParams.get("limit") ?? 20,
       search: searchParams.get("search") ?? undefined,
     });
 

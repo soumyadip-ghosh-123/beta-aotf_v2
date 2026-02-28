@@ -392,32 +392,32 @@ export default function ViewJobPostPage({
 
               <Divider />
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full h-full">
-                <div className="flex flex-col">
-                  <span className="text-xs text-default-500">Location</span>
-                  <span className="font-medium text-default-900">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-1 w-full h-full">
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-sm text-default-500">Location: </span>
+                  <span className="font-xs text-default-900">
                     {postData.location}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-default-500">
-                    {postData.workType === "job" ? "Salary" : "Budget"}
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-sm text-default-500">
+                    {postData.workType === "job" ? "Salary: " : "Budget: "}
                   </span>
-                  <span className="font-medium text-success-600">
+                  <span className="font-medium text-sm text-success-600">
                     {postData.workType === "job"
                       ? postData.salary || "Not specified"
                       : postData.budget || "Not specified"}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-default-500">Timing</span>
-                  <span className="font-medium text-default-900">
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-sm text-default-500">Timing: </span>
+                  <span className="font-xs text-default-900">
                     {postData.timing}
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-default-500">Commission</span>
-                  <span className="font-medium text-default-900">
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-sm text-default-500">Commission: </span>
+                  <span className="font-xs text-default-900">
                     {postData.academyCommissionPercentage}%
                   </span>
                 </div>

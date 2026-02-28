@@ -24,74 +24,20 @@ import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
+import {
+  jobFormSchema,
+  companyTypes,
+  workTypes,
+  commissionBasisTypes,
+  projectTypes,
+  experienceLevels,
+} from "@/lib/validations/forms";
 
 type WorkType = "job" | "project";
 type LocationType = "on-site" | "remote" | "hybrid";
 type GenderPreference = "male" | "female" | "both" | "all" | "others";
 type CommissionBasis = "first_month" | "project_value";
 type ProjectType = "one-time" | "ongoing";
-
-// Zod validation schema
-const jobPostSchema = z.object({
-  workType: z.enum(["job", "project"]),
-  clientName: z
-    .string()
-    .min(2, "Client name must be at least 2 characters")
-    .max(50, "Client name must be at most 50 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
-  clientPhone: z
-    .string()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
-  companyName: z.string().optional(),
-  companyType: z.enum(["individual", "company"]).optional(),
-  designation: z.string().min(2, "Designation is required"),
-  experience: z.string().optional(),
-  locationType: z.enum(["on-site", "remote", "hybrid"]),
-  location: z.string().min(3, "Location is required"),
-  genderPreference: z.enum(["male", "female", "both", "all", "others"]),
-  timing: z.string().optional(),
-  salary: z.string().optional(),
-  travelRequirements: z.string().optional(),
-  requiredQualifications: z.string().optional(),
-  skillsRequired: z.string().optional(),
-  notes: z.string().optional(),
-  commissionBasis: z.enum(["first_month", "project_value"]),
-  academyCommissionPercentage: z.coerce
-    .number()
-    .int("Commission percentage must be a whole number")
-    .min(0, "Commission percentage cannot be negative")
-    .max(100, "Commission percentage cannot exceed 100"),
-  projectType: z.enum(["one-time", "ongoing"]).optional(),
-  budget: z.string().optional(),
-  duration: z.string().optional(),
-});
-
-const companyTypes = [
-  { key: "individual", label: "Individual" },
-  { key: "company", label: "Company" },
-];
-
-const workTypes = [
-  { key: "job", label: "Job" },
-  { key: "project", label: "Project" },
-];
-
-const commissionBasisTypes = [
-  { key: "first_month", label: "First Month Salary" },
-  { key: "project_value", label: "Project Value" },
-];
-
-const projectTypes = [
-  { key: "one-time", label: "One-Time" },
-  { key: "ongoing", label: "Ongoing" },
-];
-
-const experienceLevels = [
-  { key: "0-1", label: "0-1 years (Fresher)" },
-  { key: "1-3", label: "1-3 years" },
-  { key: "3-5", label: "3-5 years" },
-  { key: "5-10", label: "5-10 years" },  { key: "10+", label: "10+ years" },
-];
 
 interface JobPostFormProps {
   mode?: "create" | "edit";
@@ -127,7 +73,7 @@ export default function JobPostForm({
     skillsRequired: "",
     notes: "",
     commissionBasis: "first_month" as CommissionBasis,
-    academyCommissionPercentage: "" as string,
+    academyCommissionPercentage: "25" as string,
     projectType: "" as string,
     budget: "",
     duration: "",
@@ -176,7 +122,8 @@ export default function JobPostForm({
           requiredQualifications: job.requiredQualification || "",
           skillsRequired: "",
           notes: job.brief || "",
-          commissionBasis: (job.commissionBasis || "first_month") as CommissionBasis,
+          commissionBasis: (job.commissionBasis ||
+            "first_month") as CommissionBasis,
           academyCommissionPercentage:
             job.academyCommissionPercentage?.toString() || "",
           projectType: job.projectType || "",
@@ -220,7 +167,7 @@ export default function JobPostForm({
         projectType: formData.projectType || undefined,
         experience: formData.experience || undefined,
       };
-      jobPostSchema.parse(dataToValidate);
+      jobFormSchema.parse(dataToValidate);
       setErrors({});
       return true;
     } catch (error) {
@@ -245,8 +192,8 @@ export default function JobPostForm({
       switch (step) {
         case 1: // Client Details
           const step1Schema = z.object({
-            clientName: jobPostSchema.shape.clientName,
-            clientPhone: jobPostSchema.shape.clientPhone,
+            clientName: jobFormSchema.shape.clientName,
+            clientPhone: jobFormSchema.shape.clientPhone,
           });
           step1Schema.parse({
             clientName: formData.clientName,
@@ -256,18 +203,19 @@ export default function JobPostForm({
 
         case 2: // Job Details
           const step2Schema = z.object({
-            designation: jobPostSchema.shape.designation,
-            locationType: jobPostSchema.shape.locationType,
-            location: jobPostSchema.shape.location,
+            designation: jobFormSchema.shape.designation,
+            locationType: jobFormSchema.shape.locationType,
+            location: jobFormSchema.shape.location,
           });
           step2Schema.parse({
             designation: formData.designation,
             locationType: formData.locationType,
             location: formData.location,
           });
-          break;        case 3: // Requirements & Preferences
+          break;
+        case 3: // Requirements & Preferences
           const step3Schema = z.object({
-            genderPreference: jobPostSchema.shape.genderPreference,
+            genderPreference: jobFormSchema.shape.genderPreference,
           });
           step3Schema.parse({
             genderPreference: formData.genderPreference,
@@ -276,10 +224,10 @@ export default function JobPostForm({
 
         case 4: // Work & Commission Details
           const step4Schema = z.object({
-            workType: jobPostSchema.shape.workType,
-            commissionBasis: jobPostSchema.shape.commissionBasis,
+            workType: jobFormSchema.shape.workType,
+            commissionBasis: jobFormSchema.shape.commissionBasis,
             academyCommissionPercentage:
-              jobPostSchema.shape.academyCommissionPercentage,
+              jobFormSchema.shape.academyCommissionPercentage,
           });
           step4Schema.parse({
             workType: formData.workType,
@@ -325,10 +273,63 @@ export default function JobPostForm({
         description: "Please fill in all required fields correctly",
         color: "danger",
       });
-
       return isValid;
     }
   };
+
+  // Silent check — no toasts or error state updates, used only for button colour
+  const checkStep = (step: number): boolean => {
+    try {
+      switch (step) {
+        case 1:
+          z.object({
+            clientName: jobFormSchema.shape.clientName,
+            clientPhone: jobFormSchema.shape.clientPhone,
+          }).parse({
+            clientName: formData.clientName,
+            clientPhone: formData.clientPhone,
+          });
+          break;
+        case 2:
+          z.object({
+            designation: jobFormSchema.shape.designation,
+            locationType: jobFormSchema.shape.locationType,
+            location: jobFormSchema.shape.location,
+          }).parse({
+            designation: formData.designation,
+            locationType: formData.locationType,
+            location: formData.location,
+          });
+          break;
+        case 3:
+          z.object({
+            genderPreference: jobFormSchema.shape.genderPreference,
+          }).parse({ genderPreference: formData.genderPreference });
+          break;
+        case 4:
+          z.object({
+            workType: jobFormSchema.shape.workType,
+            commissionBasis: jobFormSchema.shape.commissionBasis,
+            academyCommissionPercentage:
+              jobFormSchema.shape.academyCommissionPercentage,
+          }).parse({
+            workType: formData.workType,
+            commissionBasis: formData.commissionBasis,
+            academyCommissionPercentage:
+              formData.academyCommissionPercentage || "0",
+          });
+          if (formData.workType === "project" && !formData.projectType)
+            return false;
+          break;
+        default:
+          return true;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     if (!validate()) {
@@ -376,8 +377,7 @@ export default function JobPostForm({
         payload.experience = formData.experience.trim();
       if (formData.salary?.trim()) payload.salary = formData.salary.trim();
       if (formData.requiredQualifications?.trim())
-        payload.requiredQualification =
-          formData.requiredQualifications.trim();
+        payload.requiredQualification = formData.requiredQualifications.trim();
 
       // Build brief from multiple text fields
       const briefParts: string[] = [];
@@ -443,19 +443,17 @@ export default function JobPostForm({
 
       // Navigate after showing success
       setTimeout(() => {
-        router.push(
-          isEditMode ? `/admin/jobs/${postId}` : "/admin/jobs"
-        );
+        router.push(isEditMode ? `/admin/jobs/${postId}` : "/admin/jobs");
         router.refresh();
       }, 2000);
     } catch (error) {
       addToast({
         description:
           error instanceof Error
-          ? error.message
-          : isEditMode
-            ? "Failed to update job"
-            : "Failed to create job",
+            ? error.message
+            : isEditMode
+              ? "Failed to update job"
+              : "Failed to create job",
         color: "danger",
       });
     } finally {
@@ -489,7 +487,7 @@ export default function JobPostForm({
   }
 
   return (
-    <div className="w-full min-h-screen max-w-3xl mx-auto p-3">
+    <div className="w-full max-w-3xl mx-auto p-3">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2 justify-center">
           <h3 className="text-xl font-bold">
@@ -527,384 +525,390 @@ export default function JobPostForm({
           </p>
         </div>
       ) : (
-      <div className="flex justify-center">
-        <Stepper
-          onFinalStepCompleted={handleSubmit}
-          validateStep={validateStep}
-          nextButtonText="Next Step"
-          backButtonText="Previous"
-        >
-          {/* Step 1: Client Details */}
-          <Step>
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-default-700">
-                Client Details
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Client Name"
-                  placeholder="Enter client name"
-                  value={formData.clientName}
-                  onChange={(e) => handleChange("clientName", e.target.value)}
-                  isRequired
-                  isInvalid={!!errors.clientName}
-                  errorMessage={errors.clientName}
-                  variant="bordered"
-                  startContent={<User size={18} className="text-default-400" />}
-                />
-                <Input
-                  label="Client Phone"
-                  placeholder="Enter phone number"
-                  type="tel"
-                  value={formData.clientPhone}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "");
-                    if (value.length <= 10) {
-                      handleChange("clientPhone", value);
+        <div className="flex justify-center">
+          {" "}
+          <Stepper
+            onFinalStepCompleted={handleSubmit}
+            validateStep={validateStep}
+            checkStep={checkStep}
+            nextButtonText="Next"
+            backButtonText="Back"
+          >
+            {/* Step 1: Client Details */}
+            <Step>
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-default-700">
+                  Client Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Client Name"
+                    placeholder="Enter client name"
+                    value={formData.clientName}
+                    onChange={(e) => handleChange("clientName", e.target.value)}
+                    isRequired
+                    isInvalid={!!errors.clientName}
+                    errorMessage={errors.clientName}
+                    variant="bordered"
+                    startContent={
+                      <User size={18} className="text-default-400" />
                     }
-                  }}
-                  isRequired
-                  isInvalid={!!errors.clientPhone}
-                  errorMessage={errors.clientPhone}
-                  variant="bordered"
-                  startContent={
-                    <Phone size={18} className="text-default-400" />
-                  }
-                  maxLength={10}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Company Name"
-                  placeholder="Enter company name"
-                  value={formData.companyName}
-                  onChange={(e) => handleChange("companyName", e.target.value)}
-                  variant="bordered"
-                  startContent={
-                    <Building2 size={18} className="text-default-400" />
-                  }
-                />
-                <Select
-                  label="Company Type"
-                  placeholder="Select company type"
-                  selectedKeys={
-                    formData.companyType ? [formData.companyType] : []
-                  }
-                  onChange={(e: any) =>
-                    handleChange("companyType", e.target.value)
-                  }
-                  variant="bordered"
-                  startContent={
-                    <Building2 size={18} className="text-default-400" />
-                  }
-                >
-                  {companyTypes.map((type) => (
-                    <SelectItem key={type.key}>{type.label}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </Step>
-
-          {/* Step 2: Job Details */}
-          <Step>
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-default-700">
-                Job Details
-              </h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Designation"
-                  placeholder="e.g., Software Engineer"
-                  value={formData.designation}
-                  onChange={(e) => handleChange("designation", e.target.value)}
-                  isRequired
-                  isInvalid={!!errors.designation}
-                  errorMessage={errors.designation}
-                  variant="bordered"
-                  startContent={
-                    <Briefcase size={18} className="text-default-400" />
-                  }
-                />
-                <Select
-                  label="Experience Required"
-                  placeholder="Select experience level"
-                  selectedKeys={
-                    formData.experience ? [formData.experience] : []
-                  }
-                  onChange={(e: any) =>
-                    handleChange("experience", e.target.value)
-                  }
-                  variant="bordered"
-                  startContent={
-                    <GraduationCap size={18} className="text-default-400" />
-                  }
-                >
-                  {experienceLevels.map((exp) => (
-                    <SelectItem key={exp.key}>{exp.label}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Location Type <span className="text-danger">*</span>
-                </label>
-                <RadioGroup
-                  value={formData.locationType}
-                  onValueChange={(value) => handleChange("locationType", value)}
-                  orientation="horizontal"
-                >
-                  <Radio value="on-site">On-Site</Radio>
-                  <Radio value="remote">Remote</Radio>
-                  <Radio value="hybrid">Hybrid</Radio>
-                </RadioGroup>
-              </div>
-
-              <Input
-                label="Location"
-                placeholder="Enter job location"
-                value={formData.location}
-                onChange={(e) => handleChange("location", e.target.value)}
-                isRequired
-                isInvalid={!!errors.location}
-                errorMessage={errors.location}
-                variant="bordered"
-                startContent={<MapPin size={18} className="text-default-400" />}
-                description={
-                  formData.locationType === "remote"
-                    ? "Can be 'Work from Home' or specify region"
-                    : "Enter specific location or city"
-                }
-              />
-            </div>
-          </Step>
-
-          {/* Step 3: Requirements & Preferences */}
-          <Step>
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-default-700">
-                Requirements & Preferences
-              </h4>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Gender Preference <span className="text-danger">*</span>
-                </label>
-                <RadioGroup
-                  value={formData.genderPreference}
-                  onValueChange={(value) =>
-                    handleChange("genderPreference", value)
-                  }
-                  orientation="horizontal"
-                >
-                  <Radio value="male">Male</Radio>
-                  <Radio value="female">Female</Radio>
-                  <Radio value="both">Both</Radio>
-                  <Radio value="all">All</Radio>
-                  <Radio value="others">Others</Radio>
-                </RadioGroup>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Working Hours/Timing"
-                  placeholder="e.g., 9 AM - 6 PM"
-                  value={formData.timing}
-                  onChange={(e) => handleChange("timing", e.target.value)}
-                  variant="bordered"
-                  startContent={
-                    <Clock size={18} className="text-default-400" />
-                  }
-                />
-                <Input
-                  label="Salary Range"
-                  placeholder="e.g., 50000-80000 or 50k/month"
-                  type="text"
-                  value={formData.salary}
-                  onChange={(e) => handleChange("salary", e.target.value)}
-                  variant="bordered"
-                  startContent={
-                    <FaRupeeSign size={18} className="text-default-400" />
-                  }
-                  description="Enter salary range or amount per month"
-                />
-              </div>
-
-              <Textarea
-                label="Required Qualifications"
-                placeholder="e.g., Bachelor's degree in Computer Science, MBA..."
-                value={formData.requiredQualifications}
-                onChange={(e: any) =>
-                  handleChange("requiredQualifications", e.target.value)
-                }
-                variant="bordered"
-                minRows={3}
-              />
-
-              <Textarea
-                label="Skills Required"
-                placeholder="e.g., JavaScript, React, Node.js, Communication skills..."
-                value={formData.skillsRequired}
-                onChange={(e: any) =>
-                  handleChange("skillsRequired", e.target.value)
-                }
-                variant="bordered"
-                minRows={3}
-              />
-            </div>
-          </Step>
-
-          {/* Step 4: Work & Commission Details */}
-          <Step>
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-default-700">
-                Work & Commission Details
-              </h4>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Work Type <span className="text-danger">*</span>
-                </label>
-                <RadioGroup
-                  value={formData.workType}
-                  onValueChange={(value) => handleChange("workType", value)}
-                  orientation="horizontal"
-                >
-                  <Radio value="job">Job</Radio>
-                  <Radio value="project">Project</Radio>
-                </RadioGroup>
-              </div>
-
-              {formData.workType === "project" && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select
-                    label="Project Type"
-                    placeholder="Select type"
-                    selectedKeys={
-                      formData.projectType ? [formData.projectType] : []
+                  />
+                  <Input
+                    label="Client Phone"
+                    placeholder="Enter phone number"
+                    type="tel"
+                    value={formData.clientPhone}
+                    onChange={(e) => {
+                      handleChange("clientPhone", e.target.value);
+                    }}
+                    isRequired
+                    isInvalid={!!errors.clientPhone}
+                    errorMessage={errors.clientPhone}
+                    variant="bordered"
+                    startContent={
+                      <Phone size={18} className="text-default-400" />
                     }
-                    onChange={(e: any) =>
-                      handleChange("projectType", e.target.value)
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Company Name"
+                    placeholder="Enter company name"
+                    value={formData.companyName}
+                    onChange={(e) =>
+                      handleChange("companyName", e.target.value)
                     }
                     variant="bordered"
-                    isRequired
+                    startContent={
+                      <Building2 size={18} className="text-default-400" />
+                    }
+                  />
+                  <Select
+                    label="Company Type"
+                    placeholder="Select company type"
+                    selectedKeys={
+                      formData.companyType ? [formData.companyType] : []
+                    }
+                    onChange={(e: any) =>
+                      handleChange("companyType", e.target.value)
+                    }
+                    variant="bordered"
+                    startContent={
+                      <Building2 size={18} className="text-default-400" />
+                    }
                   >
-                    {projectTypes.map((type) => (
+                    {companyTypes.map((type) => (
                       <SelectItem key={type.key}>{type.label}</SelectItem>
                     ))}
                   </Select>
+                </div>
+              </div>
+            </Step>
+
+            {/* Step 2: Job Details */}
+            <Step>
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-default-700">
+                  Job Details
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Budget"
-                    placeholder="e.g., 50000"
-                    value={formData.budget}
-                    onChange={(e) => handleChange("budget", e.target.value)}
+                    label="Designation"
+                    placeholder="e.g., Software Engineer"
+                    value={formData.designation}
+                    onChange={(e) =>
+                      handleChange("designation", e.target.value)
+                    }
+                    isRequired
+                    isInvalid={!!errors.designation}
+                    errorMessage={errors.designation}
+                    variant="bordered"
+                    startContent={
+                      <Briefcase size={18} className="text-default-400" />
+                    }
+                  />
+                  <Select
+                    label="Experience Required"
+                    placeholder="Select experience level"
+                    selectedKeys={
+                      formData.experience ? [formData.experience] : []
+                    }
+                    onChange={(e: any) =>
+                      handleChange("experience", e.target.value)
+                    }
+                    variant="bordered"
+                    startContent={
+                      <GraduationCap size={18} className="text-default-400" />
+                    }
+                  >
+                    {experienceLevels.map((exp) => (
+                      <SelectItem key={exp.key}>{exp.label}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-default-700">
+                    Location Type <span className="text-danger">*</span>
+                  </label>
+                  <RadioGroup
+                    value={formData.locationType}
+                    onValueChange={(value) =>
+                      handleChange("locationType", value)
+                    }
+                    orientation="horizontal"
+                  >
+                    <Radio value="on-site">On-Site</Radio>
+                    <Radio value="remote">Remote</Radio>
+                    <Radio value="hybrid">Hybrid</Radio>
+                  </RadioGroup>
+                </div>
+
+                <Input
+                  label="Location"
+                  placeholder="Enter job location"
+                  value={formData.location}
+                  onChange={(e) => handleChange("location", e.target.value)}
+                  isRequired
+                  isInvalid={!!errors.location}
+                  errorMessage={errors.location}
+                  variant="bordered"
+                  startContent={
+                    <MapPin size={18} className="text-default-400" />
+                  }
+                  description={
+                    formData.locationType === "remote"
+                      ? "Can be 'Work from Home' or specify region"
+                      : "Enter specific location or city"
+                  }
+                />
+              </div>
+            </Step>
+
+            {/* Step 3: Requirements & Preferences */}
+            <Step>
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-default-700">
+                  Requirements & Preferences
+                </h4>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-default-700">
+                    Gender Preference <span className="text-danger">*</span>
+                  </label>
+                  <RadioGroup
+                    value={formData.genderPreference}
+                    onValueChange={(value) =>
+                      handleChange("genderPreference", value)
+                    }
+                    orientation="horizontal"
+                  >
+                    <Radio value="male">Male</Radio>
+                    <Radio value="female">Female</Radio>
+                    <Radio value="both">Both</Radio>
+                    <Radio value="all">All</Radio>
+                    <Radio value="others">Others</Radio>
+                  </RadioGroup>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Working Hours/Timing"
+                    placeholder="e.g., 9 AM - 6 PM"
+                    value={formData.timing}
+                    onChange={(e) => handleChange("timing", e.target.value)}
+                    variant="bordered"
+                    startContent={
+                      <Clock size={18} className="text-default-400" />
+                    }
+                  />
+                  <Input
+                    label="Salary Range"
+                    placeholder="e.g., 50000-80000 or 50k/month"
+                    type="text"
+                    value={formData.salary}
+                    onChange={(e) => handleChange("salary", e.target.value)}
                     variant="bordered"
                     startContent={
                       <FaRupeeSign size={18} className="text-default-400" />
                     }
-                  />
-                  <Input
-                    label="Duration"
-                    placeholder="e.g., 3 months"
-                    value={formData.duration}
-                    onChange={(e) => handleChange("duration", e.target.value)}
-                    variant="bordered"
+                    description="Enter salary range or amount per month"
                   />
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-default-700">
-                  Commission Basis <span className="text-danger">*</span>
-                </label>
-                <RadioGroup
-                  value={formData.commissionBasis}
-                  onValueChange={(value) =>
-                    handleChange("commissionBasis", value)
+                <Textarea
+                  label="Required Qualifications"
+                  placeholder="e.g., Bachelor's degree in Computer Science, MBA..."
+                  value={formData.requiredQualifications}
+                  onChange={(e: any) =>
+                    handleChange("requiredQualifications", e.target.value)
                   }
-                  orientation="horizontal"
-                >
-                  <Radio value="first_month">First Month Salary</Radio>
-                  <Radio value="project_value">Project Value</Radio>
-                </RadioGroup>
-              </div>
-
-              <Input
-                label="Academy Commission Percentage"
-                placeholder="e.g., 10"
-                type="tel"
-                value={formData.academyCommissionPercentage}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "");
-                  if (parseInt(value || "0", 10) <= 100) {
-                    handleChange("academyCommissionPercentage", value);
-                  }
-                }}
-                isRequired
-                isInvalid={!!errors.academyCommissionPercentage}
-                errorMessage={errors.academyCommissionPercentage}
-                variant="bordered"
-                endContent={
-                  <span className="text-default-400 text-sm">%</span>
-                }
-                description="Enter a value between 0 and 100"
-              />
-
-              <Textarea
-                label="Travel Requirements"
-                placeholder="Specify if the job requires any travel..."
-                value={formData.travelRequirements}
-                onChange={(e: any) =>
-                  handleChange("travelRequirements", e.target.value)
-                }
-                variant="bordered"
-                minRows={3}
-              />              <Textarea
-                label="Additional Notes"
-                placeholder="Any other job details, benefits, perks, responsibilities..."
-                value={formData.notes}
-                onChange={(e: any) => handleChange("notes", e.target.value)}
-                variant="bordered"
-                minRows={4}
-              />
-
-              {isEditMode && (
-                <Select
-                  label="Post Status"
-                  placeholder="Select status"
-                  selectedKeys={formData.status ? [formData.status] : []}
-                  onChange={(e: any) => handleChange("status", e.target.value)}
                   variant="bordered"
-                  isRequired
-                >
-                  <SelectItem key="open">Open</SelectItem>
-                  <SelectItem key="closed">Closed</SelectItem>
-                  <SelectItem key="hold">Hold</SelectItem>
-                  <SelectItem key="cancelled">Cancelled</SelectItem>
-                </Select>
-              )}
-            </div>
-          </Step>
+                  minRows={3}
+                />
 
-          {/* Step 5: Review & Confirm */}
-          <Step>
-            <div className="space-y-4">
+                <Textarea
+                  label="Skills Required"
+                  placeholder="e.g., JavaScript, React, Node.js, Communication skills..."
+                  value={formData.skillsRequired}
+                  onChange={(e: any) =>
+                    handleChange("skillsRequired", e.target.value)
+                  }
+                  variant="bordered"
+                  minRows={3}
+                />
+              </div>
+            </Step>
+
+            {/* Step 4: Work & Commission Details */}
+            <Step>
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-default-700">
+                  Work & Commission Details
+                </h4>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-default-700">
+                    Work Type <span className="text-danger">*</span>
+                  </label>
+                  <RadioGroup
+                    value={formData.workType}
+                    onValueChange={(value) => handleChange("workType", value)}
+                    orientation="horizontal"
+                  >
+                    <Radio value="job">Job</Radio>
+                    <Radio value="project">Project</Radio>
+                  </RadioGroup>
+                </div>
+                {formData.workType === "project" && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Select
+                      label="Project Type"
+                      placeholder="Select type"
+                      selectedKeys={
+                        formData.projectType ? [formData.projectType] : []
+                      }
+                      onChange={(e: any) =>
+                        handleChange("projectType", e.target.value)
+                      }
+                      variant="bordered"
+                      isRequired
+                    >
+                      {projectTypes.map((type) => (
+                        <SelectItem key={type.key}>{type.label}</SelectItem>
+                      ))}
+                    </Select>
+                    <Input
+                      label="Budget"
+                      placeholder="e.g., 50000"
+                      value={formData.budget}
+                      onChange={(e) => handleChange("budget", e.target.value)}
+                      variant="bordered"
+                      startContent={
+                        <FaRupeeSign size={18} className="text-default-400" />
+                      }
+                    />
+                    <Input
+                      label="Duration"
+                      placeholder="e.g., 3 months"
+                      value={formData.duration}
+                      onChange={(e) => handleChange("duration", e.target.value)}
+                      variant="bordered"
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-default-700">
+                    Commission Basis <span className="text-danger">*</span>
+                  </label>
+                  <RadioGroup
+                    value={formData.commissionBasis}
+                    onValueChange={(value) =>
+                      handleChange("commissionBasis", value)
+                    }
+                    orientation="horizontal"
+                  >
+                    <Radio value="first_month">First Month Salary</Radio>
+                    <Radio value="project_value">Project Value</Radio>
+                  </RadioGroup>
+                </div>
+                <Input
+                  label="Academy Commission Percentage"
+                  placeholder="e.g., 10"
+                  type="tel"
+                  // by default its value set to 25
+                  value={formData.academyCommissionPercentage}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    if (parseInt(value || "0", 10) <= 100) {
+                      handleChange("academyCommissionPercentage", value);
+                    }
+                  }}
+                  isRequired
+                  isInvalid={!!errors.academyCommissionPercentage}
+                  errorMessage={errors.academyCommissionPercentage}
+                  variant="bordered"
+                  endContent={
+                    <span className="text-default-400 text-sm">%</span>
+                  }
+                  description="Enter a value between 0 and 100"
+                />
+                <Textarea
+                  label="Travel Requirements"
+                  placeholder="Specify if the job requires any travel..."
+                  value={formData.travelRequirements}
+                  onChange={(e: any) =>
+                    handleChange("travelRequirements", e.target.value)
+                  }
+                  variant="bordered"
+                  minRows={3}
+                />{" "}
+                <Textarea
+                  label="Additional Notes"
+                  placeholder="Any other job details, benefits, perks, responsibilities..."
+                  value={formData.notes}
+                  onChange={(e: any) => handleChange("notes", e.target.value)}
+                  variant="bordered"
+                  minRows={4}
+                />
+                {isEditMode && (
+                  <Select
+                    label="Post Status"
+                    placeholder="Select status"
+                    selectedKeys={formData.status ? [formData.status] : []}
+                    onChange={(e: any) =>
+                      handleChange("status", e.target.value)
+                    }
+                    variant="bordered"
+                    isRequired
+                  >
+                    <SelectItem key="open">Open</SelectItem>
+                    <SelectItem key="closed">Closed</SelectItem>
+                    <SelectItem key="hold">Hold</SelectItem>
+                    <SelectItem key="cancelled">Cancelled</SelectItem>
+                  </Select>
+                )}
+              </div>
+            </Step>
+
+            {/* Step 5: Review & Confirm */}
+            <Step>
+              <div className="space-y-4">
                 <>
-                  <h4 className="text-lg font-semibold text-default-700">
+                  <h4 className="text-lg text-ce font-semibold text-default-700">
                     Review Your Job Post
                   </h4>
 
                   <Card>
-                    <CardBody className="gap-4">
+                    <CardBody className="gap-2">
                       {/* Client Information */}
                       <div>
                         <p className="text-sm font-semibold text-default-700 mb-2">
                           Client Information
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                           <div>
                             <span className="text-default-500">Name:</span>{" "}
                             <span className="font-medium">
@@ -993,7 +997,7 @@ export default function JobPostForm({
                         <p className="text-sm font-semibold text-default-700 mb-2">
                           Requirements & Preferences
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                           <div>
                             <span className="text-default-500">
                               Gender Preference:
@@ -1081,11 +1085,9 @@ export default function JobPostForm({
                         <p className="text-sm font-semibold text-default-700 mb-2">
                           Work & Commission
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="text-default-500">
-                              Work Type:
-                            </span>{" "}
+                            <span className="text-default-500">Work Type:</span>{" "}
                             <Chip
                               size="sm"
                               variant="flat"
@@ -1107,7 +1109,7 @@ export default function JobPostForm({
                           </div>
                           <div>
                             <span className="text-default-500">
-                              Commission %:
+                              Commission:
                             </span>{" "}
                             <span className="font-medium text-success">
                               {formData.academyCommissionPercentage || "0"}%
@@ -1161,10 +1163,10 @@ export default function JobPostForm({
                     </p>
                   </div>
                 </>
-            </div>
-          </Step>
-        </Stepper>
-      </div>
+              </div>
+            </Step>
+          </Stepper>
+        </div>
       )}
     </div>
   );

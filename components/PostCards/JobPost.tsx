@@ -10,11 +10,15 @@ import { BsCurrencyRupee } from "react-icons/bs";
 import { FaClock } from "react-icons/fa6";
 import { MdDoneAll } from "react-icons/md";
 import { useRouter } from "next/navigation";
+import {
+  formatJobShare,
+  shareOnWhatsApp,
+  type JobShareData,
+} from "@/lib/utils/share";
 
 interface JobPostProps {
   jobId: string;
   clientName: string;
-  phoneNumber: string;
   companyType: "individual" | "company";
   title: string;
   workType: "job" | "project";
@@ -71,6 +75,7 @@ const JobPost = ({
   experience,
   locationType,
   location,
+  gender,
   timing,
   salary,
   requiredQualification,
@@ -81,6 +86,21 @@ const JobPost = ({
   const [isApplied, setIsApplied] = useState(false);
   const router = useRouter();
 
+  const handleShare = () => {
+    const shareData: JobShareData = {
+      jobId,
+      title,
+      companyName: companyType === "company" ? clientName : undefined,
+      location,
+      salary,
+      budget,
+      requiredQualification,
+      gender,
+      workType,
+    };
+    shareOnWhatsApp(formatJobShare(shareData));
+  };
+
   const chips = [
     formatWorkType(workType),
     experience,
@@ -88,9 +108,9 @@ const JobPost = ({
   ].filter(Boolean);
 
   return (
-    <Card className="max-w-lg w-full mx-auto">
+    <Card className="w-full mx-auto">
       {/* HEADER */}
-      <CardHeader className="justify-between">
+      <CardHeader className="justify-between z-0">
         <User
           name={clientName}
           description={formatCompanyType(companyType)}
@@ -186,13 +206,11 @@ const JobPost = ({
           <Button
             size="sm"
             className="bg-default-200"
-            onClick={() => router.push(`/posts/${jobId}`)}
+            onClick={() => router.push(`/jobs/${jobId}`)}
           >
             View
             <FaEye />
-          </Button>
-
-          <Button size="sm" color="secondary">
+          </Button>          <Button size="sm" color="secondary" onClick={handleShare}>
             Share <FaShare />
           </Button>
 

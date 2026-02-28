@@ -44,7 +44,7 @@ export interface IPost extends Document {
   classType: ClassType;
   frequencyPerWeek: number;
   preferredDays: string[];
-  preferredTime: string;
+  preferredTime?: string;
   location: string;
   monthlyBudget: number;
   notes?: string;
@@ -76,8 +76,8 @@ const PostSchema = new Schema<IPost>(
       required: true,
     },
     frequencyPerWeek: { type: Number, required: true },
-    preferredDays: { type: [String], required: true },
-    preferredTime: { type: String, required: true },
+    preferredDays: { type: [String], default: [] },
+    preferredTime: { type: String },
     location: { type: String, required: true },
     monthlyBudget: { type: Number, required: true },
     notes: { type: String },

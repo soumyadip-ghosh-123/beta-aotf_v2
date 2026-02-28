@@ -51,7 +51,7 @@ export default function RootLayout({
         >
           <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
             <div className="relative flex flex-col">
-              {/* <FloatingButton /> */}
+              <FloatingButton />
               <Navbar />
               <main className="container mx-auto grow px-2">{children}</main>
             </div>

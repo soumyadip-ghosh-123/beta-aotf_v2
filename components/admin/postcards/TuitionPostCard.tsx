@@ -21,6 +21,11 @@ import {
   Edit,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
+import {
+  formatTuitionShare,
+  shareOnWhatsApp,
+  type TuitionShareData,
+} from "@/lib/utils/share";
 
 export interface TuitionPostStudent {
   className: string;
@@ -105,7 +110,6 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
     if (freq === 7) return "Daily";
     return `${freq} day${freq !== 1 ? "s" : ""}/week`;
   };
-
   // Derive display values from students array
   const safeStudents = post.students ?? [];
   const allSubjects = safeStudents.flatMap((s) => s.subjects);
@@ -114,6 +118,22 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
   const boardDisplay = safeStudents.map((s) => s.board).join(", ");
   const title = `${subjectDisplay} - Class ${classDisplay}`;
   const subtitle = `${boardDisplay} • ${post.location}`;
+
+  const handleShare = () => {
+    const shareData: TuitionShareData = {
+      postId: post.id,
+      className: classDisplay || "N/A",
+      board: boardDisplay || "N/A",
+      subjects: subjectDisplay,      monthlyBudget: post.budget,
+      classType: post.classType,
+      frequencyPerWeek: post.frequency,
+      preferredDays: post.preferredDays,
+      location: post.location,
+      notes: post.notes,
+    };
+    shareOnWhatsApp(formatTuitionShare(shareData));
+    onShare?.(post);
+  };
 
   return (
     <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-300 ">
@@ -137,7 +157,9 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
 
       <Divider />
 
-      <CardBody className="gap-1 py-1">        <Button
+      <CardBody className="gap-1 py-1">
+        {" "}
+        <Button
           isIconOnly
           aria-label="Take a photo"
           variant="faded"
@@ -164,7 +186,9 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <CheckCircle size={16} className="text-default-400" />
             <div>
               <span className="text-default-500">Board:</span>{" "}
-              <span className="font-medium text-default-700">{boardDisplay}</span>
+              <span className="font-medium text-default-700">
+                {boardDisplay.toUpperCase()}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm">
@@ -186,9 +210,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             </div>
           </div>
         </div>
-
         <Divider />
-
         {/* Schedule & Budget */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1 pl-2">
           <div className="flex items-center gap-2 text-sm">
@@ -208,7 +230,17 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
                 {getFrequencyLabel(post.frequency)}
               </span>
             </div>
-          </div>
+          </div>          {post.preferredTime && (
+            <div className="flex items-center gap-2 text-sm">
+              <Clock size={16} className="text-default-400" />
+              <div>
+                <span className="text-default-500">Preferred Time:</span>{" "}
+                <span className="font-medium text-default-700">
+                  {post.preferredTime}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-2 text-sm">
             <FaRupeeSign size={16} className="text-default-400" />
             <div>
@@ -219,7 +251,6 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             </div>
           </div>
         </div>
-
         {/* Preferred Days */}
         {post.preferredDays && post.preferredDays.length > 0 && (
           <>
@@ -236,7 +267,6 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             </div>
           </>
         )}
-
         {/* Notes */}
         {post.notes && (
           <>
@@ -247,28 +277,25 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             </div>
           </>
         )}
-
         <Divider />
-
         {/* Guardian Information */}
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-default-700">
             Guardian Details
           </p>
-          <div className="flex flex-col gap-2 pl-2">
+          <div className="flex gap-2 pl-2">
             <div className="flex items-center gap-2 text-sm">
               <User size={16} className="text-default-400" />
               <span className="text-default-600">{post.guardian}</span>
             </div>
+             |
             <div className="flex items-center gap-2 text-sm">
               <Phone size={16} className="text-default-400" />
               <span className="text-default-600">{post.guardianPhone}</span>
             </div>
           </div>
         </div>
-
         <Divider />
-
         {/* Application Statistics */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -307,13 +334,12 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3">
-        <Button
+      <CardFooter className="gap-2 py-3">        <Button
           size="sm"
           color="primary"
           variant="solid"
           startContent={<Share2 size={16} />}
-          onPress={() => onShare?.(post)}
+          onPress={handleShare}
           className="flex-1"
         >
           Share

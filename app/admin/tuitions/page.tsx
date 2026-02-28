@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Select, SelectItem } from "@heroui/select";
-import { DateRangePicker } from "@heroui/date-picker";
 import { Button } from "@heroui/button";
-import { Divider } from "@heroui/divider";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
+import AdminSearchBar, {
+  FilterConfig,
+} from "@/components/admin/ui/AdminSearchBar";
+import DateChips from "@/components/admin/ui/DateChips";
 import {
   Modal,
   ModalContent,
@@ -22,8 +22,7 @@ import {
   TuitionPostCard,
   TuitionPost,
 } from "@/components/admin/postcards/TuitionPostCard";
-import { Calendar, Filter, X, Search, AlertTriangle, Plus, RefreshCw } from "lucide-react";
-
+import { AlertTriangle, Plus } from "lucide-react";
 /** Map a DB post (from API) to the TuitionPost interface used by the card. */
 function mapApiPost(p: Record<string, any>): TuitionPost {
   return {
@@ -65,17 +64,6 @@ const Page = () => {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
 
-  // Generate years (last 5 years)
-  const years = useMemo(
-    () =>
-      Array.from({ length: 5 }, (_, i) => {
-        const year = currentYear - i;
-        return { key: year.toString(), label: year.toString() };
-      }),
-    [currentYear]
-  );
-
-  // Generate months
   const months = [
     { key: "1", label: "January" },
     { key: "2", label: "February" },
@@ -91,21 +79,12 @@ const Page = () => {
     { key: "12", label: "December" },
   ];
 
-  // Generate days (1-31)
-  const days = useMemo(
-    () =>
-      Array.from({ length: 31 }, (_, i) => {
-        const day = i + 1;
-        return { key: day.toString(), label: day.toString() };
-      }),
-    []
-  );
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [selectedDay, setSelectedDay] = useState<string>("");  const [filterStatus, setFilterStatus] = useState<string>("");
   const [dateRange, setDateRange] = useState<any>(null);
-  const [showFilters, setShowFilters] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedDateChip, setSelectedDateChip] = useState<string>("");
   const [postToCancel, setPostToCancel] = useState<TuitionPost | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -113,14 +92,19 @@ const Page = () => {
   const [posts, setPosts] = useState<TuitionPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0, limit: 50 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total: 0,
+    totalPages: 0,
+    limit: 10,
+  });
 
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
     try {
       const params = new URLSearchParams();
-      params.set("limit", "100"); // fetch enough for client-side filtering
+      params.set("limit", pagination.limit.toString());
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
       const res = await fetch(`/api/v1/posts?${params.toString()}`);
       if (!res.ok) {
@@ -130,9 +114,18 @@ const Page = () => {
       const data = await res.json();
       const mapped: TuitionPost[] = (data.posts ?? []).map(mapApiPost);
       setPosts(mapped);
-      setPagination(data.pagination ?? { page: 1, total: mapped.length, totalPages: 1, limit: 100 });
+      setPagination(
+        data.pagination ?? {
+          page: 1,
+          total: mapped.length,
+          totalPages: 1,
+          limit: 10,
+        }
+      );
     } catch (err) {
-      setFetchError(err instanceof Error ? err.message : "Failed to fetch posts");
+      setFetchError(
+        err instanceof Error ? err.message : "Failed to fetch posts"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -140,15 +133,22 @@ const Page = () => {
 
   // Fetch on mount and when searchQuery changes (debounced)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchPosts();
-    }, searchQuery ? 400 : 0); // debounce search, instant on mount
+    const timer = setTimeout(
+      () => {
+        fetchPosts();
+      },
+      searchQuery ? 400 : 0
+    ); // debounce search, instant on mount
     return () => clearTimeout(timer);
   }, [fetchPosts, searchQuery]);
-
-  // Client-side date filtering on already-fetched posts
+  // Client-side date + status filtering on already-fetched posts
   const filteredPosts = useMemo(() => {
     let filtered = [...posts];
+
+    // Filter by status
+    if (filterStatus) {
+      filtered = filtered.filter((post) => post.status === filterStatus);
+    }
 
     // Filter by dropdown selection (year, month, day) from postId
     if (selectedYear || selectedMonth || selectedDay) {
@@ -187,23 +187,85 @@ const Page = () => {
           dateRange.end.year,
           dateRange.end.month - 1,
           dateRange.end.day
-        );
-
-        return postDate >= startDate && postDate <= endDate;
+        );        return postDate >= startDate && postDate <= endDate;
       });
     }
-    return filtered;
-  }, [posts, selectedYear, selectedMonth, selectedDay, dateRange]);
 
+    // Filter by selected date chip (compares against createdAt)
+    if (selectedDateChip) {
+      filtered = filtered.filter((post) => {
+        if (!post.createdAt) return false;
+        return post.createdAt.slice(0, 10) === selectedDateChip;
+      });
+    }
+
+    return filtered;
+  }, [posts, selectedYear, selectedMonth, selectedDay, dateRange, filterStatus, selectedDateChip]);
+  // Filter configs for AdminSearchBar
+  const tuitionFilterConfigs: FilterConfig[] = [
+    {
+      key: "status",
+      label: "Status",
+      placeholder: "All Statuses",
+      options: [
+        { key: "open", label: "Open" },
+        { key: "matched", label: "Matched" },
+        { key: "closed", label: "Closed" },
+        { key: "cancelled", label: "Cancelled" },
+        { key: "hold", label: "Hold" },
+      ],
+    },
+    {
+      key: "year",
+      label: "Year",
+      placeholder: "All Years",
+      options: Array.from({ length: 5 }, (_, i) => ({
+        key: String(currentYear - i),
+        label: String(currentYear - i),
+      })),
+    },
+    {
+      key: "month",
+      label: "Month",
+      placeholder: "All Months",
+      options: months.map((m) => ({ key: m.key, label: m.label })),
+    },
+    {
+      key: "day",
+      label: "Day",
+      placeholder: "All Days",
+      options: Array.from({ length: 31 }, (_, i) => ({
+        key: String(i + 1),
+        label: String(i + 1),
+      })),
+    },
+  ];
+
+  const tuitionFilterValues: Record<string, string> = {
+    status: filterStatus,
+    year: selectedYear,
+    month: selectedMonth,
+    day: selectedDay,
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === "status") setFilterStatus(value);
+    else if (key === "year") setSelectedYear(value);
+    else if (key === "month") setSelectedMonth(value);
+    else if (key === "day") setSelectedDay(value);
+  };
   const handleClearFilters = () => {
+    setFilterStatus("");
     setSelectedYear("");
     setSelectedMonth("");
     setSelectedDay("");
     setDateRange(null);
+    setSearchQuery("");
+    setSelectedDateChip("");
   };
+
   const handleShare = (post: TuitionPost) => {
-    console.log("Share post:", post.id);
-    // Implement share functionality
+    // Share is handled inside TuitionPostCard — this callback is optional
   };
 
   const handleCancel = (post: TuitionPost) => {
@@ -238,177 +300,41 @@ const Page = () => {
   const handleEdit = (post: TuitionPost) => {
     router.push(`/admin/tuitions/${post.id}/edit`);
   };
-
   const hasActiveFilters =
-    selectedYear || selectedMonth || selectedDay || dateRange;
+    selectedYear || selectedMonth || selectedDay || filterStatus || dateRange;
   return (
     <div className="container mx-auto px-4 w-full max-w-7xl">
       <div className="space-y-3">
         {/* Header */}
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-default-900">
-              Tuition Posts Management
-            </h1>
-            <Button
-              color="primary"
-              startContent={<Plus size={18} />}
-              onPress={() => router.push("/admin/tuitions/create")}
-            >
-              Create Post
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-default-500">
-              Filter and manage all tuition posts
-            </p>
-            <Button
-              isIconOnly
-              size="sm"
-              variant="light"
-              onPress={() => fetchPosts()}
-              isLoading={isLoading}
-              aria-label="Refresh posts"
-            >
-              <RefreshCw size={16} />
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          {/* Search Section */}
-          <Input
-            placeholder="Search by Anything"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            startContent={<Search size={18} className="text-default-400" />}
-            endContent={
-              searchQuery && (
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onPress={() => setSearchQuery("")}
-                >
-                  <X size={16} />
-                </Button>
-              )
-            }
-          />
-          {/* Filter Toggle Button */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-default-900">
+            Tuition Management
+          </h1>
           <Button
-            isIconOnly
-            variant={showFilters ? "solid" : "bordered"}
-            color={showFilters ? "primary" : "default"}
-            startContent={<Filter size={18} />}
-            onPress={() => setShowFilters(!showFilters)}
-          ></Button>
+            color="primary"
+            size="sm"
+            startContent={<Plus size={16} />}
+            onPress={() => router.push("/admin/tuitions/create")}
+          >
+            New Post
+          </Button>
         </div>
 
-        {/* Filters Section - Collapsible */}
-        {showFilters && (
-          <Card>
-            <CardBody className="gap-6">
-              {/* Dropdown Filters */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={18} className="text-default-400" />
-                    <p className="text-sm font-medium text-default-700">
-                      Filter by Date
-                    </p>
-                  </div>
-                  {hasActiveFilters && (
-                    <Button
-                      size="sm"
-                      color="danger"
-                      variant="flat"
-                      startContent={<X size={16} />}
-                      onPress={handleClearFilters}
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select
-                    label="Year"
-                    placeholder="Select year"
-                    selectedKeys={selectedYear ? [selectedYear] : []}
-                    onSelectionChange={(keys) => {
-                      const key = Array.from(keys)[0] as string;
-                      setSelectedYear(key || "");
-                    }}
-                    variant="bordered"
-                  >
-                    {years.map((year) => (
-                      <SelectItem key={year.key}>{year.label}</SelectItem>
-                    ))}
-                  </Select>
+        {/* Centralised Search + Filter Bar */}        <AdminSearchBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          placeholder="Search by guardian, location, subject…"
+          filters={tuitionFilterConfigs}
+          filterValues={tuitionFilterValues}
+          onFilterChange={handleFilterChange}
+          resultCount={filteredPosts.length}
+          resultLabel="post"
+          onClearAll={handleClearFilters}
+        />
 
-                  <Select
-                    label="Month"
-                    placeholder="Select month"
-                    selectedKeys={selectedMonth ? [selectedMonth] : []}
-                    onSelectionChange={(keys) => {
-                      const key = Array.from(keys)[0] as string;
-                      setSelectedMonth(key || "");
-                    }}
-                    variant="bordered"
-                  >
-                    {months.map((month) => (
-                      <SelectItem key={month.key}>{month.label}</SelectItem>
-                    ))}
-                  </Select>
-
-                  <Select
-                    label="Day"
-                    placeholder="Select day"
-                    selectedKeys={selectedDay ? [selectedDay] : []}
-                    onSelectionChange={(keys) => {
-                      const key = Array.from(keys)[0] as string;
-                      setSelectedDay(key || "");
-                    }}
-                    variant="bordered"
-                  >
-                    {days.map((day) => (
-                      <SelectItem key={day.key}>{day.label}</SelectItem>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-
-              <Divider />
-
-              {/* Date Range Picker */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Calendar size={18} className="text-default-400" />
-                  <p className="text-sm font-medium text-default-700">
-                    Or select a date range
-                  </p>
-                </div>
-                <DateRangePicker
-                  label="Date Range"
-                  variant="bordered"
-                  value={dateRange}
-                  onChange={setDateRange}
-                  className="max-w-full"
-                />
-              </div>
-            </CardBody>
-          </Card>
-        )}
-        {/* Results Section */}
+        {/* Date quick-filter chips */}
+        <DateChips selected={selectedDateChip} onChange={setSelectedDateChip} />{/* Results Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-default-700">
-              Posts{" "}
-              <span className="text-default-400">
-                ({filteredPosts.length} results)
-              </span>
-            </h2>
-          </div>
 
           {isLoading ? (
             <Card>
@@ -420,7 +346,12 @@ const Page = () => {
             <Card>
               <CardBody className="py-12 text-center space-y-3">
                 <p className="text-danger">{fetchError}</p>
-                <Button size="sm" color="primary" variant="flat" onPress={fetchPosts}>
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                  onPress={fetchPosts}
+                >
                   Retry
                 </Button>
               </CardBody>
@@ -433,7 +364,8 @@ const Page = () => {
                 </p>
               </CardBody>
             </Card>
-          ) : (            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosts.map((post) => (
                 <TuitionPostCard
                   key={post.id}

@@ -151,4 +151,9 @@ api/
 
 
 remove notes, only status and date
-remove applicants from post application 
+
+
+centralize all form info
+ADD BOARD IN DROP DOWN
+add suggetion in additional field 
+paggignation

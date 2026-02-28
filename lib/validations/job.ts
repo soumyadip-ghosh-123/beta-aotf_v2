@@ -32,7 +32,7 @@ const createJobBaseSchema = z.object({
   phoneNumber: z
     .string({ message: "Phone number is required" })
     .trim()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
+    .min(1, "Guardian phone is required"),
 
   companyType: z.enum(COMPANY_TYPES, {
     message: `Company type must be one of: ${COMPANY_TYPES.join(", ")}`,
