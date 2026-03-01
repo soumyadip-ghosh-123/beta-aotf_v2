@@ -40,6 +40,12 @@ import {
   classes,
   frequencies,
   days,
+  classTypes,
+  classTypeToApi,
+  classTypeFromApi,
+  tuitionStatuses,
+  tuitionFormDefaults,
+  tuitionNotesSuggestions,
 } from "@/lib/validations/forms";
 import { FaRupeeSign } from "react-icons/fa";
 import { CustomCheckbox } from "@/components/ui/CustomCheckbox";
@@ -63,20 +69,7 @@ export default function TuitionPostForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [notFound, setNotFound] = useState(false);
-  const [formData, setFormData] = useState({
-    guardianName: "",
-    guardianPhone: "",
-    students: [{ class: "", subject: "", board: "" }],
-    missingSubjects: [] as string[],
-    remuneration: "",
-    classType: "in-person" as ClassType,
-    frequency: "",
-    preferredTime: "",
-    preferredDays: [] as string[],
-    preferredLocation: "",
-    notes: "",
-    status: "open",
-  });
+  const [formData, setFormData] = useState({ ...tuitionFormDefaults });
   const [missingSubjectInput, setMissingSubjectInput] = useState("");
   const {
     isOpen: isAddStudentOpen,
@@ -98,12 +91,8 @@ export default function TuitionPostForm({
           return;
         }
         const { post } = await res.json();
-        const classTypeReverseMap: Record<string, ClassType> = {
-          offline: "in-person",
-          online: "online",
-          both: "both",
-        };
         setFormData({
+          ...tuitionFormDefaults,
           guardianName: post.guardianName || "",
           guardianPhone: post.guardianPhone || "",
           students: post.students?.length
@@ -113,9 +102,9 @@ export default function TuitionPostForm({
                 board: s.board || "",
               }))
             : [{ class: "", subject: "", board: "" }],
-          missingSubjects: [],
           remuneration: post.monthlyBudget?.toString() || "",
-          classType: classTypeReverseMap[post.classType] || "in-person",
+          classType: (classTypeFromApi[post.classType] ||
+            "in-person") as ClassType,
           frequency: post.frequencyPerWeek?.toString() || "",
           preferredTime: post.preferredTime || "",
           preferredDays: post.preferredDays || [],
@@ -358,15 +347,7 @@ export default function TuitionPostForm({
       setIsSubmitting(false);
       return;
     }
-
     try {
-      // Map classType: "in-person" → "offline" for the API
-      const classTypeMap: Record<string, string> = {
-        "in-person": "offline",
-        online: "online",
-        both: "both",
-      };
-
       // Map students: each entry becomes a student with subjects as single-item array
       const mappedStudents = formData.students.map((s) => ({
         className: s.class.trim(),
@@ -378,7 +359,7 @@ export default function TuitionPostForm({
         guardianName: formData.guardianName.trim(),
         guardianPhone: formData.guardianPhone.trim(),
         students: mappedStudents,
-        classType: classTypeMap[formData.classType] || "offline",
+        classType: classTypeToApi[formData.classType] || "offline",
         frequencyPerWeek: parseInt(formData.frequency || "3", 10),
         preferredDays: formData.preferredDays,
         preferredTime: formData.preferredTime,
@@ -749,15 +730,17 @@ export default function TuitionPostForm({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-default-700">
                     Class Type
-                  </label>
+                  </label>{" "}
                   <RadioGroup
                     value={formData.classType}
                     onValueChange={(value) => handleChange("classType", value)}
                     orientation="horizontal"
                   >
-                    <Radio value="in-person">In-Person</Radio>
-                    <Radio value="online">Online</Radio>
-                    <Radio value="both">Both</Radio>
+                    {classTypes.map((ct) => (
+                      <Radio key={ct.key} value={ct.key}>
+                        {ct.label}
+                      </Radio>
+                    ))}
                   </RadioGroup>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -873,6 +856,27 @@ export default function TuitionPostForm({
                   onChange={(e: any) => handleChange("notes", e.target.value)}
                   variant="bordered"
                   minRows={4}
+                  description={
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {tuitionNotesSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              "notes",
+                              formData.notes ? `${formData.notes}\n${s}` : s
+                            )
+                          }
+                          className="px-2 py-0.5 text-xs rounded-full border border-default-300
+                            bg-default-100 hover:bg-primary hover:text-white hover:border-primary
+                            text-default-600 transition-colors cursor-pointer"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  }
                 />
                 {isEditMode && (
                   <Select
@@ -885,11 +889,9 @@ export default function TuitionPostForm({
                     variant="bordered"
                     isRequired
                   >
-                    <SelectItem key="open">Open</SelectItem>
-                    <SelectItem key="matched">Matched</SelectItem>
-                    <SelectItem key="closed">Closed</SelectItem>
-                    <SelectItem key="cancelled">Cancelled</SelectItem>
-                    <SelectItem key="hold">Hold</SelectItem>
+                    {tuitionStatuses.map((s) => (
+                      <SelectItem key={s.key}>{s.label}</SelectItem>
+                    ))}
                   </Select>
                 )}
               </div>
@@ -1118,10 +1120,10 @@ export default function TuitionPostForm({
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-default-600">
-              Copy the previous student's class, subject, and board into the new
-              entry?
+              If you have multiple students under one guardian, you can add them here. <br /><br />
+              Copy the previous student's details
             </p>
-            <div className="mt-2 p-3 bg-default-50 rounded-lg text-sm text-default-500 space-y-1">
+            <div className="p-2 bg-default-50 rounded-lg text-sm text-default-500 space-y-1">
               <p>
                 <span className="font-medium">Class:</span>{" "}
                 {formData.students[formData.students.length - 1]?.class || "—"}

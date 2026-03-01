@@ -11,6 +11,9 @@ import AdminSearchBar, {
 } from "@/components/admin/ui/AdminSearchBar";
 import DateChips from "@/components/admin/ui/DateChips";
 import {
+  tuitionListFilterConfigs,
+} from "@/lib/validations/forms";
+import {
   Modal,
   ModalContent,
   ModalHeader,
@@ -62,26 +65,11 @@ function mapApiPost(p: Record<string, any>): TuitionPost {
 
 const Page = () => {
   const router = useRouter();
-  const currentYear = new Date().getFullYear();
-
-  const months = [
-    { key: "1", label: "January" },
-    { key: "2", label: "February" },
-    { key: "3", label: "March" },
-    { key: "4", label: "April" },
-    { key: "5", label: "May" },
-    { key: "6", label: "June" },
-    { key: "7", label: "July" },
-    { key: "8", label: "August" },
-    { key: "9", label: "September" },
-    { key: "10", label: "October" },
-    { key: "11", label: "November" },
-    { key: "12", label: "December" },
-  ];
 
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedDay, setSelectedDay] = useState<string>("");  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
   const [dateRange, setDateRange] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedDateChip, setSelectedDateChip] = useState<string>("");
@@ -187,7 +175,8 @@ const Page = () => {
           dateRange.end.year,
           dateRange.end.month - 1,
           dateRange.end.day
-        );        return postDate >= startDate && postDate <= endDate;
+        );
+        return postDate >= startDate && postDate <= endDate;
       });
     }
 
@@ -200,47 +189,15 @@ const Page = () => {
     }
 
     return filtered;
-  }, [posts, selectedYear, selectedMonth, selectedDay, dateRange, filterStatus, selectedDateChip]);
-  // Filter configs for AdminSearchBar
-  const tuitionFilterConfigs: FilterConfig[] = [
-    {
-      key: "status",
-      label: "Status",
-      placeholder: "All Statuses",
-      options: [
-        { key: "open", label: "Open" },
-        { key: "matched", label: "Matched" },
-        { key: "closed", label: "Closed" },
-        { key: "cancelled", label: "Cancelled" },
-        { key: "hold", label: "Hold" },
-      ],
-    },
-    {
-      key: "year",
-      label: "Year",
-      placeholder: "All Years",
-      options: Array.from({ length: 5 }, (_, i) => ({
-        key: String(currentYear - i),
-        label: String(currentYear - i),
-      })),
-    },
-    {
-      key: "month",
-      label: "Month",
-      placeholder: "All Months",
-      options: months.map((m) => ({ key: m.key, label: m.label })),
-    },
-    {
-      key: "day",
-      label: "Day",
-      placeholder: "All Days",
-      options: Array.from({ length: 31 }, (_, i) => ({
-        key: String(i + 1),
-        label: String(i + 1),
-      })),
-    },
-  ];
-
+  }, [
+    posts,
+    selectedYear,
+    selectedMonth,
+    selectedDay,
+    dateRange,
+    filterStatus,
+    selectedDateChip,
+  ]);  // Filter configs for AdminSearchBar — sourced from lib/validations/forms.ts
   const tuitionFilterValues: Record<string, string> = {
     status: filterStatus,
     year: selectedYear,
@@ -310,32 +267,23 @@ const Page = () => {
           <h1 className="text-2xl font-bold text-default-900">
             Tuition Management
           </h1>
-          <Button
-            color="primary"
-            size="sm"
-            startContent={<Plus size={16} />}
-            onPress={() => router.push("/admin/tuitions/create")}
-          >
-            New Post
-          </Button>
         </div>
-
-        {/* Centralised Search + Filter Bar */}        <AdminSearchBar
+        {/* Centralised Search + Filter Bar */}
+        <AdminSearchBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           placeholder="Search by guardian, location, subject…"
-          filters={tuitionFilterConfigs}
+          filters={tuitionListFilterConfigs as unknown as FilterConfig[]}
           filterValues={tuitionFilterValues}
           onFilterChange={handleFilterChange}
           resultCount={filteredPosts.length}
           resultLabel="post"
           onClearAll={handleClearFilters}
         />
-
         {/* Date quick-filter chips */}
-        <DateChips selected={selectedDateChip} onChange={setSelectedDateChip} />{/* Results Section */}
+        <DateChips selected={selectedDateChip} onChange={setSelectedDateChip} />
+        {/* Results Section */}
         <div className="space-y-4">
-
           {isLoading ? (
             <Card>
               <CardBody className="py-12 flex items-center justify-center">

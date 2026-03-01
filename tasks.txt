@@ -152,8 +152,4 @@ api/
 
 remove notes, only status and date
 
-
-centralize all form info
-ADD BOARD IN DROP DOWN
-add suggetion in additional field 
 paggignation

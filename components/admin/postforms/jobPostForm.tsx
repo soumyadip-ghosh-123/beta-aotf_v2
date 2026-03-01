@@ -24,13 +24,20 @@ import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
-import {
-  jobFormSchema,
+import {  jobFormSchema,
   companyTypes,
   workTypes,
   commissionBasisTypes,
   projectTypes,
   experienceLevels,
+  locationTypes,
+  locationTypeToApi,
+  locationTypeFromApi,
+  genderPreferences,
+  genderToApi,
+  jobStatuses,
+  jobFormDefaults,
+  jobNotesSuggestions,
 } from "@/lib/validations/forms";
 
 type WorkType = "job" | "project";
@@ -54,31 +61,7 @@ export default function JobPostForm({
   const isEditMode = mode === "edit";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditMode);
-  const [notFound, setNotFound] = useState(false);
-  const [formData, setFormData] = useState({
-    workType: "job" as WorkType,
-    clientName: "",
-    clientPhone: "",
-    companyName: "",
-    companyType: "",
-    designation: "",
-    experience: "",
-    locationType: "on-site" as LocationType,
-    location: "",
-    genderPreference: "all" as GenderPreference,
-    timing: "",
-    salary: "",
-    travelRequirements: "",
-    requiredQualifications: "",
-    skillsRequired: "",
-    notes: "",
-    commissionBasis: "first_month" as CommissionBasis,
-    academyCommissionPercentage: "25" as string,
-    projectType: "" as string,
-    budget: "",
-    duration: "",
-    status: "open",
-  });
+  const [notFound, setNotFound] = useState(false);  const [formData, setFormData] = useState({ ...jobFormDefaults });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -864,14 +847,34 @@ export default function JobPostForm({
                   }
                   variant="bordered"
                   minRows={3}
-                />{" "}
-                <Textarea
+                />{" "}                <Textarea
                   label="Additional Notes"
                   placeholder="Any other job details, benefits, perks, responsibilities..."
                   value={formData.notes}
                   onChange={(e: any) => handleChange("notes", e.target.value)}
                   variant="bordered"
                   minRows={4}
+                  description={
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {jobNotesSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() =>
+                            handleChange(
+                              "notes",
+                              formData.notes ? `${formData.notes}\n${s}` : s
+                            )
+                          }
+                          className="px-2 py-0.5 text-xs rounded-full border border-default-300
+                            bg-default-100 hover:bg-primary hover:text-white hover:border-primary
+                            text-default-600 transition-colors cursor-pointer"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  }
                 />
                 {isEditMode && (
                   <Select

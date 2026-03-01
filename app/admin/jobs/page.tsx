@@ -10,7 +10,7 @@ import AdminSearchBar, {
   FilterConfig,
 } from "@/components/admin/ui/AdminSearchBar";
 import DateChips from "@/components/admin/ui/DateChips";
-
+import { jobListFilterConfigs } from "@/lib/validations/forms";
 import {
   Modal,
   ModalContent,
@@ -61,7 +61,8 @@ const Page = () => {
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");  const [filterStatus, setFilterStatus] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
@@ -71,22 +72,6 @@ const Page = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [cancelTarget, setCancelTarget] = useState<JobPost | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-
-  const currentYear = new Date().getFullYear();
-  const months = [
-    { key: "1", label: "January" },
-    { key: "2", label: "February" },
-    { key: "3", label: "March" },
-    { key: "4", label: "April" },
-    { key: "5", label: "May" },
-    { key: "6", label: "June" },
-    { key: "7", label: "July" },
-    { key: "8", label: "August" },
-    { key: "9", label: "September" },
-    { key: "10", label: "October" },
-    { key: "11", label: "November" },
-    { key: "12", label: "December" },
-  ];
 
   // Debounce search
   useEffect(() => {
@@ -123,7 +108,7 @@ const Page = () => {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Client-side date filtering (extract date from jobId format J-DDMMYYNN)
+  // Client-side date filtering
   const filteredPosts = useMemo(() => {
     let filtered = [...posts];
 
@@ -131,18 +116,17 @@ const Page = () => {
       filtered = filtered.filter((post) => {
         const jobId = post.id;
         if (!jobId || jobId.length < 10) return true;
-        const day = parseInt(jobId.substring(2, 4), 10);
+        const day   = parseInt(jobId.substring(2, 4), 10);
         const month = parseInt(jobId.substring(4, 6), 10);
-        const year = parseInt("20" + jobId.substring(6, 8), 10);
-
-        if (selectedYear && year !== parseInt(selectedYear, 10)) return false;
+        const year  = parseInt("20" + jobId.substring(6, 8), 10);
+        if (selectedYear  && year  !== parseInt(selectedYear,  10)) return false;
         if (selectedMonth && month !== parseInt(selectedMonth, 10)) return false;
-        if (selectedDay && day !== parseInt(selectedDay, 10)) return false;
+        if (selectedDay   && day   !== parseInt(selectedDay,   10)) return false;
         return true;
       });
     }
 
-    // Filter by selected date chip (compares against createdAt)
+    // Filter by date chip (compares against createdAt)
     if (selectedDateChip) {
       filtered = filtered.filter((post) => {
         if (!post.createdAt) return false;
@@ -153,17 +137,9 @@ const Page = () => {
     return filtered;
   }, [posts, selectedYear, selectedMonth, selectedDay, selectedDateChip]);
 
-  const handleViewPost = (post: JobPost) => {
-    router.push(`/admin/jobs/${post.id}`);
-  };
-
-  const handleEditPost = (post: JobPost) => {
-    router.push(`/admin/jobs/${post.id}/edit`);
-  };
-
-  const handleSharePost = (_post: JobPost) => {
-    // Share is handled inside JobPostCard
-  };
+  const handleViewPost  = (post: JobPost) => router.push(`/admin/jobs/${post.id}`);
+  const handleEditPost  = (post: JobPost) => router.push(`/admin/jobs/${post.id}/edit`);
+  const handleSharePost = (_post: JobPost) => { /* handled inside card */ };
 
   const handleCancelPost = (post: JobPost) => {
     setCancelTarget(post);
@@ -183,23 +159,21 @@ const Page = () => {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to cancel job post");
       }
-      addToast({
-        description: "Job post cancelled successfully!",
-        color: "success",
-      });
+      addToast({ description: "Job post cancelled successfully!", color: "success" });
       onClose();
       setCancelTarget(null);
       fetchJobs();
     } catch (error) {
       addToast({
-        description:
-          error instanceof Error ? error.message : "Failed to cancel post",
+        description: error instanceof Error ? error.message : "Failed to cancel post",
         color: "danger",
       });
     } finally {
       setIsCancelling(false);
     }
-  };  const clearFilters = () => {
+  };
+
+  const clearFilters = () => {
     setSearchTerm("");
     setFilterStatus("");
     setSelectedYear("");
@@ -209,55 +183,18 @@ const Page = () => {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    if (key === "status") setFilterStatus(value);
-    else if (key === "year") setSelectedYear(value);
-    else if (key === "month") setSelectedMonth(value);
-    else if (key === "day") setSelectedDay(value);
+    if      (key === "status") setFilterStatus(value);
+    else if (key === "year")   setSelectedYear(value);
+    else if (key === "month")  setSelectedMonth(value);
+    else if (key === "day")    setSelectedDay(value);
   };
 
-  const jobFilterConfigs: FilterConfig[] = [
-    {
-      key: "status",
-      label: "Status",
-      placeholder: "All Statuses",
-      options: [
-        { key: "open", label: "Open" },
-        { key: "closed", label: "Closed" },
-        { key: "hold", label: "Hold" },
-        { key: "cancelled", label: "Cancelled" },
-      ],
-    },
-    {
-      key: "year",
-      label: "Year",
-      placeholder: "All Years",
-      options: Array.from({ length: 5 }, (_, i) => ({
-        key: String(currentYear - i),
-        label: String(currentYear - i),
-      })),
-    },
-    {
-      key: "month",
-      label: "Month",
-      placeholder: "All Months",
-      options: months.map((m) => ({ key: m.key, label: m.label })),
-    },
-    {
-      key: "day",
-      label: "Day",
-      placeholder: "All Days",
-      options: Array.from({ length: 31 }, (_, i) => ({
-        key: String(i + 1),
-        label: String(i + 1),
-      })),
-    },
-  ];
-
+  // Filter values map — sourced from lib/validations/forms.ts
   const jobFilterValues: Record<string, string> = {
     status: filterStatus,
-    year: selectedYear,
-    month: selectedMonth,
-    day: selectedDay,
+    year:   selectedYear,
+    month:  selectedMonth,
+    day:    selectedDay,
   };
 
   return (
@@ -265,21 +202,14 @@ const Page = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-default-900">Job Posts</h1>
-        <Button
-          size="sm"
-          color="primary"
-          startContent={<Plus size={16} />}
-          onPress={() => router.push("/admin/jobs/create")}
-        >
-          New Job
-        </Button>
       </div>
 
-      {/* Centralised Search + Filter Bar */}      <AdminSearchBar
+      {/* Search + Filter Bar */}
+      <AdminSearchBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         placeholder="Search by title, client, location…"
-        filters={jobFilterConfigs}
+        filters={jobListFilterConfigs as unknown as FilterConfig[]}
         filterValues={jobFilterValues}
         onFilterChange={handleFilterChange}
         resultCount={filteredPosts.length}
@@ -302,9 +232,7 @@ const Page = () => {
         <Card className="bg-danger-50">
           <CardBody className="py-10 text-center">
             <p className="text-danger">{fetchError}</p>
-            <Button size="sm" className="mt-3" onPress={fetchJobs}>
-              Retry
-            </Button>
+            <Button size="sm" className="mt-3" onPress={fetchJobs}>Retry</Button>
           </CardBody>
         </Card>
       )}
@@ -343,7 +271,7 @@ const Page = () => {
               <ModalHeader>Cancel Job Post</ModalHeader>
               <ModalBody>
                 <p>
-                  Are you sure you want to cancel the job post{" "}
+                  Are you sure you want to cancel{" "}
                   <strong>{cancelTarget?.title}</strong> ({cancelTarget?.id})?
                 </p>
                 <p className="text-sm text-default-500">
@@ -351,19 +279,10 @@ const Page = () => {
                 </p>
               </ModalBody>
               <ModalFooter>
-                <Button
-                  color="default"
-                  variant="light"
-                  onPress={onClose}
-                  isDisabled={isCancelling}
-                >
+                <Button color="default" variant="light" onPress={onClose} isDisabled={isCancelling}>
                   No, Keep Post
                 </Button>
-                <Button
-                  color="danger"
-                  onPress={confirmCancel}
-                  isLoading={isCancelling}
-                >
+                <Button color="danger" onPress={confirmCancel} isLoading={isCancelling}>
                   Yes, Cancel Post
                 </Button>
               </ModalFooter>
