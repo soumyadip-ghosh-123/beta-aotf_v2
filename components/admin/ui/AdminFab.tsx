@@ -3,9 +3,9 @@
 /**
  * components/admin/ui/AdminFab.tsx
  *
- * Single FAB that performs a context-aware action based on the current URL:
- *   /admin/tuitions* → navigate to /admin/tuitions/create
+ * Single FAB that performs a context-aware action based on the current URL: *   /admin/tuitions* → navigate to /admin/tuitions/create
  *   /admin/jobs*     → navigate to /admin/jobs/create
+ *   /admin/ads*      → scroll to create-ad form on the page
  *   /admin/users*    → open Create User modal
  *   anywhere else    → hidden
  */
@@ -34,6 +34,7 @@ type Role = "teacher" | "candidate";
 const PAGE_ACTIONS = [
   { matchPath: "/admin/tuitions", action: "tuition" },
   { matchPath: "/admin/jobs",     action: "job"     },
+  { matchPath: "/admin/ads",      action: "ad"      },
   { matchPath: "/admin/users",    action: "user"    },
 ] as const;
 
@@ -53,10 +54,14 @@ export default function AdminFab() {
 
   // Don't render the FAB on unrelated pages
   if (!matched) return null;
-
   const handleFab = () => {
     if (matched.action === "tuition") router.push("/admin/tuitions/create");
     else if (matched.action === "job") router.push("/admin/jobs/create");
+    else if (matched.action === "ad") {
+      // Scroll to the create-ad form section on the ads page
+      const el = document.getElementById("create-ad-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
     else if (matched.action === "user") openUser();
   };
 

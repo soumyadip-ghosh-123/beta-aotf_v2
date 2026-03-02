@@ -14,6 +14,13 @@ export const jobIdParamSchema = z.object({
     .regex(/^J-\d{8}$/, "Invalid jobId format"),
 });
 
+export const adIdParamSchema = z.object({
+  adId: z
+    .string()
+    .trim()
+    .regex(/^AD-\d{8}$/, "Invalid adId format"),
+});
+
 export const deleteApplicationsBodySchema = z
   .object({
     applicationIds: z

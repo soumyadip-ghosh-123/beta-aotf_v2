@@ -468,3 +468,55 @@ export const jobListFilterConfigs = [
   jobStatusFilterConfig,
   ...dateFilterConfigs,
 ] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AD MANAGEMENT — OPTION ARRAYS  (client-safe; mirrors lib/models/Ad.ts enums)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const adStatuses = [
+  { key: "active",    label: "Active"    },
+  { key: "inactive",  label: "Inactive"  },
+  { key: "scheduled", label: "Scheduled" },
+  { key: "expired",   label: "Expired"   },
+] as const;
+
+export const adPlacements = [
+  { key: "home_banner", label: "Home Banner" },
+  { key: "sidebar",     label: "Sidebar"     },
+  { key: "feed_inline", label: "Feed Inline" },
+  { key: "popup",       label: "Popup"       },
+  { key: "footer",      label: "Footer"      },
+] as const;
+
+export const adTypes = [
+  { key: "image", label: "Image" },
+  { key: "text",  label: "Text"  },
+  { key: "html",  label: "HTML"  },
+] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AD FILTER CONFIGS for AdminSearchBar
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Status filter for the ads list page */
+export const adStatusFilterConfig = {
+  key:         "status",
+  label:       "Status",
+  placeholder: "All Statuses",
+  options:     adStatuses.map((s) => ({ key: s.key, label: s.label })),
+} as const;
+
+/** Placement filter for the ads list page */
+export const adPlacementFilterConfig = {
+  key:         "placement",
+  label:       "Placement",
+  placeholder: "All Placements",
+  options:     adPlacements.map((p) => ({ key: p.key, label: p.label })),
+} as const;
+
+/** Full filter configs for the ad admin list page */
+export const adListFilterConfigs = [
+  adStatusFilterConfig,
+  adPlacementFilterConfig,
+  ...dateFilterConfigs,
+] as const;
