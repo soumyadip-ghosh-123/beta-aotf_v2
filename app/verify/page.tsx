@@ -19,7 +19,11 @@ import {
   Keyboard,
   AlertTriangle,
 } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
+import {
+  BrowserQRCodeReader,
+  BrowserCodeReader,
+  type IScannerControls,
+} from "@zxing/browser";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -31,7 +35,6 @@ function extractId(raw: string): string | null {
   try {
     const url = new URL(trimmed);
     const segments = url.pathname.split("/").filter(Boolean);
-    // look for /verify/<id>
     const verifyIdx = segments.indexOf("verify");
     if (verifyIdx !== -1 && segments[verifyIdx + 1]) {
       return decodeURIComponent(segments[verifyIdx + 1]);
@@ -53,29 +56,78 @@ function extractId(raw: string): string | null {
   return null;
 }
 
+/** Classify a DOMException / error for user-friendly messages */
+function classifyMediaError(err: unknown): string {
+  const msg =
+    err instanceof DOMException
+      ? err.name
+      : err instanceof Error
+        ? err.message
+        : String(err);
+
+  if (
+    msg.includes("NotAllowedError") ||
+    msg.includes("Permission") ||
+    msg.includes("denied")
+  ) {
+    return "Camera permission denied. Please allow camera access in your browser settings and try again.";
+  }
+  if (
+    msg.includes("NotFoundError") ||
+    msg.includes("Requested device not found")
+  ) {
+    return "No camera found on this device. Use the manual input below to verify an ID.";
+  }
+  if (msg.includes("NotReadableError") || msg.includes("in use")) {
+    return "Camera is in use by another application. Close other apps using the camera and try again.";
+  }
+  if (msg.includes("OverconstrainedError")) {
+    return "Selected camera is not available. Try flipping the camera or use manual input.";
+  }
+  return "Could not access camera. Please check permissions and try again.";
+}
+
 // ─── Scanner states ───────────────────────────────────────────────────────────
 
 type ScannerState =
-  | "idle"        // camera not started
-  | "starting"    // requesting permission
-  | "scanning"    // camera active
-  | "scanned"     // got a result, navigating
-  | "error";      // camera error
+  | "idle" // camera not started
+  | "starting" // requesting permission
+  | "scanning" // camera active, decoding frames
+  | "scanned" // got a result, navigating
+  | "error"; // camera error
 
 // ─── Page component ───────────────────────────────────────────────────────────
 
 export default function VerifyScannerPage() {
   const router = useRouter();
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const controlsRef = useRef<IScannerControls | null>(null);
+  const readerRef = useRef<BrowserQRCodeReader | null>(null);
+
   const [scannerState, setScannerState] = useState<ScannerState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [scannedId, setScannedId] = useState<string | null>(null);
   const [manualId, setManualId] = useState("");
   const [showManual, setShowManual] = useState(false);
-  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [facingMode, setFacingMode] = useState<"environment" | "user">(
+    "environment"
+  );
 
-  // Cleanup scanner on unmount
+  // ── Stop scanner ────────────────────────────────────────────────────────
+  const stopScanner = useCallback(() => {
+    // IScannerControls.stop() stops the camera stream + decode loop
+    if (controlsRef.current) {
+      controlsRef.current.stop();
+      controlsRef.current = null;
+    }
+    // Also clear the video source
+    if (videoRef.current) {
+      BrowserCodeReader.cleanVideoSource(videoRef.current);
+    }
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopScanner();
@@ -83,211 +135,108 @@ export default function VerifyScannerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stopScanner = useCallback(async () => {
-    try {
-      if (scannerRef.current?.isScanning) {
-        await scannerRef.current.stop();
-      }
-    } catch {
-      // ignore
-    }
-    try {
-      scannerRef.current?.clear();
-    } catch {
-      // ignore
-    }
-    scannerRef.current = null;
-  }, []);
+  // ── Start scanner ──────────────────────────────────────────────────────
   const startScanner = useCallback(async () => {
-    // Clean up existing scanner first
-    await stopScanner();
+    stopScanner();
 
     setScannerState("starting");
     setErrorMsg("");
     setScannedId(null);
 
-    const qrConfig = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-    };
+    try {
+      // Create reader instance (re-usable, but cheap to create)
+      const reader = new BrowserQRCodeReader();
+      readerRef.current = reader;
 
-    const onSuccess = (decodedText: string) => {
-      const id = extractId(decodedText);
-      if (id) {
-        setScannedId(id);
-        setScannerState("scanned");
-        scannerRef.current?.stop().catch(() => {});
-        setTimeout(() => {
-          router.push(`/verify/${encodeURIComponent(id)}`);
-        }, 800);
-      }
-    };
-
-    const onFailure = () => {
-      // Called every frame that doesn't decode — ignore
-    };    try {
-      // Step 1: Explicitly request camera permission via getUserMedia
-      // This triggers the browser's allow/deny popup on first visit.
-      // Without this, enumerateDevices() / getCameras() may silently fail
-      // or return empty labels without ever showing the permission prompt.
-      let stream: MediaStream | null = null;
+      // Find preferred camera device ID
+      let selectedDeviceId: string | undefined;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      } catch (permErr: unknown) {
-        // Permission denied or no camera — handle below
-        const permMsg =
-          permErr instanceof DOMException
-            ? permErr.name
-            : permErr instanceof Error
-              ? permErr.message
-              : String(permErr);
-
-        if (
-          permMsg.includes("NotAllowedError") ||
-          permMsg.includes("Permission") ||
-          permMsg.includes("denied")
-        ) {
-          setScannerState("error");
-          setErrorMsg(
-            "Camera permission denied. Please allow camera access in your browser settings and try again."
-          );
-          return;
-        }
-        if (
-          permMsg.includes("NotFoundError") ||
-          permMsg.includes("Requested device not found")
-        ) {
+        const devices = await BrowserCodeReader.listVideoInputDevices();
+        if (devices.length === 0) {
           setScannerState("error");
           setErrorMsg(
             "No camera found on this device. Use the manual input below to verify an ID."
           );
           return;
         }
-        if (permMsg.includes("NotReadableError") || permMsg.includes("in use")) {
-          setScannerState("error");
-          setErrorMsg(
-            "Camera is in use by another application. Close other apps using the camera and try again."
+
+        if (facingMode === "environment") {
+          // Prefer back/rear camera
+          const back = devices.find(
+            (d) =>
+              d.label.toLowerCase().includes("back") ||
+              d.label.toLowerCase().includes("rear") ||
+              d.label.toLowerCase().includes("environment")
           );
-          return;
+          selectedDeviceId =
+            back?.deviceId ?? devices[devices.length - 1]?.deviceId;
+        } else {
+          // Prefer front camera
+          const front = devices.find(
+            (d) =>
+              d.label.toLowerCase().includes("front") ||
+              d.label.toLowerCase().includes("user")
+          );
+          selectedDeviceId = front?.deviceId ?? devices[0]?.deviceId;
         }
-        // Unknown getUserMedia error — fall through and try anyway
-      } finally {
-        // Stop the temporary stream so html5-qrcode can claim the camera
-        if (stream) {
-          stream.getTracks().forEach((t) => t.stop());
-        }
-      }
-
-      // Step 2: Now enumerate cameras (labels will be populated after permission grant)
-      const cameras = await Html5Qrcode.getCameras();
-
-      if (!cameras || cameras.length === 0) {
-        setScannerState("error");
-        setErrorMsg(
-          "No camera found on this device. Use the manual input below to verify an ID."
-        );
-        return;
-      }
-
-      const html5Qr = new Html5Qrcode("qr-reader");
-      scannerRef.current = html5Qr;
-
-      // Prefer back camera; fall back to first available
-      const backCam = cameras.find(
-        (c) =>
-          c.label.toLowerCase().includes("back") ||
-          c.label.toLowerCase().includes("rear") ||
-          c.label.toLowerCase().includes("environment")
-      );
-      const frontCam = cameras.find(
-        (c) =>
-          c.label.toLowerCase().includes("front") ||
-          c.label.toLowerCase().includes("user")
-      );
-
-      const preferred =
-        facingMode === "environment"
-          ? backCam ?? cameras[cameras.length - 1]  // last is usually back cam
-          : frontCam ?? cameras[0];
-
-      try {
-        // Try with specific device ID first (most reliable)
-        await html5Qr.start(
-          preferred.id,
-          qrConfig,
-          onSuccess,
-          onFailure
-        );
       } catch {
-        // Fallback: try with facingMode constraint
-        try {
-          await html5Qr.start(
-            { facingMode },
-            qrConfig,
-            onSuccess,
-            onFailure
-          );
-        } catch {
-          // Last resort: try first camera by ID
-          await html5Qr.start(
-            cameras[0].id,
-            qrConfig,
-            onSuccess,
-            onFailure
-          );
-        }
+        // listVideoInputDevices failed — let decodeFromVideoDevice handle it
+        // by passing undefined (it will use getUserMedia internally)
       }
 
+      const videoEl = videoRef.current;
+      if (!videoEl) {
+        throw new Error("Video element not available");
+      }
+
+      // decodeFromVideoDevice: continuous scanning, calls callback on each decode
+      // It handles getUserMedia, attaches stream to video, and runs decode loop.
+      // Returns IScannerControls with .stop() to tear everything down.
+      let hasScanned = false;
+      const controls = await reader.decodeFromVideoDevice(
+        selectedDeviceId,
+        videoEl,
+        (result, error, controls) => {
+          if (hasScanned) return;
+
+          if (result) {
+            const id = extractId(result.getText());
+            if (id) {
+              hasScanned = true;
+              setScannedId(id);
+              setScannerState("scanned");
+              controls.stop();
+              controlsRef.current = null;
+              setTimeout(() => {
+                router.push(`/verify/${encodeURIComponent(id)}`);
+              }, 800);
+            }
+          }
+          // error is thrown every frame that doesn't decode — ignore
+        }
+      );
+
+      controlsRef.current = controls;
       setScannerState("scanning");
     } catch (err: unknown) {
       setScannerState("error");
-      // html5-qrcode can throw plain strings, Error objects, or DOMException
-      const msg =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-            ? err
-            : "Could not access camera. Please check permissions and try again.";
-
-      if (
-        msg.includes("NotAllowedError") ||
-        msg.includes("Permission") ||
-        msg.includes("denied")
-      ) {
-        setErrorMsg(
-          "Camera permission denied. Please allow camera access in your browser settings and try again."
-        );
-      } else if (
-        msg.includes("NotFoundError") ||
-        msg.includes("Requested device not found") ||
-        msg.includes("no camera")
-      ) {
-        setErrorMsg(
-          "No camera found on this device. Use the manual input below to verify an ID."
-        );
-      } else if (msg.includes("NotReadableError") || msg.includes("in use")) {
-        setErrorMsg(
-          "Camera is in use by another application. Close other apps using the camera and try again."
-        );
-      } else {
-        setErrorMsg(msg);
-      }
+      setErrorMsg(classifyMediaError(err));
     }
-  }, [facingMode, router, stopScanner]);
-  const flipCamera = useCallback(async () => {
+  }, [facingMode, stopScanner, router]);
+
+  // ── Flip camera ─────────────────────────────────────────────────────────
+  const flipCamera = useCallback(() => {
     setFacingMode((prev) => {
       const next = prev === "environment" ? "user" : "environment";
-      // Stop current scanner and restart after state update
-      stopScanner().then(() => {
-        // Delay to allow state update + DOM settle
-        setTimeout(() => {
-          startScanner();
-        }, 400);
-      });
+      stopScanner();
+      setTimeout(() => {
+        startScanner();
+      }, 300);
       return next;
     });
   }, [stopScanner, startScanner]);
 
+  // ── Manual input submit ─────────────────────────────────────────────────
   const handleManualSubmit = () => {
     const id = extractId(manualId);
     if (id) {
@@ -309,17 +258,29 @@ export default function VerifyScannerPage() {
             Scan &amp; Verify
           </h1>
           <p className="text-sm text-default-500 mt-1">
-            Scan the QR code on any {siteConfig.shortName} ID card to verify
-            its authenticity
+            Scan the QR code on any {siteConfig.shortName} ID card to verify its
+            authenticity
           </p>
-        </div>        {/* ── Scanner Card ── */}
+        </div>
+
+        {/* ── Scanner Card ── */}
         <Card className="overflow-hidden mb-4">
           {/* Scanner viewport */}
-          <div className="relative bg-black" style={{ minHeight: 300 }}>
-            <div
-              id="qr-reader"
-              ref={containerRef}
-              className="w-full"
+          <div
+            className="relative bg-black overflow-hidden"
+            style={{ minHeight: 300 }}
+          >
+            {/* Video element — zxing attaches the stream directly here */}
+            <video
+              ref={videoRef}
+              className={`w-full h-full object-cover ${
+                scannerState === "scanning" || scannerState === "scanned"
+                  ? "block"
+                  : "hidden"
+              }`}
+              muted
+              playsInline
+              style={{ minHeight: 300 }}
             />
 
             {/* ── Idle overlay ── */}
@@ -348,13 +309,22 @@ export default function VerifyScannerPage() {
                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
                   <ShieldCheck size={32} className="text-green-400" />
                 </div>
-                <p className="text-white font-semibold text-sm">QR Code Detected!</p>
-                <Chip variant="bordered" className="font-mono text-xs text-white border-white/30">
+                <p className="text-white font-semibold text-sm">
+                  QR Code Detected!
+                </p>
+                <Chip
+                  variant="bordered"
+                  className="font-mono text-xs text-white border-white/30"
+                >
                   {scannedId}
                 </Chip>
-                <p className="text-white/50 text-xs">Redirecting to verification…</p>
+                <p className="text-white/50 text-xs">
+                  Redirecting to verification…
+                </p>
               </div>
-            )}            {/* ── Error overlay ── */}
+            )}
+
+            {/* ── Error overlay ── */}
             {scannerState === "error" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 px-6">
                 <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -367,7 +337,8 @@ export default function VerifyScannerPage() {
                   {errorMsg}
                 </p>
                 <p className="text-white/30 text-[10px] text-center leading-relaxed mt-1">
-                  Tip: Click the 🔒 icon in your address bar → Site settings → Camera → Allow, then retry.
+                  Tip: Click the 🔒 icon in your address bar → Site settings →
+                  Camera → Allow, then retry.
                 </p>
               </div>
             )}
@@ -376,15 +347,10 @@ export default function VerifyScannerPage() {
             {scannerState === "scanning" && (
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                 <div className="relative w-60 h-60">
-                  {/* Top-left */}
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-3 border-l-3 border-green-400 rounded-tl-lg" />
-                  {/* Top-right */}
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-3 border-r-3 border-green-400 rounded-tr-lg" />
-                  {/* Bottom-left */}
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-3 border-l-3 border-green-400 rounded-bl-lg" />
-                  {/* Bottom-right */}
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-3 border-r-3 border-green-400 rounded-br-lg" />
-                  {/* Scan line animation */}
                   <div className="absolute left-2 right-2 h-0.5 bg-green-400/60 animate-[scan_2s_ease-in-out_infinite]" />
                 </div>
               </div>
@@ -412,8 +378,8 @@ export default function VerifyScannerPage() {
                     variant="flat"
                     className="flex-1"
                     startContent={<CameraOff size={16} />}
-                    onPress={async () => {
-                      await stopScanner();
+                    onPress={() => {
+                      stopScanner();
                       setScannerState("idle");
                     }}
                   >
@@ -522,7 +488,9 @@ export default function VerifyScannerPage() {
             <ul className="text-[11px] text-amber-600 dark:text-amber-400/80 space-y-1 pl-5 list-disc">
               <li>Hold your phone steady about 15–20 cm from the QR code</li>
               <li>Ensure the QR code is well-lit and not blurry</li>
-              <li>The QR code is located at the bottom of every AOTF ID card</li>
+              <li>
+                The QR code is located at the bottom of every AOTF ID card
+              </li>
               <li>If scanning fails, use the manual input above</li>
             </ul>
           </CardBody>
@@ -533,10 +501,7 @@ export default function VerifyScannerPage() {
           {siteConfig.name} — Official Verification Portal
           <br />
           Contact us at{" "}
-          <a
-            href={`mailto:${siteConfig.contact.email}`}
-            className="underline"
-          >
+          <a href={`mailto:${siteConfig.contact.email}`} className="underline">
             {siteConfig.contact.email}
           </a>
         </p>
