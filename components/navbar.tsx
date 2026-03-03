@@ -82,7 +82,7 @@ export const Navbar = () => {
 
               <DropdownItem
                 key="profile"
-                onPress={() => router.push("/u/zoey/profile")}
+                onPress={() => router.push("/u/zoey")}
               >
                 <div className="flex items-center gap-2">
                   <FaUserAlt className="text-default-500" />

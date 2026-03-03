@@ -214,7 +214,7 @@ export default function AdminSearchBar({
 
       {/* ── Active filter chips + result count ── */}
       {(activeChips.length > 0 || resultCount !== undefined) && (
-        <div className="flex flex-wrap items-center gap-2 min-h-[24px]">
+        <div className="flex flex-wrap items-center gap-2 min-h-6">
           {/* Result count */}
           {resultCount !== undefined && (
             <span className="text-xs text-default-400 mr-1">
