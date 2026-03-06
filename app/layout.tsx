@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import { Link } from "@heroui/link";
+import { ClerkProvider } from "@clerk/nextjs";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
@@ -43,20 +43,33 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ClickSpark
-          sparkSize={9}
-          sparkRadius={25}
-          duration={500}
-          extraScale={0.9}
+        <ClerkProvider
+          localization={{
+            unstable__errors: {
+              form_identifier_exists__email_address:
+                "This email already belongs to an account. Sign in to continue with the same account, then add password login in the next step.",
+              form_identifier_exists__username:
+                "This username is already taken by an existing account. Sign in instead to link your login methods.",
+              form_identifier_exists:
+                "An account already exists with these details. Sign in to continue and link login options.",
+            },
+          }}
         >
-          <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-            <div className="relative flex flex-col">
-              <FloatingButton />
-              <Navbar />
-              <main className="container mx-auto grow px-2">{children}</main>
-            </div>
-          </Providers>
-        </ClickSpark>
+          <ClickSpark
+            sparkSize={9}
+            sparkRadius={25}
+            duration={500}
+            extraScale={0.9}
+          >
+            <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+              <div className="relative flex flex-col">
+                <FloatingButton />
+                <Navbar />
+                <main className="container mx-auto grow px-2">{children}</main>
+              </div>
+            </Providers>
+          </ClickSpark>
+        </ClerkProvider>
       </body>
     </html>
   );

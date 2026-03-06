@@ -24,7 +24,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   contentClassName?: string;
   footerClassName?: string;
   backButtonProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
-  nextButtonProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
+  nextButtonProps?: { style?: React.CSSProperties; className?: string };
   backButtonText?: string;
   nextButtonText?: string;
   disableStepIndicators?: boolean;
@@ -169,23 +169,29 @@ export default function Stepper({
                   <ArrowLeft className="h-4 w-4" />
                   {backButtonText}
                 </Button>
-              )}              <Button
-                onPress={isLastStep ? handleComplete : handleNext}
-                color={
-                  isLastStep
-                    ? "warning"
-                    : checkStep && checkStep(currentStep)
-                      ? "primary"
-                      : "default"
-                }
-              >
-                {isLastStep ? "Complete" : nextButtonText}
-                {isLastStep ? (
-                  <CheckCheck className="h-4 w-4" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-              </Button>
+              )}
+              {(() => {
+                const btnColor: "warning" | "primary" | "default" = isLastStep
+                  ? "warning"
+                  : checkStep && checkStep(currentStep)
+                    ? "primary"
+                    : "default";
+                return (
+                  <Button
+                    onPress={isLastStep ? handleComplete : handleNext}
+                    color={btnColor}
+                    style={(nextButtonProps || {}).style}
+                    className={(nextButtonProps || {}).className}
+                  >
+                    {isLastStep ? "Complete" : nextButtonText}
+                    {isLastStep ? (
+                      <CheckCheck className="h-4 w-4" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                );
+              })()}
             </div>
           </div>
         )}
