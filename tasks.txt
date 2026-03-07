@@ -174,3 +174,23 @@ Admin
     Backend:
         Ads
         feedback
+
+
+
+backend --> 
+    1. user now can apply to posts ( teacher has tuition access & candidate has both) 
+    2. user can now send feedbacks (admin can see them in their feedback panel)
+    3. user can now edit their profile details. (username, email can't be changed, it is locked)
+    4. user's dashboard will hold the posts they applied and their status.
+    5. teacher can upgrade their account to candidate account
+
+    1. admin can create post against enquiry.
+    2. admin can change status of an "enquiry" and calendar tracks it as an event.
+    3. admin can see applicants for each post, and can call them via button. GC DC time can be entered.
+    4. GC DC time is tracked by the calendar.
+    5. database, dashboard, Settings, Database, Admin login
+
+
+frontend --> 
+    1. calender images
+    2. Ads backend
