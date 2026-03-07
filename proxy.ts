@@ -2,6 +2,8 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
+import dbConnect from "@/lib/db";
+import User from "@/lib/models/User";
 
 // ─── Route matchers ─────────────────────────────────────────────────────
 
@@ -45,6 +47,28 @@ const middleware = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
   const method = req.method;
   const start = Date.now();
+  // 0. /dashboard/redirect → /u/[username]/dashboard
+  // username is NOT in the Clerk JWT by default, so we always look it up from DB.
+  if (pathname === "/dashboard/redirect" && userId) {
+    try {
+      await dbConnect();
+      const userDoc = await User.findOne(
+        { clerkId: userId },
+        { username: 1, onboardingCompleted: 1 },
+      ).lean();
+
+      if (userDoc?.onboardingCompleted && userDoc?.username) {
+        return NextResponse.redirect(
+          new URL(`/u/${userDoc.username}/profile`, req.url),
+        );
+      }
+      // Payment not completed yet — send to onboarding
+      return NextResponse.redirect(new URL("/onboarding", req.url));
+    } catch {
+      // DB unreachable — send to home as safe fallback
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
 
   // 1. Admin route guard
   if (isAdminRoute(req) && !isPublicRoute(req)) {
@@ -57,8 +81,7 @@ const middleware = clerkMiddleware(async (auth, req) => {
   if (!isPublicRoute(req) && !userId) {
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
-
-  // 3. Onboarding gate — JWT claim only, no DB query
+  // 3. Onboarding gate — JWT claim first, DB fallback if claim is absent
   if (
     userId &&
     !isPublicRoute(req) &&
@@ -67,8 +90,33 @@ const middleware = clerkMiddleware(async (auth, req) => {
     !isOnboardingApiRoute(req) &&
     !isUserProfileRoute(req)
   ) {
-    if (meta?.onboardingCompleted !== true) {
-      return NextResponse.redirect(new URL("/onboarding", req.url));
+    // Fast path: JWT already carries the flag (normal case after first login
+    // post-payment, or after Clerk propagates the metadata update).
+    if (meta?.onboardingCompleted === true) {
+      // allowed through — fall to NextResponse.next() below
+    } else {
+      // Slow path: JWT claim is missing or stale (happens on the first re-login
+      // after payment because Clerk issues the session token before the
+      // publicMetadata update propagates). Check the DB as the source of truth.
+      try {
+        await dbConnect();
+        const userDoc = await User.findOne(
+          { clerkId: userId },
+          { onboardingCompleted: 1 },
+        ).lean();
+
+        if (!userDoc?.onboardingCompleted) {
+          return NextResponse.redirect(new URL("/onboarding", req.url));
+        }
+        // DB says completed — let the user through. Clerk metadata will catch
+        // up on the next token refresh and the slow path won't be needed again.
+      } catch {
+        // If the DB is unreachable, fall back to the JWT claim to avoid
+        // blocking the user with a redirect loop.
+        if (meta?.onboardingCompleted !== true) {
+          return NextResponse.redirect(new URL("/onboarding", req.url));
+        }
+      }
     }
   }
 
@@ -95,8 +143,8 @@ export async function proxy(request: NextRequest) {
 
   const event = {
     sourcePage: "/",
-    waitUntil: () => {},
-    passThroughOnException: () => {},
+    waitUntil: () => { },
+    passThroughOnException: () => { },
   } as unknown as NextFetchEvent;
 
   return middleware(request, event);

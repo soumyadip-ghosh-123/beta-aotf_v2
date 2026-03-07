@@ -75,7 +75,7 @@ export default function LinkAccountPage() {
           Your account now supports both Google SSO and password-based sign in.
           Use either method on your next login.
         </p>
-        <Button as={Link} color="primary" href="/dashboard">
+        <Button as={Link} color="primary" href="/u/servicehub/dashboard">
           Continue to dashboard
         </Button>
       </div>

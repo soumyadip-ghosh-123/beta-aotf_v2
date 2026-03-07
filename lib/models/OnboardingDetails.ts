@@ -28,11 +28,10 @@ const onboardingDetailsSchema = new Schema(
       default: null,
       enum: ["0-1", "2-5", "6-10", "10+", null],
     },
-    qualification: { type: String, default: null },
-    board: {
+    qualification: { type: String, default: null }, board: {
       type: String,
       default: null,
-      enum: ["CBSE", "ICSE", "WB", null],
+      enum: ["CBSE", "ICSE", "ISC", "IB", "WB-Bengali", "WB-English", null],
     },
     plan: {
       type: String,

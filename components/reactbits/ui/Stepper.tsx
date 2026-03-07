@@ -258,6 +258,18 @@ function SlideTransition({
     }
   }, [children, onHeightReady]);
 
+  // Also observe resize so dynamically-rendered content (e.g. after async
+  // state updates) correctly reports its height to the parent wrapper.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      onHeightReady(el.offsetHeight);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onHeightReady]);
+
   return (
     <motion.div
       ref={containerRef}

@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import Payment from "@/lib/models/Payment";
 import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import { ensureUserRecord } from "@/lib/utils/ensure-user";
 
@@ -70,9 +71,7 @@ export async function PATCH(req: Request) {
         { error: "Invalid jobExp value" },
         { status: 400 },
       );
-    }
-
-    const validBoards = ["CBSE", "ICSE", "WB"];
+    } const validBoards = ["CBSE", "ICSE", "ISC", "IB", "WB-Bengali", "WB-English"];
     if (board !== undefined && !validBoards.includes(board)) {
       return NextResponse.json(
         { error: "Invalid board value" },
@@ -131,13 +130,11 @@ export async function GET() {
         { error: "Authentication required" },
         { status: 401 },
       );
-    }
-
-    await dbConnect();
+    } await dbConnect();
 
     const [onboardingDetails, userDoc] = await Promise.all([
       OnboardingDetails.findOne({ clerkId }),
-      User.findOne({ clerkId }, { createdAt: 1 }),
+      User.findOne({ clerkId }, { createdAt: 1, onboardingCompleted: 1 }),
     ]);
     if (!onboardingDetails) {
       return NextResponse.json(
@@ -146,9 +143,23 @@ export async function GET() {
       );
     }
 
+    // Check if the user has a paid payment but onboardingCompleted is still false
+    let paymentPaidButNotOnboarded = false;
+    if (userDoc && !userDoc.onboardingCompleted) {
+      const paidPayment = await Payment.findOne({
+        clerkId,
+        status: "paid",
+      }).lean();
+      if (paidPayment) {
+        paymentPaidButNotOnboarded = true;
+      }
+    }
+
     return NextResponse.json({
       onboardingDetails,
       createdAt: userDoc?.createdAt ?? null,
+      onboardingCompleted: userDoc?.onboardingCompleted ?? false,
+      paymentPaidButNotOnboarded,
     });
   } catch (error) {
     console.error("[onboarding] Error:", error);
