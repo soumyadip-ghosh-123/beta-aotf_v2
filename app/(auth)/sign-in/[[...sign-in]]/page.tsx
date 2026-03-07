@@ -10,7 +10,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   const linkMode = mode === "link-account";
 
   return (
-    <div className="w-full max-w-md space-y-3">
+    <>
       {linkMode ? (
         <div className="rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
           This account already exists. Sign in to the same account, and we will
@@ -22,6 +22,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         forceRedirectUrl={linkMode ? "/verify/link-account" : undefined}
         fallbackRedirectUrl={linkMode ? "/verify/link-account" : undefined}
       />
-    </div>
+    </>
   );
 }

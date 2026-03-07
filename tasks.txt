@@ -153,3 +153,24 @@ api/
 remove notes, only status and date
 
 paggignation
+
+navbar
+profile
+dashboard
+send feedback
+/posts -> /tuitions
+/contact
+/privacy-policy
+/terms
+/refund-policy
+/about
+/verify
+
+Admin
+    Dashboard
+    calender
+    Database
+
+    Backend:
+        Ads
+        feedback
