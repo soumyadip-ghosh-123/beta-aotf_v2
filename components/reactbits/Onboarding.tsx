@@ -1,6 +1,6 @@
 "use client";
 import Stepper, { Step } from "./ui/Stepper";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
@@ -74,10 +74,77 @@ export default function Onboarding() {
   // conditionally hide the footer Complete button on step 3.
   const [currentStep, setCurrentStep] = useState(1);
 
+  // Auto-deletion countdown (computed as createdAt + 30 days)
+  const [deletionDeadline, setDeletionDeadline] = useState<Date | null>(null);
+  const [countdown, setCountdown] = useState("");
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Pre-fill form from DB on mount
+  useEffect(() => {
+    fetch("/api/v1/onboarding")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { onboardingDetails?: Record<string, string | null>; createdAt?: string | null } | null) => {
+        const d = data?.onboardingDetails;
+        if (d) {
+          setFormData((prev) => {
+            const phone = d.phone ?? prev.phone;
+            const whatsapp = d.whatsapp ?? prev.whatsapp;
+            return {
+              phone,
+              whatsapp,
+              sameAsPhone: !!phone && phone === whatsapp,
+              address: d.address ?? prev.address,
+              teachingExp: d.teachingExp ?? prev.teachingExp,
+              jobExp: d.jobExp ?? prev.jobExp,
+              qualification: d.qualification ?? prev.qualification,
+              board: d.board ?? prev.board,
+              plan: (d.plan as PlanValue) ?? prev.plan,
+            };
+          });
+          setProfileSaved(true);
+          if (d.plan) setOnboardingDetailsSaved(true);
+        }
+        if (data?.createdAt) {
+          const deadline = new Date(new Date(data.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+          setDeletionDeadline(deadline);
+        }
+      })
+      .catch(() => {/* silently ignore — form stays empty */});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Live countdown ticker
+  useEffect(() => {
+    if (!deletionDeadline) return;
+    const tick = () => {
+      const diff = deletionDeadline.getTime() - Date.now();
+      if (diff <= 0) {
+        setCountdown("Account will be deleted shortly.");
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown(`${days}d ${hrs.toString().padStart(2, "0")}h ${mins.toString().padStart(2, "0")}m ${secs.toString().padStart(2, "0")}s`);
+    };
+    tick();
+    countdownRef.current = setInterval(tick, 1000);
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [deletionDeadline]);
+
   // Profile save state (fires on transition from step 1 → step 2)
   const [profileSaved, setProfileSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Onboarding details save state (fires on plan selection; gates step 2 → 3)
+  const [onboardingDetailsSaved, setOnboardingDetailsSaved] = useState(false);
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
+  const [onboardingDetailsError, setOnboardingDetailsError] = useState<string | null>(null);
 
   // Payment state
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
@@ -96,13 +163,19 @@ export default function Onboarding() {
       };
       return next;
     });
-    // If any step-1 field changes, mark profile as needing re-save
+    // If any step-1 field changes, mark profile and onboarding as needing re-save
     const step1Fields: (keyof FormData)[] = [
       "phone", "whatsapp", "sameAsPhone", "address",
       "teachingExp", "jobExp", "qualification", "board",
     ];
     if (step1Fields.includes(key)) {
       setProfileSaved(false);
+      setOnboardingDetailsSaved(false);
+    }
+    // When a plan is selected, immediately sync to onboardingDetails
+    if (key === "plan" && typeof value === "string" && value) {
+      setOnboardingDetailsSaved(false);
+      saveOnboardingDetails(value);
     }
   };
 
@@ -146,14 +219,63 @@ export default function Onboarding() {
     }
   };
 
+  // ─── Onboarding details save ──────────────────────────────────────
+
+  const saveOnboardingDetails = async (planOverride?: string) => {
+    setIsSavingOnboarding(true);
+    setOnboardingDetailsError(null);
+    // Use the explicit override first, then fall back to current state
+    const planValue =
+      planOverride !== undefined ? planOverride : formData.plan || undefined;
+    try {
+      const res = await fetch("/api/v1/onboarding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: formData.phone,
+          whatsapp: formData.whatsapp,
+          address: formData.address,
+          teachingExp: formData.teachingExp,
+          ...(formData.jobExp ? { jobExp: formData.jobExp } : {}),
+          qualification: formData.qualification,
+          board: formData.board,
+          ...(planValue ? { plan: planValue } : {}),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg =
+          (data as { error?: string }).error ??
+          (res.status === 404
+            ? "Your account is still being set up. Please wait a moment and try again."
+            : "Failed to save details. Please try again.");
+        throw new Error(msg);
+      }
+
+      // Mark as saved — step-1 fields are now in sync; plan inclusion is separate
+      setOnboardingDetailsSaved(true);
+    } catch (err) {
+      setOnboardingDetailsError(
+        err instanceof Error ? err.message : "Failed to save your details.",
+      );
+    } finally {
+      setIsSavingOnboarding(false);
+    }
+  };
+
   // ─── Stepper callbacks ────────────────────────────────────────────
 
   // Fires after Stepper already moved to `step`
   const handleStepChange = (step: number) => {
     setCurrentStep(step);
-    // Save step-1 data when arriving at step 2 (if not already saved)
+    // Save step-1 data when arriving at step 2 — only if something changed
     if (step === 2 && !profileSaved) {
       saveProfile();
+    }
+    // Sync step-1 fields to onboardingDetails when arriving at step 2 — only if something changed
+    if (step === 2 && !onboardingDetailsSaved) {
+      saveOnboardingDetails(formData.plan || undefined);
     }
   };
 
@@ -165,8 +287,8 @@ export default function Onboarding() {
       return !!(phone && whatsapp && address && teachingExp && qualification && board);
     }
     if (step === 2) {
-      // Must have a plan selected AND profile save must have succeeded
-      return profileSaved && !!formData.plan;
+      // Must have a plan selected, profile saved, and onboarding details synced
+      return profileSaved && onboardingDetailsSaved && !!formData.plan;
     }
     // Step 3: block the Stepper's "Complete" button — payment is handled by
     // the custom Pay button inside the step content.
@@ -283,6 +405,17 @@ export default function Onboarding() {
 
   return (
     <div className="w-full max-w-md mx-auto py-10">
+      {/* ── Auto-deletion warning ──────────────────────────────── */}
+      {deletionDeadline && countdown && (
+        <div className="mb-6 p-4 rounded-xl bg-warning-50 border border-warning-300 text-warning-800 text-sm space-y-1">
+          <p className="font-semibold">⚠️ Account scheduled for deletion</p>
+          <p>
+            Your account will be automatically deleted if payment is not
+            completed.
+          </p>
+          <p className="font-mono font-bold tracking-wide">{countdown}</p>
+        </div>
+      )}
       <Stepper
         className="mb-10"
         onStepChange={handleStepChange}
@@ -375,8 +508,8 @@ export default function Onboarding() {
         {/* ── STEP 2: Plan Selection ─────────────────────────────── */}
         <Step>
           <div className="space-y-4">
-            {/* Save status banner */}
-            {isSaving && (
+            {/* Save status banners */}
+            {(isSaving || isSavingOnboarding) && (
               <p className="text-sm text-default-500 text-center">
                 Saving your details…
               </p>
@@ -390,6 +523,20 @@ export default function Onboarding() {
                   variant="flat"
                   onPress={saveProfile}
                   isLoading={isSaving}
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
+            {onboardingDetailsError && (
+              <div className="p-3 rounded-lg bg-danger-50 border border-danger-200 text-danger text-sm flex items-center justify-between gap-3">
+                <span>{onboardingDetailsError}</span>
+                <Button
+                  size="sm"
+                  color="danger"
+                  variant="flat"
+                  onPress={() => saveOnboardingDetails(formData.plan || undefined)}
+                  isLoading={isSavingOnboarding}
                 >
                   Retry
                 </Button>

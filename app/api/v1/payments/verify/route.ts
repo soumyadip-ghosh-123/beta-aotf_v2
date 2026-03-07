@@ -5,6 +5,7 @@ import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Payment from "@/lib/models/Payment";
+import OnboardingDetails from "@/lib/models/OnboardingDetails";
 
 export async function POST(req: Request) {
   try {
@@ -101,6 +102,12 @@ export async function POST(req: Request) {
         registrationPaymentId: payment._id,
         role: toPlan,
       },
+    );
+
+    // Clear TTL on onboarding details so MongoDB doesn't auto-delete them
+    await OnboardingDetails.updateOne(
+      { clerkId },
+      { $set: { expiresAt: null, status: "completed" } },
     );
 
     // Sync to Clerk public metadata

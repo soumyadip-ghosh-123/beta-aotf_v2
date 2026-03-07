@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
-import Profile from "@/lib/models/Profile";
 import User from "@/lib/models/User";
+import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import { ensureUserRecord } from "@/lib/utils/ensure-user";
 
 export async function PATCH(req: Request) {
@@ -17,11 +17,6 @@ export async function PATCH(req: Request) {
 
     const body = await req.json();
     const {
-      displayName,
-      bio,
-      location,
-      subjects,
-      experience,
       phone,
       whatsapp,
       address,
@@ -29,12 +24,8 @@ export async function PATCH(req: Request) {
       jobExp,
       qualification,
       board,
+      plan,
     } = body as {
-      displayName?: string;
-      bio?: string;
-      location?: string;
-      subjects?: string[];
-      experience?: number;
       phone?: string;
       whatsapp?: string;
       address?: string;
@@ -42,34 +33,8 @@ export async function PATCH(req: Request) {
       jobExp?: string;
       qualification?: string;
       board?: string;
+      plan?: string;
     };
-
-    // Validate bio length
-    if (bio !== undefined && bio.length > 300) {
-      return NextResponse.json(
-        { error: "Bio must be 300 characters or less" },
-        { status: 400 },
-      );
-    }
-
-    // Validate subjects array
-    if (subjects !== undefined && !Array.isArray(subjects)) {
-      return NextResponse.json(
-        { error: "Subjects must be an array" },
-        { status: 400 },
-      );
-    }
-
-    // Validate experience
-    if (
-      experience !== undefined &&
-      (typeof experience !== "number" || experience < 0 || experience > 50)
-    ) {
-      return NextResponse.json(
-        { error: "Experience must be a number between 0 and 50" },
-        { status: 400 },
-      );
-    }
 
     // Validate phone / whatsapp (10-digit Indian mobile)
     const phoneRegex = /^[6-9]\d{9}$/;
@@ -86,7 +51,6 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Validate address length
     if (address !== undefined && address.length > 200) {
       return NextResponse.json(
         { error: "Address must be 200 characters or less" },
@@ -116,14 +80,20 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const validPlans = ["teacher", "teacher_candidate"];
+    if (plan !== undefined && !validPlans.includes(plan)) {
+      return NextResponse.json(
+        { error: "Invalid plan value" },
+        { status: 400 },
+      );
+    }
+
     await dbConnect();
 
-    const updateFields: Record<string, unknown> = {};
-    if (displayName !== undefined) updateFields.displayName = displayName;
-    if (bio !== undefined) updateFields.bio = bio;
-    if (location !== undefined) updateFields.location = location;
-    if (subjects !== undefined) updateFields.subjects = subjects;
-    if (experience !== undefined) updateFields.experience = experience;
+    // Ensure User + Profile exist (self-heals if the Clerk webhook was delayed)
+    const user = await ensureUserRecord(clerkId);
+
+    const updateFields: Record<string, unknown> = { userId: user._id };
     if (phone !== undefined) updateFields.phone = phone;
     if (whatsapp !== undefined) updateFields.whatsapp = whatsapp;
     if (address !== undefined) updateFields.address = address;
@@ -131,34 +101,23 @@ export async function PATCH(req: Request) {
     if (jobExp !== undefined) updateFields.jobExp = jobExp;
     if (qualification !== undefined) updateFields.qualification = qualification;
     if (board !== undefined) updateFields.board = board;
+    if (plan !== undefined) updateFields.plan = plan;
+    // Refresh the 72-hour TTL on every save while payment hasn't happened
+    updateFields.expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
 
-    // Ensure User + Profile exist (self-heals if the Clerk webhook was delayed)
-    const user = await ensureUserRecord(clerkId);
-
-    const profile = await Profile.findOneAndUpdate(
+    const onboardingDetails = await OnboardingDetails.findOneAndUpdate(
       { clerkId },
-      {
-        $set: updateFields,
-        $setOnInsert: {
-          userId: user._id,
-          clerkId,
-          username: user.username,
-        },
-      },
-      { new: true, upsert: true },
+      { $set: updateFields },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     );
 
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
+    console.log(`[onboarding] Upserted onboarding details for ${clerkId}`);
 
-    console.log(`[profile] Updated profile for ${clerkId}`);
-
-    return NextResponse.json({ success: true, profile });
+    return NextResponse.json({ success: true, onboardingDetails });
   } catch (error) {
-    console.error("[profile] Error:", error);
+    console.error("[onboarding] Error:", error);
     return NextResponse.json(
-      { error: "Failed to update profile" },
+      { error: "Failed to save onboarding details" },
       { status: 500 },
     );
   }
@@ -176,16 +135,25 @@ export async function GET() {
 
     await dbConnect();
 
-    const profile = await Profile.findOne({ clerkId });
-    if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    const [onboardingDetails, userDoc] = await Promise.all([
+      OnboardingDetails.findOne({ clerkId }),
+      User.findOne({ clerkId }, { createdAt: 1 }),
+    ]);
+    if (!onboardingDetails) {
+      return NextResponse.json(
+        { error: "Onboarding details not found" },
+        { status: 404 },
+      );
     }
 
-    return NextResponse.json({ profile });
+    return NextResponse.json({
+      onboardingDetails,
+      createdAt: userDoc?.createdAt ?? null,
+    });
   } catch (error) {
-    console.error("[profile] Error:", error);
+    console.error("[onboarding] Error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch profile" },
+      { error: "Failed to fetch onboarding details" },
       { status: 500 },
     );
   }

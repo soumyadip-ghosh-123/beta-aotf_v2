@@ -26,6 +26,11 @@ const isPublicRoute = createRouteMatcher([
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
+// API routes called during onboarding — must be reachable before onboarding is complete
+const isOnboardingApiRoute = createRouteMatcher([
+  "/api/v1/profile(.*)",
+  "/api/v1/onboarding(.*)",
+]);
 // ─── Clerk middleware instance ───────────────────────────────────────
 
 const middleware = clerkMiddleware(async (auth, req) => {
@@ -55,7 +60,8 @@ const middleware = clerkMiddleware(async (auth, req) => {
     userId &&
     !isPublicRoute(req) &&
     !isAdminRoute(req) &&
-    !isOnboardingRoute(req)
+    !isOnboardingRoute(req) &&
+    !isOnboardingApiRoute(req)
   ) {
     if (meta?.onboardingCompleted !== true) {
       return NextResponse.redirect(new URL("/onboarding", req.url));

@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["unproductive-superuniversally-lizbeth.ngrok-free.dev"],
+
   // Performance optimizations
   images: {
     remotePatterns: [

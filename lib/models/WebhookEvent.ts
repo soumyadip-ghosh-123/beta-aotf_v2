@@ -19,9 +19,12 @@ const webhookEventSchema = new Schema(
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
+// Idempotency: one record per (provider, event-type, entity).
+// Note: if a legacy "uniq_provider_entity" index exists in MongoDB, drop it:
+//   db.webhookevents.dropIndex("uniq_provider_entity")
 webhookEventSchema.index(
-  { provider: 1, entityId: 1 },
-  { unique: true, name: "uniq_provider_entity" },
+  { provider: 1, event: 1, entityId: 1 },
+  { unique: true, name: "uniq_provider_event_entity" },
 );
 
 webhookEventSchema.index({ processed: 1 }, { name: "idx_processed" });

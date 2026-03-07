@@ -8,7 +8,7 @@ const planSchema = new Schema(
       default: "teacher",
       required: true,
     },
-    hasTuitionAccess: { type: Boolean, default: true },
+    hasTuitionAccess: { type: Boolean, default: false },
     hasCandidateAccess: { type: Boolean, default: false },
     activatedAt: { type: Date, default: null },
   },
@@ -49,6 +49,8 @@ const userSchema = new Schema(
       ref: "Payment",
       default: null,
     },
+    // Tracks when the 5-day warning email was sent (null = not yet sent).
+    deletionWarningEmailSentAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

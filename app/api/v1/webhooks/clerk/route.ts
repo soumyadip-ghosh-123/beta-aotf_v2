@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Profile from "@/lib/models/Profile";
+import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import WebhookEvent from "@/lib/models/WebhookEvent";
 import mongoose from "mongoose";
 
@@ -72,16 +73,18 @@ export async function POST(req: NextRequest) {
     }
 
     await WebhookEvent.updateOne(
-      { provider: "clerk", entityId },
+      { provider: "clerk", event: eventType, entityId },
       { processed: true, processedAt: new Date() },
     );
   } catch (err) {
     console.error(`[clerk-webhook] Error processing ${eventType}:`, err);
     // Delete the idempotency record so that Clerk's automatic retry can
     // attempt the event again on the next delivery.
-    await WebhookEvent.deleteOne({ provider: "clerk", entityId }).catch(
-      () => {},
-    );
+    await WebhookEvent.deleteOne({
+      provider: "clerk",
+      event: eventType,
+      entityId,
+    }).catch(() => {});
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 },
@@ -93,54 +96,102 @@ export async function POST(req: NextRequest) {
 
 async function handleUserCreated(data: Record<string, unknown>) {
   const clerkId = data.id as string;
-  const username = (data.username as string)?.toLowerCase().trim();
 
-  if (!clerkId || !username) {
-    throw new Error("Missing clerkId or username in user.created event");
+  if (!clerkId) {
+    throw new Error("Missing clerkId in user.created event");
+  }
+
+  // username is null when Clerk is configured without a username requirement,
+  // during OAuth sign-ups, and in every Clerk test-event payload.
+  // Derive a stable, URL-safe fallback from the primary email + clerkId suffix.
+  let username = (data.username as string)?.toLowerCase().trim();
+
+  if (!username) {
+    const emails =
+      (data.email_addresses as
+        | Array<{ id: string; email_address: string }>
+        | undefined) ?? [];
+    const primaryEmailId = data.primary_email_address_id as string | undefined;
+    const primaryEmail =
+      (emails.find((e) => e.id === primaryEmailId) ?? emails[0])
+        ?.email_address ?? "";
+
+    // Keep only alphanumeric chars from the local part, limit to 15 chars.
+    const localPart = primaryEmail
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .slice(0, 15);
+
+    // Append last 8 chars of clerkId (after "user_") to guarantee uniqueness.
+    const suffix = clerkId.replace("user_", "").slice(-8);
+    username = `${localPart || "user"}${suffix}`;
   }
 
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      const user = await User.create(
-        [
-          {
-            clerkId,
-            username,
-            role: "teacher",
-            plan: {
-              current: "teacher",
-              hasTuitionAccess: true,
-              hasCandidateAccess: false,
-              activatedAt: null,
-            },
-            onboardingCompleted: false,
-            status: "active",
-            registrationPaymentId: null,
-          },
-        ],
-        { session },
+      // 1. Find by clerkId (clean re-delivery) or by username (orphaned doc
+      //    left by a previous failed attempt with a different/null clerkId).
+      //    If found by username, adopt it by writing the correct clerkId.
+      let userDoc = await User.findOneAndUpdate(
+        { $or: [{ clerkId }, { username }] },
+        { $set: { clerkId, status: "active" } },
+        { new: true, session },
       );
 
-      await Profile.create(
-        [
-          {
-            userId: user[0]._id,
-            clerkId,
-            username,
-            displayName: null,
-            bio: null,
-            avatarUrl: null,
-            location: null,
-            websiteUrl: null,
-            socialLinks: {},
-            subjects: [],
-            experience: null,
-            isPublic: true,
-          },
-        ],
-        { session },
+      if (!userDoc) {
+        // First-ever delivery — create fresh.
+        const created = await User.create(
+          [
+            {
+              clerkId,
+              username,
+              role: "teacher",
+              plan: {
+                current: "teacher",
+                hasTuitionAccess: false,
+                hasCandidateAccess: false,
+                activatedAt: null,
+              },
+              onboardingCompleted: false,
+              status: "active",
+              registrationPaymentId: null,
+            },
+          ],
+          { session },
+        );
+        userDoc = created[0];
+      }
+
+      // Same pattern for Profile.
+      const existingProfile = await Profile.findOneAndUpdate(
+        { $or: [{ clerkId }, { username }] },
+        { $set: { clerkId, userId: userDoc._id } },
+        { new: true, session },
       );
+
+      if (!existingProfile) {
+        await Profile.create(
+          [
+            {
+              userId: userDoc._id,
+              clerkId,
+              username,
+              displayName: null,
+              bio: null,
+              avatarUrl: null,
+              location: null,
+              websiteUrl: null,
+              socialLinks: {},
+              subjects: [],
+              experience: null,
+              isPublic: true,
+            },
+          ],
+          { session },
+        );
+      }
     });
   } finally {
     await session.endSession();
@@ -149,20 +200,43 @@ async function handleUserCreated(data: Record<string, unknown>) {
   // Mirror business state into Clerk publicMetadata so the JWT carries these
   // claims. MongoDB is the source of truth; Clerk publicMetadata is the read
   // cache. proxy.ts reads onboardingCompleted from sessionClaims to gate routes.
-  try {
-    const client = await clerkClient();
-    await client.users.updateUserMetadata(clerkId, {
-      publicMetadata: {
-        role: "teacher",
-        onboardingCompleted: false,
-      },
-    });
-  } catch (err) {
-    // Non-fatal: the user exists in MongoDB. The onboarding flow will re-sync
-    // these claims when it runs. Log so it can be investigated.
+  //
+  // Retry with backoff: Clerk occasionally fires user.created before the user
+  // is fully available via the Management API, causing a transient 404.
+  const delays = [500, 1500, 3000];
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, delays[attempt - 1]));
+    }
+    try {
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(clerkId, {
+        publicMetadata: {
+          role: "teacher",
+          onboardingCompleted: false,
+        },
+      });
+      lastErr = null;
+      break;
+    } catch (err: unknown) {
+      lastErr = err;
+      const status =
+        typeof err === "object" && err !== null && "status" in err
+          ? (err as { status: number }).status
+          : null;
+      // Only retry on 404 (transient propagation delay); bail immediately for other errors
+      if (status !== 404) break;
+      console.warn(
+        `[clerk-webhook] updateUserMetadata 404 for ${clerkId}, attempt ${attempt + 1}/${delays.length + 1} — retrying…`,
+      );
+    }
+  }
+  if (lastErr) {
+    // Non-fatal: MongoDB record exists. Log for investigation.
     console.error(
-      `[clerk-webhook] Failed to set publicMetadata for ${clerkId}:`,
-      err,
+      `[clerk-webhook] Failed to set publicMetadata for ${clerkId} after retries:`,
+      lastErr,
     );
   }
 
@@ -215,6 +289,8 @@ async function handleUserDeleted(data: Record<string, unknown>) {
     await session.withTransaction(async () => {
       await User.updateOne({ clerkId }, { status: "deleted" }, { session });
       await Profile.updateOne({ clerkId }, { isPublic: false }, { session });
+      // Also remove OnboardingDetails (if any) since the account is gone
+      await OnboardingDetails.deleteOne({ clerkId }).session(session);
     });
   } finally {
     await session.endSession();
