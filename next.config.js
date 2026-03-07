@@ -53,13 +53,13 @@ const nextConfig = {
               // Clerk serves its runtime from subdomains like *.clerk.accounts.dev.
               // Keep dev unsafe-eval for Next HMR while allowing Clerk script origins.
               isProd
-                ? "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com"
-                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com",
+                ? "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com"
+                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com",
               "style-src 'self' 'unsafe-inline'", // HeroUI uses inline styles
               "img-src 'self' data: https: blob:", // allow remote images
               "font-src 'self' data:",
-              "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://api.clerk.com https://clerk-telemetry.com https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https:",
-              "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com",
+              "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://api.clerk.com https://clerk-telemetry.com https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://lumberjack.razorpay.com https://api.razorpay.com https:",
+              "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://api.razorpay.com https://checkout.razorpay.com",
               "frame-ancestors 'none'", // equivalent to X-Frame-Options DENY
               "base-uri 'self'",
               "form-action 'self'",

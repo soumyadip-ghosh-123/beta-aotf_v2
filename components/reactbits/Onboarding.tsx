@@ -1,7 +1,7 @@
 "use client";
 import Stepper, { Step } from "./ui/Stepper";
 import { useState, useEffect, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useSession } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
@@ -56,6 +56,7 @@ function loadRazorpayScript(): Promise<void> {
 
 export default function Onboarding() {
   const { user } = useUser();
+  const { session } = useSession();
   const router = useRouter();
 
   const [formData, setFormData] = useState<FormData>({
@@ -364,9 +365,11 @@ export default function Onboarding() {
 
               // 5. Refresh Clerk session so JWT carries updated onboardingCompleted
               await user.reload();
+              // Force the session JWT to regenerate with new publicMetadata
+              await session?.reload();
 
-              // 6. Redirect to the user's dashboard
-              router.push(`/u/${user.username}`);
+              // 6. Hard redirect so the proxy sees the fresh JWT
+              window.location.href = `/u/${user.username}`;
               resolve();
             } catch (err) {
               reject(err);

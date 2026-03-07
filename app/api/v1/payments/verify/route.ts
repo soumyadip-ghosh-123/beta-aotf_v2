@@ -96,6 +96,7 @@ export async function POST(req: Request) {
       { clerkId },
       {
         "plan.current": toPlan,
+        "plan.hasTuitionAccess": true,
         "plan.hasCandidateAccess": toPlan === "teacher_candidate",
         "plan.activatedAt": new Date(),
         onboardingCompleted: true,
