@@ -141,6 +141,11 @@ async function handleUserCreated(data: Record<string, unknown>) {
     username = `${localPart || "user"}${suffix}`;
   }
 
+  const firstName = (data.first_name as string) || "";
+  const lastName = (data.last_name as string) || "";
+  const accountHolderName = `${firstName} ${lastName}`.trim() || null;
+  const avatarUrl = (data.image_url as string) || null;
+
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -191,9 +196,9 @@ async function handleUserCreated(data: Record<string, unknown>) {
               userId: userDoc._id,
               clerkId,
               username,
-              displayName: null,
+              displayName: accountHolderName,
               bio: null,
-              avatarUrl: null,
+              avatarUrl,
               location: null,
               websiteUrl: null,
               socialLinks: {},
@@ -204,6 +209,24 @@ async function handleUserCreated(data: Record<string, unknown>) {
           ],
           { session },
         );
+      } else {
+        const profileUpdate: Record<string, unknown> = {};
+
+        if (avatarUrl) {
+          profileUpdate.avatarUrl = avatarUrl;
+        }
+
+        if (!existingProfile.displayName && accountHolderName) {
+          profileUpdate.displayName = accountHolderName;
+        }
+
+        if (Object.keys(profileUpdate).length > 0) {
+          await Profile.updateOne(
+            { _id: existingProfile._id },
+            { $set: profileUpdate },
+            { session },
+          );
+        }
       }
     });
   } finally {
@@ -323,6 +346,10 @@ async function handleAdminCreated(data: Record<string, unknown>) {
 async function handleUserUpdated(data: Record<string, unknown>) {
   const clerkId = data.id as string;
   const newUsername = (data.username as string)?.toLowerCase().trim();
+  const avatarUrl = (data.image_url as string) || null;
+  const firstName = (data.first_name as string) || "";
+  const lastName = (data.last_name as string) || "";
+  const accountHolderName = `${firstName} ${lastName}`.trim();
 
   if (!clerkId) return;
 
@@ -371,25 +398,29 @@ async function handleUserUpdated(data: Record<string, unknown>) {
 
   // Only sync if username actually changed
   if (newUsername && newUsername !== user.username) {
-    const session = await mongoose.startSession();
-    try {
-      await session.withTransaction(async () => {
-        await User.updateOne(
-          { clerkId },
-          { username: newUsername },
-          { session },
-        );
-        await Profile.updateOne(
-          { clerkId },
-          { username: newUsername },
-          { session },
-        );
-      });
-    } finally {
-      await session.endSession();
-    }
+    // Username is immutable in this app after account creation.
+    console.warn(
+      `[clerk-webhook] Ignoring username change for ${clerkId}: ${newUsername} (locked)`,
+    );
+  }
+
+  if (avatarUrl) {
+    await Profile.updateOne({ clerkId }, { avatarUrl });
+  }
+
+  if (accountHolderName) {
+    await Profile.updateOne(
+      {
+        clerkId,
+        $or: [{ displayName: null }, { displayName: "" }],
+      },
+      { displayName: accountHolderName },
+    );
+  }
+
+  if (avatarUrl || accountHolderName) {
     console.log(
-      `[clerk-webhook] Synced username for ${clerkId}: ${user.username} → ${newUsername}`,
+      `[clerk-webhook] Synced profile fields for ${clerkId} (avatar/name policy applied)`,
     );
   }
 }

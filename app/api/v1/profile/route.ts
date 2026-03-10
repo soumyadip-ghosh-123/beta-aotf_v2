@@ -17,6 +17,9 @@ export async function PATCH(req: Request) {
 
     const body = await req.json();
     const {
+      username,
+      email,
+      name,
       displayName,
       bio,
       location,
@@ -30,6 +33,9 @@ export async function PATCH(req: Request) {
       qualification,
       board,
     } = body as {
+      username?: string;
+      email?: string;
+      name?: string;
       displayName?: string;
       bio?: string;
       location?: string;
@@ -43,6 +49,21 @@ export async function PATCH(req: Request) {
       qualification?: string;
       board?: string;
     };
+
+    // Identity fields are immutable after account creation.
+    if (
+      username !== undefined ||
+      email !== undefined ||
+      name !== undefined ||
+      displayName !== undefined
+    ) {
+      return NextResponse.json(
+        {
+          error: "Name, username, and email are locked after account creation.",
+        },
+        { status: 400 },
+      );
+    }
 
     // Validate bio length
     if (bio !== undefined && bio.length > 300) {
@@ -119,7 +140,6 @@ export async function PATCH(req: Request) {
     await dbConnect();
 
     const updateFields: Record<string, unknown> = {};
-    if (displayName !== undefined) updateFields.displayName = displayName;
     if (bio !== undefined) updateFields.bio = bio;
     if (location !== undefined) updateFields.location = location;
     if (subjects !== undefined) updateFields.subjects = subjects;

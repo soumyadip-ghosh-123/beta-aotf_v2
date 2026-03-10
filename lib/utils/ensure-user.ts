@@ -58,6 +58,9 @@ export async function ensureUserRecord(clerkId: string): Promise<IUser> {
     clerkUser.username ?? null,
   );
 
+  const accountHolderName = clerkUser.fullName?.trim() || null;
+  const avatarUrl = clerkUser.imageUrl || null;
+
   // Upsert User (handles races and re-runs gracefully)
   const user = await User.findOneAndUpdate(
     { $or: [{ clerkId }, { username }] },
@@ -87,9 +90,9 @@ export async function ensureUserRecord(clerkId: string): Promise<IUser> {
       $set: { clerkId, userId: user._id },
       $setOnInsert: {
         username,
-        displayName: null,
+        displayName: accountHolderName,
         bio: null,
-        avatarUrl: null,
+        avatarUrl,
         location: null,
         websiteUrl: null,
         socialLinks: {},

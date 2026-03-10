@@ -18,32 +18,18 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      toPlan,
-    } = body as {
-      razorpay_order_id: string;
-      razorpay_payment_id: string;
-      razorpay_signature: string;
-      toPlan: string;
-    };
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      body as {
+        razorpay_order_id: string;
+        razorpay_payment_id: string;
+        razorpay_signature: string;
+      };
 
-    if (
-      !razorpay_order_id ||
-      !razorpay_payment_id ||
-      !razorpay_signature ||
-      !toPlan
-    ) {
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
       );
-    }
-
-    if (!["teacher", "teacher_candidate"].includes(toPlan)) {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
     // Verify Razorpay signature
@@ -74,6 +60,15 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Payment record not found" },
         { status: 404 },
+      );
+    }
+
+    const toPlan = payment.toPlan;
+
+    if (!["teacher", "teacher_candidate"].includes(toPlan)) {
+      return NextResponse.json(
+        { error: "Invalid payment plan target" },
+        { status: 400 },
       );
     }
 
@@ -121,7 +116,7 @@ export async function POST(req: Request) {
     });
 
     console.log(
-      `[verify-payment] Payment verified for ${clerkId}, plan: ${toPlan}`,
+      `[verify-payment] Payment verified for ${clerkId}, from: ${payment.fromPlan ?? "none"}, to: ${toPlan}`,
     );
 
     return NextResponse.json({ success: true });

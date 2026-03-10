@@ -235,7 +235,15 @@ export function IdCard({ data }: { data: IdCardData }) {
 
 // ─── Upgrade to Candidate Card ────────────────────────────────────────────────
 
-export function UpgradeCandidateCard() {
+export function UpgradeCandidateCard({
+  onUpgrade,
+  isLoading = false,
+  error,
+}: {
+  onUpgrade?: () => void;
+  isLoading?: boolean;
+  error?: string | null;
+}) {
   return (
     <div className="w-full h-full select-none rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-white dark:bg-zinc-900 flex flex-col">
       {/* ── Top gradient banner ── */}
@@ -275,9 +283,13 @@ export function UpgradeCandidateCard() {
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-60">
             Unlock your personalized Candidate ID Card, get priority access to
-            job postings, and stand out to recruiters.
+            job postings, and stand out to recruiters for just INR 50 extra.
           </p>
         </div>
+
+        <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+          Upgrade fee: INR 50
+        </p>
 
         {/* Benefits */}
         <div className="w-full space-y-2 text-left text-[11px]">
@@ -299,10 +311,21 @@ export function UpgradeCandidateCard() {
         </div>
 
         {/* CTA */}
-        <button className="mt-1 w-full flex items-center justify-center gap-2 bg-linear-to-br from-amber-500 to-orange-500 text-white text-sm font-semibold py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-[0.98]">
-          Upgrade Now
+        <button
+          type="button"
+          onClick={onUpgrade}
+          disabled={isLoading || !onUpgrade}
+          className="mt-1 w-full flex items-center justify-center gap-2 bg-linear-to-br from-amber-500 to-orange-500 text-white text-sm font-semibold py-2.5 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Processing..." : "Upgrade Now"}
           <ArrowRight size={14} />
         </button>
+
+        {error ? (
+          <p className="text-[11px] text-danger text-center leading-relaxed">
+            {error}
+          </p>
+        ) : null}
       </div>
 
       {/* ── Bottom bar ── */}
@@ -311,7 +334,7 @@ export function UpgradeCandidateCard() {
           www.aotf.in &nbsp;•&nbsp; +91 98765-43210
         </p>
         <p className="text-[9px] text-white/60 font-medium">
-          Plans from ₹199/mo
+          Candidate unlock in INR 50
         </p>
       </div>
     </div>

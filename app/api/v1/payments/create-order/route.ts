@@ -37,7 +37,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const amount = plan === "teacher" ? 4900 : 9900;
+    const isTeacherToCandidateUpgrade =
+      user.onboardingCompleted &&
+      user.plan?.current === "teacher" &&
+      plan === "teacher_candidate";
+
+    const amount = isTeacherToCandidateUpgrade
+      ? 5000
+      : plan === "teacher"
+        ? 4900
+        : 9900;
+
+    const purpose = isTeacherToCandidateUpgrade
+      ? "plan_upgrade"
+      : "registration";
+
+    const fromPlan = isTeacherToCandidateUpgrade ? user.plan?.current : null;
 
     const razorpayOrder = await razorpay.orders.create({
       amount,
@@ -48,7 +63,8 @@ export async function POST(req: Request) {
     const payment = await Payment.create({
       userId: user._id,
       clerkId,
-      purpose: "registration",
+      purpose,
+      fromPlan,
       toPlan: plan,
       amount,
       currency: "INR",
@@ -58,7 +74,7 @@ export async function POST(req: Request) {
     });
 
     console.log(
-      `[create-order] Order ${razorpayOrder.id} created for user ${clerkId}, plan: ${plan}, amount: ${amount}`,
+      `[create-order] Order ${razorpayOrder.id} created for user ${clerkId}, from: ${fromPlan ?? "none"}, to: ${plan}, amount: ${amount}`,
     );
 
     return NextResponse.json({

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Avatar } from "@heroui/avatar";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
 import { Tab, Tabs } from "@heroui/tabs";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
@@ -59,6 +60,26 @@ interface UserData {
   memberSince: string;
 }
 
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (
+      typeof window !== "undefined" &&
+      typeof (window as unknown as Record<string, unknown>).Razorpay !==
+        "undefined"
+    ) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+    document.body.appendChild(script);
+  });
+}
+
 // ── Page ────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
@@ -69,6 +90,10 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
+  const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const isOwnProfile =
     clerkUser?.username?.toLowerCase() === username?.toLowerCase();
@@ -118,9 +143,14 @@ export default function ProfilePage() {
 
   // ── Derived data ──────────────────────────────────────────────────
 
-  const displayName = profile.displayName ?? profile.username;
-  const avatarUrl =
-    profile.avatarUrl ?? clerkUser?.imageUrl ?? undefined;
+  const accountHolderName =
+    profile.displayName?.trim() ||
+    (isOwnProfile ? clerkUser?.fullName?.trim() : "") ||
+    "Account Holder";
+  const displayName = profile.displayName?.trim() || accountHolderName;
+  const avatarUrl = isOwnProfile
+    ? clerkUser?.imageUrl ?? profile.avatarUrl ?? undefined
+    : profile.avatarUrl ?? undefined;
   const email =
     clerkUser?.primaryEmailAddress?.emailAddress ?? undefined;
   const phone = profile.phone ? `+91 ${profile.phone}` : null;
@@ -131,11 +161,159 @@ export default function ProfilePage() {
   });
 
   const isCandidate = userData.plan.hasCandidateAccess;
+  const canUpgradeToCandidate =
+    isOwnProfile &&
+    !isCandidate &&
+    userData.role === "teacher" &&
+    userData.plan.current === "teacher";
+
+  const handleCandidateUpgrade = async () => {
+    if (!canUpgradeToCandidate) {
+      setUpgradeError("Only teacher accounts can upgrade to candidate.");
+      return;
+    }
+
+    setIsUpgradeLoading(true);
+    setUpgradeError(null);
+
+    try {
+      const orderRes = await fetch("/api/v1/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "teacher_candidate" }),
+      });
+
+      if (!orderRes.ok) {
+        const data = await orderRes.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ?? "Failed to create order",
+        );
+      }
+
+      const { orderId, amount, currency, key } = (await orderRes.json()) as {
+        orderId: string;
+        amount: number;
+        currency: string;
+        key: string;
+      };
+
+      await loadRazorpayScript();
+
+      await new Promise<void>((resolve, reject) => {
+        const options = {
+          key,
+          amount,
+          currency,
+          name: "AOTF",
+          description: "Teacher to Candidate Upgrade (INR 50)",
+          order_id: orderId,
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              const verifyRes = await fetch("/api/v1/payments/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+
+              if (!verifyRes.ok) {
+                const data = await verifyRes.json().catch(() => ({}));
+                throw new Error(
+                  (data as { error?: string }).error ??
+                    "Payment verification failed",
+                );
+              }
+
+              await clerkUser?.reload();
+              window.location.href = `/u/${profile.username}`;
+              resolve();
+            } catch (upgradeErr) {
+              reject(upgradeErr);
+            }
+          },
+          prefill: {
+            contact: profile.phone ?? undefined,
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment cancelled")),
+          },
+        };
+
+        const RazorpayClass = (
+          window as unknown as {
+            Razorpay: new (opts: unknown) => { open: () => void };
+          }
+        ).Razorpay;
+
+        new RazorpayClass(options).open();
+      });
+    } catch (upgradeErr) {
+      if (
+        upgradeErr instanceof Error &&
+        upgradeErr.message === "Payment cancelled"
+      ) {
+        setUpgradeError(null);
+      } else {
+        setUpgradeError(
+          upgradeErr instanceof Error
+            ? upgradeErr.message
+            : "Upgrade failed. Please try again.",
+        );
+      }
+      setIsUpgradeLoading(false);
+    }
+  };
+
+  const updateAvatar = async (file: File) => {
+    if (!clerkUser) {
+      setAvatarMessage("Unable to update avatar right now.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarMessage("Please choose a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarMessage("Avatar size must be 5MB or less.");
+      return;
+    }
+
+    setIsAvatarSaving(true);
+    setAvatarMessage(null);
+
+    try {
+      await clerkUser.setProfileImage({ file });
+      await clerkUser.reload();
+      setAvatarMessage("Avatar updated successfully.");
+    } catch {
+      setAvatarMessage("Failed to update avatar. Please try again.");
+    } finally {
+      setIsAvatarSaving(false);
+    }
+  };
+
+  const handleAvatarInputChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await updateAvatar(file);
+    event.target.value = "";
+  };
 
   // Build IdCard data
   const teacherCardData: IdCardData = {
     role: "teacher",
-    name: displayName,
+    name: accountHolderName,
     photo: avatarUrl ?? "/AOTF.svg",
     designation: profile.qualification
       ? `${profile.qualification} Educator`
@@ -154,7 +332,7 @@ export default function ProfilePage() {
 
   const candidateCardData: IdCardData = {
     role: "candidate",
-    name: displayName,
+    name: accountHolderName,
     photo: avatarUrl ?? "/AOTF.svg",
     designation: "Aspiring Educator",
     qualification: profile.qualification ?? undefined,
@@ -197,11 +375,11 @@ export default function ProfilePage() {
           <Avatar
             className="w-20 h-20 text-large"
             src={avatarUrl}
-            name={displayName}
+            name={accountHolderName}
           />
           <div className="flex flex-col items-start gap-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{displayName}</h1>
+              <h1 className="text-xl font-semibold">{accountHolderName}</h1>
               {userData.onboardingCompleted && (
                 <ShieldCheck className="text-green-500" size={18} />
               )}
@@ -221,6 +399,33 @@ export default function ProfilePage() {
               <div className="flex items-center gap-1">
                 <FaLocationDot />
                 <p className="text-sm text-gray-500">{profile.address}</p>
+              </div>
+            )}
+
+            {isOwnProfile && (
+              <div className="pt-1">
+                <label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarInputChange}
+                    disabled={isAvatarSaving}
+                  />
+                  <Button
+                    as="span"
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    isLoading={isAvatarSaving}
+                    className="cursor-pointer"
+                  >
+                    Change Avatar
+                  </Button>
+                </label>
+                {avatarMessage && (
+                  <p className="mt-1 text-xs text-default-500">{avatarMessage}</p>
+                )}
               </div>
             )}
           </div>
@@ -313,6 +518,38 @@ export default function ProfilePage() {
                 </Card>
               )}
 
+              {isOwnProfile && (
+                <Card className="p-4 max-w-lg mx-auto">
+                  <CardHeader className="p-0">
+                    <h3 className="text-lg font-bold">Account Details</h3>
+                  </CardHeader>
+                  <CardBody className="space-y-3 p-0 pt-3">
+                    <div>
+                      <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
+                        Name (Locked)
+                      </p>
+                      <p className="font-bold text-sm">{accountHolderName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
+                        Username (Locked)
+                      </p>
+                      <p className="font-bold text-sm">{profile.username}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#4c6c9a] dark:text-slate-400">
+                        Email (Locked)
+                      </p>
+                      <p className="font-bold text-sm">{email ?? "—"}</p>
+                    </div>
+                    <p className="text-xs text-default-500">
+                      Name, username, and email are permanently locked. You can
+                      still update avatar and other profile details.
+                    </p>
+                  </CardBody>
+                </Card>
+              )}
+
               {/* Professional Details */}
               <ProfessionalDetailsCard
                 qualification={profile.qualification}
@@ -339,7 +576,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <FaChalkboardTeacher className="text-indigo-500" />
                   <h3 className="text-lg font-bold text-default-900">
-                    {isOwnProfile ? "Your ID Cards" : `${displayName}'s ID`}
+                    {isOwnProfile ? "Your ID Cards" : `${accountHolderName}'s ID`}
                   </h3>
                 </div>
                 <Chip
@@ -366,7 +603,16 @@ export default function ProfilePage() {
                     isCandidate ? (
                       <IdCard key="candidate" data={candidateCardData} />
                     ) : (
-                      <UpgradeCandidateCard key="upgrade" />
+                        <UpgradeCandidateCard
+                          key="upgrade"
+                          onUpgrade={
+                            canUpgradeToCandidate
+                              ? handleCandidateUpgrade
+                              : undefined
+                          }
+                          isLoading={isUpgradeLoading}
+                          error={canUpgradeToCandidate ? upgradeError : null}
+                        />
                     ),
                   ]}
                   pauseOnHover
