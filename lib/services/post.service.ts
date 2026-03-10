@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Post, { type PostStatus, type IPost } from "@/lib/models/Post";
+import Enquiry from "@/lib/models/Enquiry";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
 import type {
@@ -20,7 +21,7 @@ type UpdatePostParams = UpdatePostInput & {
 // ─── Types returned to route handlers ───────────────────────────────────
 
 export interface PaginatedPosts {
-  posts: IPost[];
+  posts: PostWithEnquiryReference[];
   pagination: {
     page: number;
     limit: number;
@@ -28,6 +29,10 @@ export interface PaginatedPosts {
     totalPages: number;
   };
 }
+
+export type PostWithEnquiryReference = IPost & {
+  enquiryReferenceId?: string | null;
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -75,6 +80,42 @@ function normalizeStudents(
   }));
 }
 
+async function attachEnquiryReferences<
+  T extends { enquiryId?: mongoose.Types.ObjectId | string | null },
+>(posts: T[]): Promise<Array<T & { enquiryReferenceId: string | null }>> {
+  const linkedEnquiryIds = [
+    ...new Set(
+      posts
+        .map((post) => post.enquiryId?.toString())
+        .filter((enquiryId): enquiryId is string => Boolean(enquiryId)),
+    ),
+  ];
+
+  const enquiryObjectIds = linkedEnquiryIds
+    .filter((enquiryId) => mongoose.Types.ObjectId.isValid(enquiryId))
+    .map((enquiryId) => new mongoose.Types.ObjectId(enquiryId));
+
+  if (enquiryObjectIds.length === 0) {
+    return posts.map((post) => ({ ...post, enquiryReferenceId: null }));
+  }
+
+  const enquiries = await Enquiry.find(
+    { _id: mongoose.trusted({ $in: enquiryObjectIds }) },
+    { enquiryId: 1 },
+  ).lean();
+
+  const enquiryMap = new Map(
+    enquiries.map((enquiry) => [String(enquiry._id), enquiry.enquiryId]),
+  );
+
+  return posts.map((post) => ({
+    ...post,
+    enquiryReferenceId: post.enquiryId
+      ? (enquiryMap.get(String(post.enquiryId)) ?? null)
+      : null,
+  }));
+}
+
 // ─── Service Functions ──────────────────────────────────────────────────
 
 /**
@@ -113,27 +154,35 @@ export async function createPost(input: CreatePostParams): Promise<IPost> {
 /**
  * Get a single post by postId.
  */
-export async function getPostByPostId(postId: string): Promise<IPost> {
+export async function getPostByPostId(
+  postId: string,
+): Promise<PostWithEnquiryReference> {
   await dbConnect();
 
   const post = await Post.findOne({ postId }).lean<IPost>();
   if (!post) {
     throw new NotFoundError("Post");
   }
-  return post;
+
+  const [enrichedPost] = await attachEnquiryReferences([post]);
+  return enrichedPost;
 }
 
 /**
  * Get a single post by MongoDB _id.
  */
-export async function getPostById(id: string): Promise<IPost> {
+export async function getPostById(
+  id: string,
+): Promise<PostWithEnquiryReference> {
   await dbConnect();
 
   const post = await Post.findById(id).lean<IPost>();
   if (!post) {
     throw new NotFoundError("Post");
   }
-  return post;
+
+  const [enrichedPost] = await attachEnquiryReferences([post]);
+  return enrichedPost;
 }
 
 /**
@@ -176,8 +225,10 @@ export async function listPosts(
     Post.countDocuments(filter),
   ]);
 
+  const enrichedPosts = await attachEnquiryReferences(posts);
+
   return {
-    posts,
+    posts: enrichedPosts,
     pagination: {
       page,
       limit,

@@ -30,6 +30,7 @@ import { AlertTriangle, Plus } from "lucide-react";
 function mapApiPost(p: Record<string, any>): TuitionPost {
   return {
     id: p.postId,
+    enquiryReferenceId: p.enquiryReferenceId ?? undefined,
     guardian: p.guardianName,
     guardianPhone: p.guardianPhone,
     students: (p.students ?? []).map((s: any) => ({

@@ -14,8 +14,10 @@ const enquiryFilterConfigs: FilterConfig[] = [
     placeholder: "All Statuses",
     options: [
       { key: "new", label: "New" },
+      { key: "in_progress", label: "In Progress" },
       { key: "contacted", label: "Contacted" },
-      { key: "converted", label: "Converted" },
+      { key: "unreachable", label: "Unreachable" },
+      { key: "resolved", label: "Resolved" },
       { key: "closed", label: "Closed" },
     ],
   },
@@ -33,8 +35,20 @@ export default function EnquiriesPage() {
     setError(null);
     try {
       const res = await fetch("/api/v1/enquiry");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch");
+      const contentType = res.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+      const data = isJson ? await res.json() : null;
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error || `Failed to fetch enquiries (${res.status})`,
+        );
+      }
+
+      if (!isJson || !data) {
+        throw new Error("Unexpected server response while loading enquiries");
+      }
+
       setEnquiries(data.enquiries);
     } catch (err: any) {
       setError(err.message);
@@ -49,7 +63,7 @@ export default function EnquiriesPage() {
 
   const filteredEnquiries = useMemo(() => {
     return enquiries.filter((enq) => {
-      if (filterStatus && (enq as any).status !== filterStatus) return false;
+      if (filterStatus && enq.currentStatus !== filterStatus) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (

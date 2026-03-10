@@ -36,6 +36,7 @@ import { addToast } from "@heroui/toast";
 interface JobPostData {
   _id: string;
   jobId: string;
+  enquiryReferenceId?: string | null;
   workType: string;
   title: string;
   clientName: string;
@@ -361,9 +362,16 @@ export default function ViewJobPostPage({
             <CardHeader className="flex-col items-start gap-3 pb-4">
               <div className="flex flex-col w-full">
                 <div className="flex justify-between">
-                  <p className="text-sm text-default-400">
-                    Post ID: {postData.jobId}
-                  </p>
+                  <div>
+                    <p className="text-sm text-default-400">
+                      Post ID: {postData.jobId}
+                    </p>
+                    {postData.enquiryReferenceId && (
+                      <p className="text-xs text-default-500">
+                        Enquiry Ref: {postData.enquiryReferenceId}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Chip
                       size="sm"

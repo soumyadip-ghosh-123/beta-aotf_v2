@@ -27,6 +27,7 @@ import {
 
 export interface JobPost {
   id: string; // jobId
+  enquiryReferenceId?: string | null;
   workType: "job" | "project";
   title: string;
   clientName: string;
@@ -141,6 +142,11 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
                 </Chip>
               </div>
             </div>
+            {post.enquiryReferenceId && (
+              <p className="text-xs text-default-500">
+                Enquiry Ref: {post.enquiryReferenceId}
+              </p>
+            )}
           </div>
         </div>
       </CardHeader>

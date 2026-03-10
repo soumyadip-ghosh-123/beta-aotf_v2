@@ -45,6 +45,13 @@ export interface StatusUpdateResult {
   attemptNumber: number;
 }
 
+type LatestEnquiryStatus = {
+  _id: string;
+  adminName: string;
+  adminRole: string;
+  attemptNumber: number;
+};
+
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -79,6 +86,61 @@ async function generateEnquiryId(): Promise<string> {
   }
 
   return `${prefix}-${String(counter).padStart(3, "0")}`;
+}
+
+async function getLatestStatusMap(enquiryIds: unknown[]) {
+  if (enquiryIds.length === 0) {
+    return new Map<string, LatestEnquiryStatus>();
+  }
+
+  const latestStatuses = await EnqStatus.aggregate<LatestEnquiryStatus>([
+    { $match: { enquiryId: { $in: enquiryIds } } },
+    { $sort: { actionAt: -1 } },
+    {
+      $group: {
+        _id: "$enquiryId",
+        adminName: { $first: "$adminName" },
+        adminRole: { $first: "$adminRole" },
+        attemptNumber: { $first: "$attemptNumber" },
+      },
+    },
+  ]);
+
+  return new Map(latestStatuses.map((status) => [String(status._id), status]));
+}
+
+function enrichEnquiry(
+  enquiry: {
+    _id: unknown;
+    enquiryId: string;
+    name: string;
+    phoneNumber: string;
+    query: string;
+    currentStatus: EnquiryStatus;
+    firstResponseAt?: Date;
+    resolvedAt?: Date;
+    lastActionAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  latest?: LatestEnquiryStatus,
+): EnrichedEnquiry {
+  return {
+    _id: String(enquiry._id),
+    enquiryId: enquiry.enquiryId,
+    name: enquiry.name,
+    phoneNumber: enquiry.phoneNumber,
+    query: enquiry.query,
+    currentStatus: enquiry.currentStatus,
+    firstResponseAt: enquiry.firstResponseAt,
+    resolvedAt: enquiry.resolvedAt,
+    lastActionByAdminName: latest?.adminName ?? null,
+    lastActionByAdminRole: latest?.adminRole ?? null,
+    lastAttemptNumber: latest?.attemptNumber ?? 0,
+    lastActionAt: enquiry.lastActionAt,
+    createdAt: enquiry.createdAt,
+    updatedAt: enquiry.updatedAt,
+  };
 }
 
 // ─── Service Functions ──────────────────────────────────────────────────
@@ -142,45 +204,11 @@ export async function listEnquiries(
 
   // Batch-fetch the latest enqStatus for all enquiries in one query
   const enquiryIds = enquiries.map((e) => e._id);
-  const latestStatuses = await EnqStatus.aggregate<{
-    _id: string;
-    adminName: string;
-    adminRole: string;
-    attemptNumber: number;
-  }>([
-    { $match: { enquiryId: { $in: enquiryIds } } },
-    { $sort: { actionAt: -1 } },
-    {
-      $group: {
-        _id: "$enquiryId",
-        adminName: { $first: "$adminName" },
-        adminRole: { $first: "$adminRole" },
-        attemptNumber: { $first: "$attemptNumber" },
-      },
-    },
-  ]);
+  const statusMap = await getLatestStatusMap(enquiryIds);
 
-  const statusMap = new Map(latestStatuses.map((s) => [String(s._id), s]));
-
-  const enriched: EnrichedEnquiry[] = enquiries.map((enq) => {
-    const latest = statusMap.get(String(enq._id));
-    return {
-      _id: String(enq._id),
-      enquiryId: enq.enquiryId,
-      name: enq.name,
-      phoneNumber: enq.phoneNumber,
-      query: enq.query,
-      currentStatus: enq.currentStatus,
-      firstResponseAt: enq.firstResponseAt,
-      resolvedAt: enq.resolvedAt,
-      lastActionByAdminName: latest?.adminName ?? null,
-      lastActionByAdminRole: latest?.adminRole ?? null,
-      lastAttemptNumber: latest?.attemptNumber ?? 0,
-      lastActionAt: enq.lastActionAt,
-      createdAt: enq.createdAt,
-      updatedAt: enq.updatedAt,
-    };
-  });
+  const enriched: EnrichedEnquiry[] = enquiries.map((enq) =>
+    enrichEnquiry(enq, statusMap.get(String(enq._id))),
+  );
 
   return {
     enquiries: enriched,
@@ -191,6 +219,21 @@ export async function listEnquiries(
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+export async function getEnquiryById(
+  enquiryDocId: string,
+): Promise<EnrichedEnquiry> {
+  await dbConnect();
+
+  const enquiry = await Enquiry.findById(enquiryDocId).lean();
+  if (!enquiry) {
+    throw new NotFoundError("Enquiry");
+  }
+
+  const statusMap = await getLatestStatusMap([enquiry._id]);
+
+  return enrichEnquiry(enquiry, statusMap.get(String(enquiry._id)));
 }
 
 /**

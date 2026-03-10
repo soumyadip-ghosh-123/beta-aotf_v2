@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { Tabs, Tab } from "@heroui/tabs";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -9,100 +8,134 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
-import { MessageSquare, Star, Calendar, User, Filter } from "lucide-react";
+import { Spinner } from "@heroui/spinner";
+import { Calendar, Mail, MessageSquare, Star, User } from "lucide-react";
+import AdminSearchBar, {
+  type FilterConfig,
+} from "@/components/admin/ui/AdminSearchBar";
 
 type Category = "bug" | "suggestion" | "complaint" | "payment" | "general";
-type Status = "open" | "pending" | "resolved";
+type Status = "open" | "seen" | "resolved";
 
 type FeedbackData = {
-  id: string;
-  userName: string;
-  userEmail: string;
+  _id: string;
+  userId: string;
+  userType: "teacher" | "teacher_candidate";
+  userSnapshot: {
+    name: string;
+    username: string;
+    role: "teacher" | "teacher_candidate";
+    email: string;
+  };
   category: Category;
   subject: string;
-  query: string;
-  rating: number;
+  message: string;
+  rating: number | null;
   status: Status;
+  handledByAdminId: string | null;
+  handledAt: string | null;
   createdAt: string;
-  adminNotes?: string;
+  updatedAt: string;
+  adminNotes: string | null;
 };
 
-// Mock data
-const mockFeedbacks: FeedbackData[] = [
+const feedbackFilterConfigs: FilterConfig[] = [
   {
-    id: "fb1",
-    userName: "Pritam Mahata",
-    userEmail: "pritam@example.com",
-    category: "bug",
-    subject: "Login Issue",
-    query: "Unable to login with correct credentials",
-    rating: 2,
-    status: "open",
-    createdAt: "2024-02-05",
+    key: "status",
+    label: "Status",
+    placeholder: "All statuses",
+    options: [
+      { key: "open", label: "Open" },
+      { key: "seen", label: "Seen" },
+      { key: "resolved", label: "Resolved" },
+    ],
   },
   {
-    id: "fb2",
-    userName: "Anita Sharma",
-    userEmail: "anita@example.com",
-    category: "suggestion",
-    subject: "Add Dark Mode",
-    query: "Please add dark mode support for better user experience",
-    rating: 5,
-    status: "pending",
-    createdAt: "2024-02-06",
-    adminNotes: "Under consideration for next release",
-  },
-  {
-    id: "fb3",
-    userName: "Rahul Kumar",
-    userEmail: "rahul@example.com",
-    category: "payment",
-    subject: "Payment Failed",
-    query: "Payment was deducted but subscription not activated",
-    rating: 1,
-    status: "resolved",
-    createdAt: "2024-02-04",
-    adminNotes: "Refund processed and subscription activated manually",
-  },
-  {
-    id: "fb4",
-    userName: "Sneha Patel",
-    userEmail: "sneha@example.com",
-    category: "complaint",
-    subject: "Poor Service",
-    query: "Teacher was not responsive to queries",
-    rating: 2,
-    status: "pending",
-    createdAt: "2024-02-07",
-  },
-  {
-    id: "fb5",
-    userName: "Amit Singh",
-    userEmail: "amit@example.com",
-    category: "general",
-    subject: "Great Platform",
-    query: "Really enjoying the platform, keep up the good work!",
-    rating: 5,
-    status: "resolved",
-    createdAt: "2024-02-03",
-    adminNotes: "Thank you note sent",
+    key: "category",
+    label: "Category",
+    placeholder: "All categories",
+    options: [
+      { key: "bug", label: "Bug" },
+      { key: "suggestion", label: "Suggestion" },
+      { key: "complaint", label: "Complaint" },
+      { key: "payment", label: "Payment" },
+      { key: "general", label: "General" },
+    ],
   },
 ];
 
 export default function FeedbackPage() {
-  const [selectedStatus, setSelectedStatus] = useState<Status>("open");
-  const [feedbacks, setFeedbacks] = useState<FeedbackData[]>(mockFeedbacks);
+  const [feedbacks, setFeedbacks] = useState<FeedbackData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackData | null>(null);
-  const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [adminNotes, setAdminNotes] = useState("");
   const [newStatus, setNewStatus] = useState<Status>("open");
+  const [updating, setUpdating] = useState(false);
 
-  const filteredFeedbacks = feedbacks.filter((fb) => {
-    const matchesStatus = fb.status === selectedStatus;
-    const matchesCategory = filterCategory === "all" || fb.category === filterCategory;
-    return matchesStatus && matchesCategory;
-  });
+  const fetchFeedbacks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/v1/feedback?limit=100", {
+        cache: "no-store",
+      });
+      
+      const contentType = res.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+      
+      if (!isJson) {
+        const text = await res.text();
+        console.error("Non-JSON response:", text);
+        throw new Error(`Server returned non-JSON response (${res.status}). Content-Type: ${contentType}`);
+      }
+      
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || `Failed to fetch feedbacks (${res.status})`);
+      }
+
+      if (!data || !Array.isArray(data.feedbacks)) {
+        console.error("Invalid data structure:", data);
+        throw new Error("Invalid response structure from server");
+      }
+
+      setFeedbacks(data.feedbacks);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch feedbacks");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
+
+  const filteredFeedbacks = useMemo(() => {
+    return feedbacks.filter((fb) => {
+      if (filterStatus && fb.status !== filterStatus) return false;
+      if (filterCategory && fb.category !== filterCategory) return false;
+
+      if (!searchQuery.trim()) return true;
+
+      const query = searchQuery.toLowerCase();
+      return (
+        fb.userSnapshot.name.toLowerCase().includes(query) ||
+        fb.userSnapshot.username.toLowerCase().includes(query) ||
+        fb.userSnapshot.email.toLowerCase().includes(query) ||
+        fb.subject.toLowerCase().includes(query) ||
+        fb.message.toLowerCase().includes(query)
+      );
+    });
+  }, [feedbacks, filterCategory, filterStatus, searchQuery]);
 
   const handleViewFeedback = (feedback: FeedbackData) => {
     setSelectedFeedback(feedback);
@@ -111,19 +144,50 @@ export default function FeedbackPage() {
     onOpen();
   };
 
-  const handleUpdateFeedback = () => {
+  const handleClose = () => {
+    setSelectedFeedback(null);
+    setAdminNotes("");
+    setNewStatus("open");
+    onClose();
+  };
+
+  const handleUpdateFeedback = async () => {
     if (!selectedFeedback) return;
 
-    const updated = feedbacks.map((fb) =>
-      fb.id === selectedFeedback.id
-        ? { ...fb, status: newStatus, adminNotes: adminNotes }
-        : fb
-    );
+    setUpdating(true);
 
-    setFeedbacks(updated);
-    addToast({ description: "Feedback updated successfully", color: "success" });
-    onClose();
-    setSelectedFeedback(null);
+    try {
+      const res = await fetch(`/api/v1/feedback/${selectedFeedback._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          adminNotes: adminNotes.trim() || undefined,
+        }),
+      });
+
+      const contentType = res.headers.get("content-type") ?? "";
+      const isJson = contentType.includes("application/json");
+      const data = isJson ? await res.json() : null;
+
+      if (!res.ok) {
+        throw new Error(data?.error || `Failed to update feedback (${res.status})`);
+      }
+
+      addToast({ description: "Feedback updated successfully", color: "success" });
+      await fetchFeedbacks();
+      handleClose();
+    } catch (err) {
+      addToast({
+        description:
+          err instanceof Error ? err.message : "Failed to update feedback",
+        color: "danger",
+      });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const getCategoryColor = (category: Category): "primary" | "success" | "warning" | "danger" | "default" => {
@@ -140,13 +204,17 @@ export default function FeedbackPage() {
   const getStatusColor = (status: Status): "success" | "warning" | "default" => {
     const colors: Record<Status, "success" | "warning" | "default"> = {
       open: "warning",
-      pending: "default",
+      seen: "default",
       resolved: "success",
     };
     return colors[status];
   };
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number | null) => {
+    if (!rating) {
+      return <span className="text-xs text-default-400">No rating</span>;
+    }
+
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -160,58 +228,55 @@ export default function FeedbackPage() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20 w-full">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-20 text-danger w-full">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-6 py-4">
-      <div className="flex flex-col md:flex-row justify-between">
+      <div className="flex flex-col md:flex-row justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Feedback Management</h1>
           <p className="text-sm text-default-500 mt-1">
             Manage and respond to user feedback
           </p>
         </div>
-        <div className="flex items-center gap-2 justify-end">
-          <Filter size={18} className="text-default-400" />
-          <Select
-            placeholder="Filter by category"
-            selectedKeys={[filterCategory]}
-            onChange={(e: any) => setFilterCategory(e.target.value)}
-            className="w-48"
-            size="sm"
-            variant="bordered"
-          >
-            <SelectItem key="all">All Categories</SelectItem>
-            <SelectItem key="bug">Bug</SelectItem>
-            <SelectItem key="suggestion">Suggestion</SelectItem>
-            <SelectItem key="complaint">Complaint</SelectItem>
-            <SelectItem key="payment">Payment</SelectItem>
-            <SelectItem key="general">General</SelectItem>
-          </Select>
-        </div>
       </div>
 
-      <Tabs
-        selectedKey={selectedStatus}
-        onSelectionChange={(key) => setSelectedStatus(key as Status)}
-        aria-label="Feedback status"
-        color="primary"
-      >
-        <Tab
-          key="open"
-          title={`Open (${feedbacks.filter((f) => f.status === "open").length})`}
-        />
-        <Tab
-          key="pending"
-          title={`Pending (${feedbacks.filter((f) => f.status === "pending").length})`}
-        />
-        <Tab
-          key="resolved"
-          title={`Resolved (${feedbacks.filter((f) => f.status === "resolved").length})`}
-        />
-      </Tabs>
+      <AdminSearchBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by user, email, subject or message…"
+        filters={feedbackFilterConfigs}
+        filterValues={{ status: filterStatus, category: filterCategory }}
+        onFilterChange={(key, value) => {
+          if (key === "status") setFilterStatus(value);
+          if (key === "category") setFilterCategory(value);
+        }}
+        resultCount={filteredFeedbacks.length}
+        resultLabel="feedback"
+        onClearAll={() => {
+          setSearchQuery("");
+          setFilterStatus("");
+          setFilterCategory("");
+        }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredFeedbacks.map((feedback) => (
-          <Card key={feedback.id} className="w-full">
+          <Card key={feedback._id} className="w-full">
             <CardHeader className="flex flex-col gap-3 items-start">
               <div className="flex justify-between w-full items-start">
                 <div className="flex items-center gap-2">
@@ -219,8 +284,8 @@ export default function FeedbackPage() {
                     <MessageSquare className="text-primary" size={20} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">{feedback.userName}</p>
-                    <p className="text-xs text-default-500">{feedback.userEmail}</p>
+                    <p className="text-sm font-semibold">{feedback.userSnapshot.name}</p>
+                    <p className="text-xs text-default-500">@{feedback.userSnapshot.username}</p>
                   </div>
                 </div>
                 <Chip size="sm" color={getCategoryColor(feedback.category)} variant="flat">
@@ -233,8 +298,12 @@ export default function FeedbackPage() {
               </div>
             </CardHeader>
             <CardBody className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-default-500">
+                <Mail size={14} />
+                {feedback.userSnapshot.email}
+              </div>
               <p className="text-sm text-default-600 line-clamp-3">
-                {feedback.query}
+                {feedback.message}
               </p>
               <div className="flex items-center gap-2 text-xs text-default-500">
                 <Calendar size={14} />
@@ -263,14 +332,13 @@ export default function FeedbackPage() {
         <div className="text-center py-12">
           <MessageSquare size={48} className="mx-auto text-default-300 mb-4" />
           <p className="text-default-500">
-            No {selectedStatus} feedbacks found
-            {filterCategory !== "all" && ` in ${filterCategory} category`}.
+            No feedbacks match the current filters.
           </p>
         </div>
       )}
 
       {/* Feedback Detail Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
             Feedback Details
@@ -282,10 +350,13 @@ export default function FeedbackPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <User size={16} className="text-default-400" />
-                      <span className="font-semibold">{selectedFeedback.userName}</span>
+                      <span className="font-semibold">{selectedFeedback.userSnapshot.name}</span>
                     </div>
                     <p className="text-sm text-default-500 ml-6">
-                      {selectedFeedback.userEmail}
+                      @{selectedFeedback.userSnapshot.username} · {selectedFeedback.userSnapshot.role.replace("_", " ")}
+                    </p>
+                    <p className="text-sm text-default-500 ml-6">
+                      {selectedFeedback.userSnapshot.email}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -314,10 +385,16 @@ export default function FeedbackPage() {
                   <p className="font-semibold text-sm">User Message:</p>
                   <Card className="bg-default-100">
                     <CardBody>
-                      <p className="text-sm">{selectedFeedback.query}</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedFeedback.message}</p>
                     </CardBody>
                   </Card>
                 </div>
+
+                {selectedFeedback.handledAt && (
+                  <div className="text-sm text-default-500">
+                    Last handled on {new Date(selectedFeedback.handledAt).toLocaleString()}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="font-semibold text-sm">Update Status:</label>
@@ -327,7 +404,7 @@ export default function FeedbackPage() {
                     variant="bordered"
                   >
                     <SelectItem key="open">Open</SelectItem>
-                    <SelectItem key="pending">Pending</SelectItem>
+                    <SelectItem key="seen">Seen</SelectItem>
                     <SelectItem key="resolved">Resolved</SelectItem>
                   </Select>
                 </div>
@@ -346,10 +423,10 @@ export default function FeedbackPage() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onClose}>
+            <Button variant="flat" onPress={handleClose} isDisabled={updating}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleUpdateFeedback}>
+            <Button color="primary" onPress={handleUpdateFeedback} isLoading={updating}>
               Update Feedback
             </Button>
           </ModalFooter>

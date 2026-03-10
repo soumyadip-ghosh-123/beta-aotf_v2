@@ -78,6 +78,17 @@ export default function EnquiryCard({
   const [notes, setNotes] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const handleCall = () => {
+    const phoneNumber = enquiry.phoneNumber?.trim().replace(/[^\d+]/g, "");
+
+    if (!phoneNumber) {
+      addToast({ description: "No valid phone number available", color: "danger" });
+      return;
+    }
+
+    window.location.href = `tel:${phoneNumber}`;
+  };
+
   const handleCreatePost = (type: "job" | "tuition") => {
     // Navigate to the create form page with enquiry ID and type
     router.push(`/admin/enquiries/${enquiry._id}?type=${type}`);
@@ -283,7 +294,7 @@ export default function EnquiryCard({
           <Button color="success" onPress={onOpen}>
             Update
           </Button>
-          <Button color="primary">
+          <Button color="primary" onPress={handleCall}>
             <FaPhone /> Call
           </Button>
         </CardFooter>

@@ -32,6 +32,7 @@ const isPublicRoute = createRouteMatcher([
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isAdminApiRoute = createRouteMatcher(["/api/v1/admin(.*)"]);
+const isEnquiryApiRoute = createRouteMatcher(["/api/v1/enquiry(.*)"]);
 
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
 const isUserProfileRoute = createRouteMatcher(["/u(.*)"]);
@@ -41,6 +42,7 @@ const isOnboardingApiRoute = createRouteMatcher([
   "/api/v1/onboarding(.*)",
   "/api/v1/payments(.*)",
   "/api/v1/users(.*)",
+  "/api/v1/feedback(.*)", // Admin-only route, skip onboarding check (API handles auth)
 ]);
 // ─── Clerk middleware instance ───────────────────────────────────────
 
@@ -53,6 +55,12 @@ const middleware = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
   const method = req.method;
   const start = Date.now();
+  const isApiRequest = pathname.startsWith("/api/");
+  const isProtectedEnquiryApiRequest =
+    isEnquiryApiRoute(req) &&
+    !(pathname === "/api/v1/enquiry" && method === "POST");
+  const isProtectedAdminRequest =
+    isAdminRoute(req) || isAdminApiRoute(req) || isProtectedEnquiryApiRequest;
 
   // Debug logging for API routes
   if (pathname === "/api/v1/posts") {
@@ -88,9 +96,16 @@ const middleware = clerkMiddleware(async (auth, req) => {
   // Track if user is an admin to skip onboarding checks later
   let isUserAdmin = false;
 
-  if ((isAdminRoute(req) || isAdminApiRoute(req)) && !isPublicRoute(req)) {
+  if (isProtectedAdminRequest && !isPublicRoute(req)) {
     // Must be signed in
     if (!userId) {
+      if (isApiRequest) {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 },
+        );
+      }
+
       return NextResponse.redirect(new URL("/", req.url));
     }
 
@@ -122,12 +137,26 @@ const middleware = clerkMiddleware(async (auth, req) => {
 
     if (!isAdminConfirmed || !adminDoc) {
       // Neither JWT nor DB confirms admin status — redirect to home
+      if (isApiRequest) {
+        return NextResponse.json(
+          { error: "Admin access required" },
+          { status: 403 },
+        );
+      }
+
       return NextResponse.redirect(new URL("/", req.url));
     }
 
     // Additional admin-specific checks for authenticated admins
     if (!adminDoc.isActive) {
       // Admin account is deactivated
+      if (isApiRequest) {
+        return NextResponse.json(
+          { error: "Admin account is deactivated" },
+          { status: 403 },
+        );
+      }
+
       return NextResponse.redirect(
         new URL("/admin/login?error=deactivated", req.url),
       );
@@ -135,6 +164,13 @@ const middleware = clerkMiddleware(async (auth, req) => {
 
     if (adminDoc.isLocked) {
       // Admin account is locked (failed login attempts or manual lock)
+      if (isApiRequest) {
+        return NextResponse.json(
+          { error: "Admin account is locked" },
+          { status: 403 },
+        );
+      }
+
       return NextResponse.redirect(
         new URL("/admin/login?error=locked", req.url),
       );
@@ -145,6 +181,13 @@ const middleware = clerkMiddleware(async (auth, req) => {
       adminDoc.requirePasswordChange &&
       pathname !== "/admin/change-password"
     ) {
+      if (isApiRequest) {
+        return NextResponse.json(
+          { error: "Password change required" },
+          { status: 403 },
+        );
+      }
+
       return NextResponse.redirect(new URL("/admin/change-password", req.url));
     }
   }

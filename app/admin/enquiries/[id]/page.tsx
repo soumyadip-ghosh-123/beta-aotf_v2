@@ -33,30 +33,26 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
   useEffect(() => {
     if (!enquiryId) return;
 
-    // Simulate fetching enquiry data (mock data for now)
     const fetchEnquiry = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const res = await fetch(`/api/v1/enquiry/${enquiryId}`);
+        const contentType = res.headers.get("content-type") ?? "";
+        const isJson = contentType.includes("application/json");
+        const data = isJson ? await res.json() : null;
 
-        // Mock enquiry data based on ID
-        const mockEnquiry: Enquiry = {
-          _id: enquiryId,
-          enquiryId: `ENQ-${enquiryId.slice(-8).toUpperCase()}`,
-          name: "John Doe",
-          phoneNumber: "9876543210",
-          query: "I am looking for a suitable job opportunity in Mumbai area. I have 5 years of experience in software development.",
-          currentStatus: "new",
-          lastActionByAdminName: null,
-          lastActionByAdminRole: null,
-          lastAttemptNumber: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        if (!res.ok) {
+          throw new Error(
+            data?.error || `Failed to fetch enquiry (${res.status})`,
+          );
+        }
 
-        setEnquiry(mockEnquiry);
+        if (!isJson || !data) {
+          throw new Error("Unexpected server response while loading enquiry");
+        }
+
+        setEnquiry(data.enquiry as Enquiry);
       } catch (err: any) {
         setError(err.message);
       } finally {

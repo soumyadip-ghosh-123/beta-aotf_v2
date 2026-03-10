@@ -42,6 +42,7 @@ import Image from "next/image";
 interface TuitionPostData {
   _id: string;
   postId: string;
+  enquiryReferenceId?: string | null;
   guardianName: string;
   guardianPhone: string;
   students: {
@@ -76,6 +77,56 @@ export default function ViewPostPage({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const sanitizePhoneNumber = (phoneNumber?: string) => {
+    const trimmed = phoneNumber?.trim() ?? "";
+    if (!trimmed) return { dialer: null, whatsapp: null };
+
+    const dialer = trimmed.replace(/[^\d+]/g, "");
+    const digitsOnly = trimmed.replace(/\D/g, "");
+
+    if (!digitsOnly) {
+      return { dialer: null, whatsapp: null };
+    }
+
+    const whatsapp =
+      digitsOnly.length === 10 ? `91${digitsOnly}` : digitsOnly;
+
+    return {
+      dialer: dialer || null,
+      whatsapp,
+    };
+  };
+
+  const openGuardianDialer = () => {
+    const phoneTargets = sanitizePhoneNumber(postData?.guardianPhone);
+    if (!phoneTargets.dialer) {
+      addToast({
+        description: "No valid phone number available",
+        color: "danger",
+      });
+      return;
+    }
+
+    window.location.href = `tel:${phoneTargets.dialer}`;
+  };
+
+  const openGuardianWhatsApp = () => {
+    const phoneTargets = sanitizePhoneNumber(postData?.guardianPhone);
+    if (!phoneTargets.whatsapp) {
+      addToast({
+        description: "No valid WhatsApp number available",
+        color: "danger",
+      });
+      return;
+    }
+
+    window.open(
+      `https://wa.me/${phoneTargets.whatsapp}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   useEffect(() => {
     const fetchPostAndApplications = async () => {
@@ -387,9 +438,16 @@ export default function ViewPostPage({
               <CardHeader className="flex-col items-start gap-3 py-2">
                 <div className="flex flex-col justify-between w-full">
                   <div className="flex justify-between">
-                    <p className="text-sm text-default-400">
-                      Post ID: {postData.postId}
-                    </p>
+                    <div>
+                      <p className="text-sm text-default-400">
+                        Post ID: {postData.postId}
+                      </p>
+                      {postData.enquiryReferenceId && (
+                        <p className="text-xs text-default-500">
+                          Enquiry Ref: {postData.enquiryReferenceId}
+                        </p>
+                      )}
+                    </div>
                     <Chip
                       size="sm"
                       color={
@@ -452,7 +510,7 @@ export default function ViewPostPage({
                     size="sm"
                     color="primary"
                     startContent={<Phone size={16} />}
-                    onPress={() => {}}
+                    onPress={openGuardianDialer}
                   >
                     Call
                   </Button>
@@ -467,7 +525,7 @@ export default function ViewPostPage({
                         className="text-green-500"
                       />
                     }
-                    onPress={() => {}}
+                    onPress={openGuardianWhatsApp}
                   >
                     WhatsApp
                   </Button>

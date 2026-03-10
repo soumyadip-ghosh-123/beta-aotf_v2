@@ -27,6 +27,7 @@ import { addToast } from "@heroui/toast";
 function mapApiJob(j: Record<string, unknown>): JobPost {
   return {
     id: (j.jobId as string) ?? (j._id as string),
+    enquiryReferenceId: (j.enquiryReferenceId as string | null) ?? undefined,
     title: j.title as string,
     workType: j.workType as JobPost["workType"],
     clientName: j.clientName as string,

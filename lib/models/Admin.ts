@@ -91,7 +91,6 @@ const adminSchema = new Schema(
 );
 
 // Indexes
-adminSchema.index({ email: 1 });
 adminSchema.index({ role: 1, isActive: 1 });
 adminSchema.index({ isLocked: 1 });
 

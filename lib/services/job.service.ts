@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Job, { type IJob } from "@/lib/models/Job";
+import Enquiry from "@/lib/models/Enquiry";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
 import type {
@@ -12,7 +13,7 @@ import type {
 // ─── Types returned to route handlers ───────────────────────────────────
 
 export interface PaginatedJobs {
-  jobs: IJob[];
+  jobs: JobWithEnquiryReference[];
   pagination: {
     page: number;
     limit: number;
@@ -20,6 +21,10 @@ export interface PaginatedJobs {
     totalPages: number;
   };
 }
+
+export type JobWithEnquiryReference = IJob & {
+  enquiryReferenceId?: string | null;
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -53,6 +58,42 @@ async function generateJobId(): Promise<string> {
   }
 
   return `${prefix}${String(counter).padStart(2, "0")}`;
+}
+
+async function attachEnquiryReferences<
+  T extends { enquiryId?: mongoose.Types.ObjectId | string | null },
+>(jobs: T[]): Promise<Array<T & { enquiryReferenceId: string | null }>> {
+  const linkedEnquiryIds = [
+    ...new Set(
+      jobs
+        .map((job) => job.enquiryId?.toString())
+        .filter((enquiryId): enquiryId is string => Boolean(enquiryId)),
+    ),
+  ];
+
+  const enquiryObjectIds = linkedEnquiryIds
+    .filter((enquiryId) => mongoose.Types.ObjectId.isValid(enquiryId))
+    .map((enquiryId) => new mongoose.Types.ObjectId(enquiryId));
+
+  if (enquiryObjectIds.length === 0) {
+    return jobs.map((job) => ({ ...job, enquiryReferenceId: null }));
+  }
+
+  const enquiries = await Enquiry.find(
+    { _id: mongoose.trusted({ $in: enquiryObjectIds }) },
+    { enquiryId: 1 },
+  ).lean();
+
+  const enquiryMap = new Map(
+    enquiries.map((enquiry) => [String(enquiry._id), enquiry.enquiryId]),
+  );
+
+  return jobs.map((job) => ({
+    ...job,
+    enquiryReferenceId: job.enquiryId
+      ? (enquiryMap.get(String(job.enquiryId)) ?? null)
+      : null,
+  }));
 }
 
 // ─── Service Functions ──────────────────────────────────────────────────
@@ -101,27 +142,33 @@ export async function createJob(input: CreateJobInput): Promise<IJob> {
 /**
  * Get a single job by its jobId field.
  */
-export async function getJobByJobId(jobId: string): Promise<IJob> {
+export async function getJobByJobId(
+  jobId: string,
+): Promise<JobWithEnquiryReference> {
   await dbConnect();
 
   const job = await Job.findOne({ jobId }).lean<IJob>();
   if (!job) {
     throw new NotFoundError("Job");
   }
-  return job;
+
+  const [enrichedJob] = await attachEnquiryReferences([job]);
+  return enrichedJob;
 }
 
 /**
  * Get a single job by MongoDB _id.
  */
-export async function getJobById(id: string): Promise<IJob> {
+export async function getJobById(id: string): Promise<JobWithEnquiryReference> {
   await dbConnect();
 
   const job = await Job.findById(id).lean<IJob>();
   if (!job) {
     throw new NotFoundError("Job");
   }
-  return job;
+
+  const [enrichedJob] = await attachEnquiryReferences([job]);
+  return enrichedJob;
 }
 
 /**
@@ -161,8 +208,10 @@ export async function listJobs(input: ListJobsInput): Promise<PaginatedJobs> {
     Job.countDocuments(filter),
   ]);
 
+  const enrichedJobs = await attachEnquiryReferences(jobs);
+
   return {
-    jobs,
+    jobs: enrichedJobs,
     pagination: {
       page,
       limit,

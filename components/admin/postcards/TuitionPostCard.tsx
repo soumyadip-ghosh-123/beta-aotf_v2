@@ -36,6 +36,7 @@ export interface TuitionPostStudent {
 
 export interface TuitionPost {
   id: string;
+  enquiryReferenceId?: string | null;
   guardian: string;
   guardianPhone: string;
   students: TuitionPostStudent[];
@@ -151,6 +152,11 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
                 {post.status}
               </Chip>
             </div>
+            {post.enquiryReferenceId && (
+              <p className="text-xs text-default-500">
+                Enquiry Ref: {post.enquiryReferenceId}
+              </p>
+            )}
           </div>
         </div>
       </CardHeader>
