@@ -21,6 +21,13 @@ export const adIdParamSchema = z.object({
     .regex(/^AD-\d{8}$/, "Invalid adId format"),
 });
 
+export const applicationIdParamSchema = z.object({
+  applicationId: z
+    .string()
+    .trim()
+    .regex(/^APP-[A-Z0-9]+-[A-Z0-9]+$/, "Invalid applicationId format"),
+});
+
 export const deleteApplicationsBodySchema = z
   .object({
     applicationIds: z
@@ -32,4 +39,28 @@ export const deleteApplicationsBodySchema = z
 
 export type DeleteApplicationsBodyInput = z.infer<
   typeof deleteApplicationsBodySchema
+>;
+
+export const updateApplicationStatusBodySchema = z
+  .object({
+    status: z.enum(
+      ["applied", "DC", "GC", "approved", "decline", "withdrawn"],
+      {
+        errorMap: () => ({ message: "Invalid status value" }),
+      },
+    ),
+    dcDate: z
+      .string()
+      .datetime({ message: "dcDate must be a valid ISO date string" })
+      .optional(),
+    gcDate: z
+      .string()
+      .datetime({ message: "gcDate must be a valid ISO date string" })
+      .optional(),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .strict();
+
+export type UpdateApplicationStatusBodyInput = z.infer<
+  typeof updateApplicationStatusBodySchema
 >;

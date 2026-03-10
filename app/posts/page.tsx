@@ -1,7 +1,14 @@
+import { auth } from "@clerk/nextjs/server";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
+import {
+  getApplicantPermissionsByClerkId,
+  getAppliedPostIdsForApplicant,
+} from "@/lib/services/application.service";
 import { listPosts } from "@/lib/services/post.service";
+
+const EDITED_THRESHOLD_MS = 1000;
 
 export default async function DocsPage({
   searchParams,
@@ -12,6 +19,7 @@ export default async function DocsPage({
   const page = parseInt(params.page || "1", 10);
   const search = params.search || undefined;
   const status = (params.status as any) || "all";
+  const { userId: clerkId } = await auth();
 
   const { posts, pagination } = await listPosts({
     page,
@@ -19,6 +27,23 @@ export default async function DocsPage({
     search,
     status,
   });
+
+  const applicantPermissions = clerkId
+    ? await getApplicantPermissionsByClerkId(clerkId)
+    : null;
+
+  const appliedPostIds = applicantPermissions?.canApplyToPosts
+    ? new Set(
+        await getAppliedPostIdsForApplicant(
+          applicantPermissions.applicantId,
+          posts.map((post) => post.postId),
+        ),
+      )
+    : new Set<string>();
+
+  const canApplyToPosts = clerkId
+    ? applicantPermissions?.canApplyToPosts
+    : undefined;
 
   return (
     <FilterSidebarProvider>
@@ -47,6 +72,15 @@ export default async function DocsPage({
                 status={post.status}
                 createdAt={post.createdAt}
                 updatedAt={post.updatedAt}
+                initialApplied={appliedPostIds.has(post.postId)}
+                isSignedIn={Boolean(clerkId)}
+                canApply={canApplyToPosts}
+                isEdited={
+                  Boolean(post.updatedByAdminClerkId) ||
+                  new Date(post.updatedAt).getTime() -
+                    new Date(post.createdAt).getTime() >
+                    EDITED_THRESHOLD_MS
+                }
               />
             ))}
           </div>

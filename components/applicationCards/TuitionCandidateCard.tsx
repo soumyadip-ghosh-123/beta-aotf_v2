@@ -13,6 +13,7 @@ export interface Candidate {
   name: string;
   email: string;
   phone: string;
+  applicantType?: "teacher" | "candidate";
   avatar?: string;
   status: "applied" | "DC" | "GC" | "approved" | "decline" | "auto_declined" | "withdrawn";
   appliedDate: string;
@@ -77,6 +78,9 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
     }
   };
 
+  const applicantTypeLabel =
+    candidate.applicantType === "teacher" ? "Teacher" : "Candidate";
+
   return (
     <Card className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}>
       <CardBody className="p-4 pb-2">
@@ -101,6 +105,9 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                 name={candidate.name}
                 description={`Email: ${candidate.email}`}
               />
+              <Chip size="sm" variant="bordered">
+                {applicantTypeLabel}
+              </Chip>
             </div>
             <Chip
               size="sm"

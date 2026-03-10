@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth, useUser } from "@clerk/nextjs";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
@@ -65,6 +66,8 @@ export default function TuitionPostForm({
   enquiry,
 }: TuitionPostFormProps) {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
   const isEditMode = mode === "edit";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditMode);
@@ -391,6 +394,19 @@ export default function TuitionPostForm({
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          addToast({
+            description: "Your admin session expired. Please sign in again.",
+            color: "danger",
+          });
+          router.push("/admin/login");
+          return;
+        }
+
+        if (res.status === 403) {
+          throw new Error("Admin access required to manage tuition posts");
+        }
+
         const data = await res.json();
         if (data.fieldErrors) {
           const messages = Object.entries(data.fieldErrors)
@@ -442,6 +458,14 @@ export default function TuitionPostForm({
 
   // Edit mode: loading state
   if (isEditMode && isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!isSignedIn || !user) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Spinner size="lg" />

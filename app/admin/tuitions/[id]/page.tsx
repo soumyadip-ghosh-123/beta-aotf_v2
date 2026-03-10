@@ -105,6 +105,7 @@ export default function ViewPostPage({
               name: app.applicantSnapshot?.name ?? "Unknown",
               email: app.applicantSnapshot?.email ?? "",
               phone: app.applicantSnapshot?.phone ?? "",
+              applicantType: app.applicantType,
               status: app.status,
               appliedDate: app.appliedAt ?? app.createdAt,
               coverLetter: app.coverLetter,
@@ -229,7 +230,7 @@ export default function ViewPostPage({
 
     if (hasApproved) {
       // If someone is approved, all others go to declined
-      waitingListLabel = "Declined Candidates";
+      waitingListLabel = "Declined Applicants";
       waitingListCandidates = [
         ...applied,
         ...inDC.filter((c) => c.id !== approved[0]?.id),
@@ -493,17 +494,15 @@ export default function ViewPostPage({
 
           <Divider />
 
-          {/* Candidates Section */}
+          {/* Applicants Section */}
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Approved Candidates */}
+              {/* Approved Applicants */}
               {categorizedCandidates.approved.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <CheckCircle size={20} className="text-success" />
-                    <h2 className="text-xl font-semibold">
-                      Approved Candidate
-                    </h2>
+                    <h2 className="text-xl font-semibold">Approved Applicant</h2>
                     <Chip size="sm" color="success" variant="flat">
                       {categorizedCandidates.approved.length}
                     </Chip>
@@ -624,18 +623,18 @@ export default function ViewPostPage({
               </div>
             )}
 
-            {/* Withdrawn Candidates */}
+            {/* Withdrawn Applicants */}
             {categorizedCandidates.withdrawn.length > 0 && (
               <div>
                 <Accordion variant="bordered">
                   <AccordionItem
                     key="2"
-                    aria-label="Withdrawn Candidates"
+                    aria-label="Withdrawn Applicants"
                     title={
                       <div className="flex items-center gap-2">
                         <XCircle size={20} className="text-default-400" />
                         <span className="font-semibold">
-                          Withdrawn Candidates
+                          Withdrawn Applicants
                         </span>
                         <Chip size="sm" color="default" variant="flat">
                           {categorizedCandidates.withdrawn.length}
@@ -662,7 +661,7 @@ export default function ViewPostPage({
             )}
           </div>
 
-          {/* No Candidates */}
+          {/* No Applicants */}
           {candidates.length === 0 && (
             <Card>
               <CardBody className="py-10 text-center">
@@ -671,7 +670,7 @@ export default function ViewPostPage({
                   className="mx-auto text-default-300 mb-4"
                 />
                 <p className="text-default-500">
-                  No candidates have applied for this tuition post yet.
+                  No applicants have applied for this tuition post yet.
                 </p>
               </CardBody>
             </Card>

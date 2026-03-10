@@ -1,6 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import Search from "@/components/Search";
 import JobPost from "@/components/PostCards/JobPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
+import {
+  getApplicantPermissionsByClerkId,
+  getAppliedJobIdsForApplicant,
+} from "@/lib/services/application.service";
 import { listJobs } from "@/lib/services/job.service";
 
 export default async function JobsPage({
@@ -12,6 +17,7 @@ export default async function JobsPage({
   const page = parseInt(params.page || "1", 10);
   const search = params.search || undefined;
   const status = (params.status as any) || "all";
+  const { userId: clerkId } = await auth();
 
   const { jobs, pagination } = await listJobs({
     page,
@@ -19,6 +25,23 @@ export default async function JobsPage({
     search,
     status,
   });
+
+  const applicantPermissions = clerkId
+    ? await getApplicantPermissionsByClerkId(clerkId)
+    : null;
+
+  const appliedJobIds = applicantPermissions?.canApplyToJobs
+    ? new Set(
+        await getAppliedJobIdsForApplicant(
+          applicantPermissions.applicantId,
+          jobs.map((job) => job.jobId),
+        ),
+      )
+    : new Set<string>();
+
+  const canApplyToJobs = clerkId
+    ? applicantPermissions?.canApplyToJobs
+    : undefined;
 
   return (
     <FilterSidebarProvider>
@@ -50,6 +73,9 @@ export default async function JobsPage({
                 brief={job.brief}
                 status={job.status}
                 createdAt={job.createdAt?.toISOString()}
+                initialApplied={appliedJobIds.has(job.jobId)}
+                isSignedIn={Boolean(clerkId)}
+                canApply={canApplyToJobs}
               />
             ))}
           </div>

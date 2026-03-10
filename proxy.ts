@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import Admin from "@/lib/models/Admin";
 
 // ─── Route matchers ─────────────────────────────────────────────────────
 
@@ -12,7 +13,10 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/admin/login(.*)",
+  "/admin/change-password",
   "/api/v1/webhooks(.*)",
+  "/api/v1/posts(.*)",
+  "/api/v1/jobs(.*)",
   "/about(.*)",
   "/contact(.*)",
   "/enquiry(.*)",
@@ -27,6 +31,8 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isAdminApiRoute = createRouteMatcher(["/api/v1/admin(.*)"]);
+
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
 const isUserProfileRoute = createRouteMatcher(["/u(.*)"]);
 // API routes called during onboarding — must be reachable before onboarding is complete
@@ -47,6 +53,14 @@ const middleware = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
   const method = req.method;
   const start = Date.now();
+
+  // Debug logging for API routes
+  if (pathname === "/api/v1/posts") {
+    console.log("[proxy DEBUG] /api/v1/posts request");
+    console.log("  - userId:", userId);
+    console.log("  - meta?.isAdmin:", meta?.isAdmin);
+    console.log("  - method:", method);
+  }
   // 0. /dashboard/redirect → /u/[username]/dashboard
   // username is NOT in the Clerk JWT by default, so we always look it up from DB.
   if (pathname === "/dashboard/redirect" && userId) {
@@ -71,21 +85,96 @@ const middleware = clerkMiddleware(async (auth, req) => {
   }
 
   // 1. Admin route guard
-  if (isAdminRoute(req) && !isPublicRoute(req)) {
-    if (!userId || meta?.isAdmin !== true) {
+  // Track if user is an admin to skip onboarding checks later
+  let isUserAdmin = false;
+
+  if ((isAdminRoute(req) || isAdminApiRoute(req)) && !isPublicRoute(req)) {
+    // Must be signed in
+    if (!userId) {
       return NextResponse.redirect(new URL("/", req.url));
     }
+
+    // Check admin status — use JWT claim first, but fall back to DB if stale
+    // (Clerk JWT may not have updated publicMetadata immediately after sign-in)
+    let isAdminConfirmed = meta?.isAdmin === true;
+    let adminDoc: {
+      isActive?: boolean;
+      isLocked?: boolean;
+      requirePasswordChange?: boolean;
+    } | null = null;
+
+    try {
+      await dbConnect();
+      adminDoc = await Admin.findOne(
+        { clerkId: userId },
+        { isActive: 1, isLocked: 1, requirePasswordChange: 1 },
+      ).lean();
+
+      // DB is the source of truth — if admin record exists, they're an admin
+      if (adminDoc) {
+        isAdminConfirmed = true;
+        isUserAdmin = true;
+      }
+    } catch (err) {
+      console.error("[proxy] Error checking admin status:", err);
+      // If DB is down, fall back to JWT claim to avoid blocking admins
+    }
+
+    if (!isAdminConfirmed || !adminDoc) {
+      // Neither JWT nor DB confirms admin status — redirect to home
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
+    // Additional admin-specific checks for authenticated admins
+    if (!adminDoc.isActive) {
+      // Admin account is deactivated
+      return NextResponse.redirect(
+        new URL("/admin/login?error=deactivated", req.url),
+      );
+    }
+
+    if (adminDoc.isLocked) {
+      // Admin account is locked (failed login attempts or manual lock)
+      return NextResponse.redirect(
+        new URL("/admin/login?error=locked", req.url),
+      );
+    }
+
+    // If admin requires password change, only allow access to password change page
+    if (
+      adminDoc.requirePasswordChange &&
+      pathname !== "/admin/change-password"
+    ) {
+      return NextResponse.redirect(new URL("/admin/change-password", req.url));
+    }
+  }
+
+  if (userId && meta?.isAdmin === true) {
+    // Preserve admin access for non-admin page routes when metadata is fresh.
+    isUserAdmin = true;
   }
 
   // 2. Auth guard for all protected routes
   if (!isPublicRoute(req) && !userId) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (isAdminRoute(req) || isAdminApiRoute(req)) {
+      return NextResponse.redirect(new URL("/admin/login", req.url));
+    }
+
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
+
   // 3. Onboarding gate — JWT claim first, DB fallback if claim is absent
+  // Skip onboarding check for admins
   if (
     userId &&
+    !isUserAdmin &&
     !isPublicRoute(req) &&
     !isAdminRoute(req) &&
+    !isAdminApiRoute(req) &&
     !isOnboardingRoute(req) &&
     !isOnboardingApiRoute(req) &&
     !isUserProfileRoute(req)
@@ -143,8 +232,8 @@ export async function proxy(request: NextRequest) {
 
   const event = {
     sourcePage: "/",
-    waitUntil: () => { },
-    passThroughOnException: () => { },
+    waitUntil: () => {},
+    passThroughOnException: () => {},
   } as unknown as NextFetchEvent;
 
   return middleware(request, event);

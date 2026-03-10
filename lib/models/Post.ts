@@ -49,9 +49,9 @@ export interface IPost extends Document {
   monthlyBudget: number;
   notes?: string;
   status: PostStatus;
-  matchedTeacherId?: mongoose.Types.ObjectId;
-  createdByAdminId?: mongoose.Types.ObjectId;
-  updatedByAdminId?: mongoose.Types.ObjectId;
+  matchedTeacherClerkId?: string;
+  createdByAdminClerkId?: string;
+  updatedByAdminClerkId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,15 +87,22 @@ const PostSchema = new Schema<IPost>(
       required: true,
       default: "open",
     },
-    matchedTeacherId: { type: Schema.Types.ObjectId },
-    createdByAdminId: { type: Schema.Types.ObjectId },
-    updatedByAdminId: { type: Schema.Types.ObjectId },
+    matchedTeacherClerkId: { type: String },
+    createdByAdminClerkId: { type: String },
+    updatedByAdminClerkId: { type: String },
   },
   {
     timestamps: true,
     collection: "posts",
   },
 );
+
+PostSchema.index({ enquiryId: 1 });
+PostSchema.index({ guardianPhone: 1 });
+PostSchema.index({ status: 1, createdAt: -1 });
+PostSchema.index({ matchedTeacherClerkId: 1 });
+PostSchema.index({ createdByAdminClerkId: 1, createdAt: -1 });
+PostSchema.index({ "students.subjectsNormalized": 1 });
 
 const Post: Model<IPost> =
   models.Post || mongoose.model<IPost>("Post", PostSchema);

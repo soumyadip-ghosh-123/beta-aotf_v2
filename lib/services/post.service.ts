@@ -9,6 +9,14 @@ import type {
   ListPostsInput,
 } from "@/lib/validations/post";
 
+type CreatePostParams = CreatePostInput & {
+  createdByAdminClerkId?: string;
+};
+
+type UpdatePostParams = UpdatePostInput & {
+  updatedByAdminClerkId?: string;
+};
+
 // ─── Types returned to route handlers ───────────────────────────────────
 
 export interface PaginatedPosts {
@@ -73,7 +81,7 @@ function normalizeStudents(
  * Create a new tuition post (admin-facing).
  * @returns The created post document.
  */
-export async function createPost(input: CreatePostInput): Promise<IPost> {
+export async function createPost(input: CreatePostParams): Promise<IPost> {
   await dbConnect();
 
   const postId = await generatePostId();
@@ -95,9 +103,8 @@ export async function createPost(input: CreatePostInput): Promise<IPost> {
     monthlyBudget: input.monthlyBudget,
     notes: input.notes,
     status: input.status ?? "open",
-    createdByAdminId: input.createdByAdminId
-      ? new mongoose.Types.ObjectId(input.createdByAdminId)
-      : undefined,
+    matchedTeacherClerkId: input.matchedTeacherClerkId,
+    createdByAdminClerkId: input.createdByAdminClerkId,
   });
 
   return post;
@@ -185,7 +192,7 @@ export async function listPosts(
  */
 export async function updatePost(
   postId: string,
-  input: UpdatePostInput,
+  input: UpdatePostParams,
 ): Promise<IPost> {
   await dbConnect();
 
@@ -196,12 +203,6 @@ export async function updatePost(
     updateData.students = normalizeStudents(input.students);
   }
 
-  // Convert string IDs to ObjectIds
-  if (input.updatedByAdminId) {
-    updateData.updatedByAdminId = new mongoose.Types.ObjectId(
-      input.updatedByAdminId,
-    );
-  }
   if (input.enquiryId) {
     updateData.enquiryId = new mongoose.Types.ObjectId(input.enquiryId);
   }

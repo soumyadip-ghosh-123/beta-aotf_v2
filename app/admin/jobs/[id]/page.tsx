@@ -101,6 +101,7 @@ export default function ViewJobPostPage({
               name: app.applicantSnapshot?.name ?? "Unknown",
               email: app.applicantSnapshot?.email ?? "",
               phone: app.applicantSnapshot?.phone ?? "",
+              applicantType: app.applicantType,
               status: app.status === "applied" ? "applied" : app.status,
               appliedDate: app.appliedAt ?? app.createdAt,
               coverLetter: app.coverLetter,
@@ -215,7 +216,7 @@ export default function ViewJobPostPage({
     let waitingListCandidates = applied;
 
     if (hasApproved) {
-      waitingListLabel = "Declined Candidates";
+      waitingListLabel = "Declined Applicants";
       waitingListCandidates = [...applied, ...declined];
     }
 
@@ -445,14 +446,14 @@ export default function ViewJobPostPage({
         </div>
       </div>
       <Divider />
-      {/* Candidates Sections */}
+      {/* Applicants Sections */}
       <div className="space-y-3">
-        {/* Approved Candidates */}
+        {/* Approved Applicants */}
         {categorizedCandidates.approved.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle size={20} className="text-success" />
-              <h2 className="text-xl font-semibold">Approved Candidates</h2>
+              <h2 className="text-xl font-semibold">Approved Applicants</h2>
               <Chip size="sm" color="success" variant="flat">
                 {categorizedCandidates.approved.length}
               </Chip>

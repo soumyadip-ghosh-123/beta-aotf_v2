@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   handleApiError,
@@ -6,6 +7,8 @@ import {
   getClientIp,
   checkJsonContentType,
 } from "@/lib/api-utils";
+import Admin from "@/lib/models/Admin";
+import dbConnect from "@/lib/db";
 import { updatePostSchema } from "@/lib/validations/post";
 import {
   getPostByPostId,
@@ -59,6 +62,14 @@ export async function PATCH(
   { params }: { params: Promise<{ postId: string }> },
 ) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
 
@@ -71,10 +82,22 @@ export async function PATCH(
     const rateLimitBlock = checkRateLimit(mutateLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
+    await dbConnect();
+    const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+    if (!currentAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 },
+      );
+    }
+
     const { postId } = postIdParamSchema.parse(await params);
     const body = await request.json();
     const input = updatePostSchema.parse(body);
-    const post = await updatePost(postId, input);
+    const post = await updatePost(postId, {
+      ...input,
+      updatedByAdminClerkId: currentAdmin.clerkId,
+    });
 
     return NextResponse.json({
       message: "Post updated successfully",
@@ -97,6 +120,14 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> },
 ) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
 
@@ -104,6 +135,15 @@ export async function DELETE(
     const ipDel = getClientIp(request);
     const rateLimitBlockDel = checkRateLimit(mutateLimiter, ipDel);
     if (rateLimitBlockDel) return rateLimitBlockDel;
+
+    await dbConnect();
+    const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+    if (!currentAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 },
+      );
+    }
 
     const { postId } = postIdParamSchema.parse(await params);
     await deletePost(postId);

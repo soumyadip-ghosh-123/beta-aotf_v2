@@ -4,17 +4,16 @@ import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { User } from "@heroui/user";
-import { useState } from "react";
 import { FaMapMarkerAlt, FaArrowRight, FaShare, FaEye } from "react-icons/fa";
 import { BsCurrencyRupee } from "react-icons/bs";
 import { FaClock } from "react-icons/fa6";
-import { MdDoneAll } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import {
   formatJobShare,
   shareOnWhatsApp,
   type JobShareData,
 } from "@/lib/utils/share";
+import ApplyActionButton from "@/components/ApplyActionButton";
 
 interface JobPostProps {
   jobId: string;
@@ -35,6 +34,9 @@ interface JobPostProps {
   brief?: string;
   status: "open" | "closed" | "hold" | "cancelled";
   createdAt?: string;
+  initialApplied?: boolean;
+  isSignedIn?: boolean;
+  canApply?: boolean;
 }
 
 /* ---------- FORMATTERS ---------- */
@@ -82,8 +84,10 @@ const JobPost = ({
   budget,
   duration,
   status,
+  initialApplied = false,
+  isSignedIn = false,
+  canApply,
 }: JobPostProps) => {
-  const [isApplied, setIsApplied] = useState(false);
   const router = useRouter();
 
   const handleShare = () => {
@@ -214,15 +218,16 @@ const JobPost = ({
             Share <FaShare />
           </Button>
 
-          <Button
+          <ApplyActionButton
+            target="job"
+            targetId={jobId}
+            initialApplied={initialApplied}
+            isSignedIn={isSignedIn}
+            isEligible={canApply}
+            ineligibleLabel="Candidates Only"
             size="sm"
-            color={isApplied ? "default" : "primary"}
-            isDisabled={isApplied}
-            onClick={() => setIsApplied(true)}
-          >
-            {isApplied ? "Applied" : "Apply"}
-            {isApplied ? <MdDoneAll /> : <FaArrowRight />}
-          </Button>
+            color="primary"
+          />
         </div>
       </CardFooter>
     </Card>

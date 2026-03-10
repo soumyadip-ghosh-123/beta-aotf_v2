@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
 import { FaHome } from "react-icons/fa";
@@ -5,9 +6,16 @@ import { LuMapPin, LuNotebookText } from "react-icons/lu";
 import { SlCalender, SlShare } from "react-icons/sl";
 import { PiClockCountdownFill } from "react-icons/pi";
 import { MdOutlineOnlinePrediction } from "react-icons/md";
+import ApplyActionButton from "@/components/ApplyActionButton";
 import BackButton from "@/components/BackButton";
+import {
+  getApplicantPermissionsByClerkId,
+  hasAppliedToPost,
+} from "@/lib/services/application.service";
 import { getPostByPostId } from "@/lib/services/post.service";
 import { notFound } from "next/navigation";
+
+const EDITED_THRESHOLD_MS = 1000;
 
 const getStatusBadge = (status: string) => {
   const colors: Record<string, { bg: string; border: string; text: string }> = {
@@ -59,6 +67,7 @@ export default async function PostDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: postId } = await params;
+  const { userId: clerkId } = await auth();
 
   let post;
   try {
@@ -67,6 +76,18 @@ export default async function PostDetailPage({
     notFound();
   }
 
+  const applicantPermissions = clerkId
+    ? await getApplicantPermissionsByClerkId(clerkId)
+    : null;
+
+  const initialApplied = applicantPermissions?.canApplyToPosts
+    ? await hasAppliedToPost(applicantPermissions.applicantId, postId)
+    : false;
+
+  const canApplyToPosts = clerkId
+    ? applicantPermissions?.canApplyToPosts
+    : undefined;
+
   const safeStudents = post.students ?? [];
   const allSubjects = safeStudents.flatMap((s) => s.subjects);
   const subjectDisplay = allSubjects.join(", ");
@@ -74,6 +95,10 @@ export default async function PostDetailPage({
   const boardDisplay = safeStudents.map((s) => s.board).join(", ");
   const statusBadge = getStatusBadge(post.status);
   const classTypeInfo = getClassTypeIcon(post.classType);
+  const isEdited =
+    Boolean(post.updatedByAdminClerkId) ||
+    new Date(post.updatedAt).getTime() - new Date(post.createdAt).getTime() >
+      EDITED_THRESHOLD_MS;
 
   const freqText =
     post.frequencyPerWeek === 7
@@ -90,14 +115,23 @@ export default async function PostDetailPage({
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide ">
             Post ID: #{post.postId}
           </p>
-          <div
-            className={`flex h-7 items-center justify-center px-3 rounded-full ${statusBadge.bg} border ${statusBadge.border}`}
-          >
-            <span
-              className={`${statusBadge.text} text-xs font-bold uppercase tracking-wider`}
+          <div className="flex items-center gap-2">
+            {isEdited ? (
+              <div className="flex h-7 items-center justify-center rounded-full border border-amber-200 bg-amber-100 px-3 dark:border-amber-800 dark:bg-amber-900/40">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  Edited
+                </span>
+              </div>
+            ) : null}
+            <div
+              className={`flex h-7 items-center justify-center px-3 rounded-full ${statusBadge.bg} border ${statusBadge.border}`}
             >
-              {post.status}
-            </span>
+              <span
+                className={`${statusBadge.text} text-xs font-bold uppercase tracking-wider`}
+              >
+                {post.status}
+              </span>
+            </div>
           </div>
         </div>
         <h1 className="text-gray-900 dark:text-white text-[28px] font-bold leading-[1.2] mb-1">
@@ -213,9 +247,17 @@ export default async function PostDetailPage({
           Share
         </Button>
 
-        <Button className="w-full" size="lg" color="primary">
-          Apply Now
-        </Button>
+        <ApplyActionButton
+          target="post"
+          targetId={postId}
+          initialApplied={initialApplied}
+          isSignedIn={Boolean(clerkId)}
+          isEligible={canApplyToPosts}
+          ineligibleLabel="Not Eligible"
+          className="w-full"
+          size="lg"
+          color="primary"
+        />
       </div>
     </div>
   );

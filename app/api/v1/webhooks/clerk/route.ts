@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import Admin from "@/lib/models/Admin";
 import Profile from "@/lib/models/Profile";
 import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import WebhookEvent from "@/lib/models/WebhookEvent";
@@ -101,6 +102,18 @@ async function handleUserCreated(data: Record<string, unknown>) {
     throw new Error("Missing clerkId in user.created event");
   }
 
+  // Check if this is an admin user
+  const publicMetadata =
+    (data.public_metadata as Record<string, unknown>) || {};
+  const isAdmin = publicMetadata.isAdmin === true;
+
+  if (isAdmin) {
+    // Handle admin user creation
+    await handleAdminCreated(data);
+    return;
+  }
+
+  // Handle regular user creation
   // username is null when Clerk is configured without a username requirement,
   // during OAuth sign-ups, and in every Clerk test-event payload.
   // Derive a stable, URL-safe fallback from the primary email + clerkId suffix.
@@ -243,12 +256,113 @@ async function handleUserCreated(data: Record<string, unknown>) {
   console.log(`[clerk-webhook] Created user and profile for ${clerkId}`);
 }
 
+async function handleAdminCreated(data: Record<string, unknown>) {
+  const clerkId = data.id as string;
+  const username = (data.username as string)?.toLowerCase().trim();
+  const publicMetadata =
+    (data.public_metadata as Record<string, unknown>) || {};
+  const role = (publicMetadata.role as string) || "moderator";
+
+  const emails =
+    (data.email_addresses as
+      | Array<{ id: string; email_address: string }>
+      | undefined) ?? [];
+  const primaryEmailId = data.primary_email_address_id as string | undefined;
+  const email =
+    (emails.find((e) => e.id === primaryEmailId) ?? emails[0])?.email_address ??
+    "";
+
+  const firstName = (data.first_name as string) || "";
+  const lastName = (data.last_name as string) || "";
+  const name = `${firstName} ${lastName}`.trim();
+
+  if (!clerkId || !username || !email) {
+    throw new Error("Missing required fields for admin creation");
+  }
+
+  // Check if admin already exists
+  let adminDoc = await Admin.findOne({ clerkId });
+
+  if (!adminDoc) {
+    // Create new admin with default permissions based on role
+    const permissions = Admin.getDefaultPermissions(role);
+
+    adminDoc = await Admin.create({
+      clerkId,
+      username,
+      email,
+      name,
+      role: role as "super_admin" | "admin" | "moderator",
+      permissions,
+      isActive: true,
+      isLocked: false,
+      requirePasswordChange: publicMetadata.requirePasswordChange || false,
+      createdBy: null, // Will be updated via API when admin creates another admin
+    });
+
+    console.log(`[clerk-webhook] Created admin ${clerkId} with role ${role}`);
+  }
+
+  // Update Clerk metadata with adminId
+  try {
+    const client = await clerkClient();
+    await client.users.updateUserMetadata(clerkId, {
+      publicMetadata: {
+        ...publicMetadata,
+        adminId: adminDoc._id.toString(),
+      },
+    });
+  } catch (err) {
+    console.error(
+      `[clerk-webhook] Failed to update admin metadata for ${clerkId}:`,
+      err,
+    );
+  }
+}
+
 async function handleUserUpdated(data: Record<string, unknown>) {
   const clerkId = data.id as string;
   const newUsername = (data.username as string)?.toLowerCase().trim();
 
   if (!clerkId) return;
 
+  // Check if this is an admin
+  const publicMetadata =
+    (data.public_metadata as Record<string, unknown>) || {};
+  const isAdmin = publicMetadata.isAdmin === true;
+
+  if (isAdmin) {
+    // Handle admin update
+    const admin = await Admin.findOne({ clerkId });
+    if (!admin) {
+      console.warn(
+        `[clerk-webhook] user.updated: Admin not found for ${clerkId}`,
+      );
+      return;
+    }
+
+    // Only sync if username actually changed
+    if (newUsername && newUsername !== admin.username) {
+      await Admin.updateOne({ clerkId }, { username: newUsername });
+      console.log(
+        `[clerk-webhook] Synced admin username for ${clerkId}: ${admin.username} → ${newUsername}`,
+      );
+    }
+
+    // Sync name if changed
+    const firstName = (data.first_name as string) || "";
+    const lastName = (data.last_name as string) || "";
+    const newName = `${firstName} ${lastName}`.trim();
+
+    if (newName && newName !== admin.name) {
+      await Admin.updateOne({ clerkId }, { name: newName });
+      console.log(`[clerk-webhook] Synced admin name for ${clerkId}`);
+    }
+
+    return;
+  }
+
+  // Handle regular user update
   const user = await User.findOne({ clerkId });
   if (!user) {
     console.warn(`[clerk-webhook] user.updated: User not found for ${clerkId}`);
@@ -284,6 +398,22 @@ async function handleUserDeleted(data: Record<string, unknown>) {
   const clerkId = data.id as string;
   if (!clerkId) return;
 
+  // Check if this is an admin
+  const publicMetadata =
+    (data.public_metadata as Record<string, unknown>) || {};
+  const isAdmin = publicMetadata.isAdmin === true;
+
+  if (isAdmin) {
+    // Soft delete admin (set inactive)
+    await Admin.updateOne(
+      { clerkId },
+      { isActive: false, terminatedAt: new Date() },
+    );
+    console.log(`[clerk-webhook] Soft-deleted admin ${clerkId}`);
+    return;
+  }
+
+  // Handle regular user deletion
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {

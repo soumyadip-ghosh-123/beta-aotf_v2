@@ -13,6 +13,7 @@ export interface JobCandidate {
   name: string;
   email: string;
   phone: string;
+  applicantType?: "teacher" | "candidate";
   avatar?: string;
   status: "applied" | "approved" | "decline" | "auto_declined" | "withdrawn";
   appliedDate: string;
@@ -69,6 +70,9 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
     }
   };
 
+  const applicantTypeLabel =
+    candidate.applicantType === "teacher" ? "Teacher" : "Candidate";
+
   return (
     <Card className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}>
       <CardBody className="p-4">
@@ -93,6 +97,9 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
                 name={candidate.name}
                 description={`Email: ${candidate.email}`}
               />
+              <Chip size="sm" variant="bordered">
+                {applicantTypeLabel}
+              </Chip>
             </div>
             <Chip
               size="sm"

@@ -1,12 +1,347 @@
+import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
-import Application, { type IApplication } from "@/lib/models/Application";
-import { NotFoundError } from "@/lib/errors";
+import Application, {
+  type ApplicantType,
+  type IApplication,
+  type IApplicantSnapshot,
+} from "@/lib/models/Application";
+import Job from "@/lib/models/Job";
+import Post from "@/lib/models/Post";
+import User from "@/lib/models/User";
+import { ConflictError, NotFoundError } from "@/lib/errors";
+import { ensureUserRecord } from "@/lib/utils/ensure-user";
 
 // ─── Types returned to route handlers ───────────────────────────────────
 
 export interface ApplicationListResult {
   applications: IApplication[];
   total: number;
+}
+
+export interface AppliedPostResult {
+  post: Awaited<ReturnType<typeof Post.findOne>> extends { lean(): infer T }
+    ? T
+    : never;
+  application: IApplication;
+  applicantCount: number;
+}
+
+export interface AppliedJobResult {
+  job: Awaited<ReturnType<typeof Job.findOne>> extends { lean(): infer T }
+    ? T
+    : never;
+  application: IApplication;
+}
+
+export interface ApplicantPermissions {
+  applicantId: mongoose.Types.ObjectId;
+  applicantType: ApplicantType;
+  canApplyToPosts: boolean;
+  canApplyToJobs: boolean;
+  role: "teacher" | "teacher_candidate" | "admin";
+  status: "active" | "blocked" | "deleted";
+}
+
+export interface CreatePostApplicationParams {
+  postId: string;
+  applicantId: mongoose.Types.ObjectId;
+  profileId: string;
+  applicantType: ApplicantType;
+  applicantSnapshot: IApplicantSnapshot;
+  coverLetter?: string;
+}
+
+export interface CreateJobApplicationParams {
+  jobIdPublic: string;
+  applicantId: mongoose.Types.ObjectId;
+  profileId: string;
+  applicantType: ApplicantType;
+  applicantSnapshot: IApplicantSnapshot;
+  coverLetter?: string;
+}
+
+function isCandidateApplicant(user: {
+  role: "teacher" | "teacher_candidate" | "admin";
+  plan?: { hasCandidateAccess?: boolean | null } | null;
+}): boolean {
+  return (
+    user.role === "teacher_candidate" || Boolean(user.plan?.hasCandidateAccess)
+  );
+}
+
+function generateApplicationId(): string {
+  const time = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `APP-${time}-${random}`;
+}
+
+export async function getApplicantPermissionsByClerkId(
+  clerkId: string,
+  options: { ensureUser?: boolean } = {},
+): Promise<ApplicantPermissions | null> {
+  await dbConnect();
+
+  const user = options.ensureUser
+    ? await ensureUserRecord(clerkId)
+    : await User.findOne({ clerkId }).lean<{
+        _id: mongoose.Types.ObjectId;
+        role: "teacher" | "teacher_candidate" | "admin";
+        status: "active" | "blocked" | "deleted";
+        plan?: { hasCandidateAccess?: boolean | null } | null;
+      }>();
+
+  if (!user) {
+    return null;
+  }
+
+  const candidateApplicant = isCandidateApplicant(user);
+
+  return {
+    applicantId: user._id,
+    applicantType: candidateApplicant ? "candidate" : "teacher",
+    canApplyToPosts: user.role !== "admin",
+    canApplyToJobs: candidateApplicant,
+    role: user.role,
+    status: user.status,
+  };
+}
+
+export async function getAppliedPostIdsForApplicant(
+  applicantId: mongoose.Types.ObjectId,
+  postIds: string[],
+): Promise<string[]> {
+  await dbConnect();
+
+  if (postIds.length === 0) {
+    return [];
+  }
+
+  const appliedPostIds = await Application.distinct("postId", {
+    applicantId,
+    postId: mongoose.trusted({ $in: postIds }),
+  });
+
+  return appliedPostIds.filter(
+    (postId): postId is string => typeof postId === "string",
+  );
+}
+
+export async function getAppliedJobIdsForApplicant(
+  applicantId: mongoose.Types.ObjectId,
+  jobIdsPublic: string[],
+): Promise<string[]> {
+  await dbConnect();
+
+  if (jobIdsPublic.length === 0) {
+    return [];
+  }
+
+  const appliedJobIds = await Application.distinct("jobIdPublic", {
+    applicantId,
+    jobIdPublic: mongoose.trusted({ $in: jobIdsPublic }),
+  });
+
+  return appliedJobIds.filter(
+    (jobIdPublic): jobIdPublic is string => typeof jobIdPublic === "string",
+  );
+}
+
+export async function getAppliedPostsForApplicant(
+  applicantId: mongoose.Types.ObjectId,
+): Promise<AppliedPostResult[]> {
+  await dbConnect();
+
+  const applications = (
+    await Application.find({
+      applicantId,
+    })
+      .sort({ appliedAt: -1 })
+      .lean<IApplication[]>()
+  ).filter((app) => app.postId && app.postId !== null);
+
+  const postIds = applications
+    .map((application) => application.postId)
+    .filter((postId): postId is string => typeof postId === "string");
+
+  if (postIds.length === 0) {
+    return [];
+  }
+
+  const [posts, counts] = await Promise.all([
+    Post.find({ postId: mongoose.trusted({ $in: postIds }) }).lean(),
+    Application.aggregate<{ _id: string; count: number }>([
+      { $match: { postId: mongoose.trusted({ $in: postIds }) } },
+      { $group: { _id: "$postId", count: { $sum: 1 } } },
+    ]),
+  ]);
+
+  const postMap = new Map(posts.map((post) => [post.postId, post]));
+  const countMap = new Map(counts.map((entry) => [entry._id, entry.count]));
+
+  return applications
+    .map((application) => {
+      const postId = application.postId;
+      if (!postId) {
+        return null;
+      }
+
+      const post = postMap.get(postId);
+      if (!post) {
+        return null;
+      }
+
+      return {
+        post,
+        application,
+        applicantCount: countMap.get(postId) ?? 0,
+      };
+    })
+    .filter((entry): entry is AppliedPostResult => entry !== null);
+}
+
+export async function getAppliedJobsForApplicant(
+  applicantId: mongoose.Types.ObjectId,
+): Promise<AppliedJobResult[]> {
+  await dbConnect();
+
+  const applications = await Application.find({
+    applicantId,
+    jobIdPublic: mongoose.trusted({ $exists: true, $ne: null }),
+  })
+    .sort({ appliedAt: -1 })
+    .lean<IApplication[]>();
+
+  const jobIdsPublic = applications
+    .map((application) => application.jobIdPublic)
+    .filter(
+      (jobIdPublic): jobIdPublic is string => typeof jobIdPublic === "string",
+    );
+
+  if (jobIdsPublic.length === 0) {
+    return [];
+  }
+
+  const jobs = await Job.find({
+    jobId: mongoose.trusted({ $in: jobIdsPublic }),
+  }).lean();
+  const jobMap = new Map(jobs.map((job) => [job.jobId, job]));
+
+  return applications
+    .map((application) => {
+      const jobIdPublic = application.jobIdPublic;
+      if (!jobIdPublic) {
+        return null;
+      }
+
+      const job = jobMap.get(jobIdPublic);
+      if (!job) {
+        return null;
+      }
+
+      return {
+        job,
+        application,
+      };
+    })
+    .filter((entry): entry is AppliedJobResult => entry !== null);
+}
+
+export async function hasAppliedToPost(
+  applicantId: mongoose.Types.ObjectId,
+  postId: string,
+): Promise<boolean> {
+  await dbConnect();
+
+  const existing = await Application.exists({ applicantId, postId });
+  return Boolean(existing);
+}
+
+export async function hasAppliedToJob(
+  applicantId: mongoose.Types.ObjectId,
+  jobIdPublic: string,
+): Promise<boolean> {
+  await dbConnect();
+
+  const existing = await Application.exists({ applicantId, jobIdPublic });
+  return Boolean(existing);
+}
+
+export async function createPostApplication(
+  input: CreatePostApplicationParams,
+): Promise<IApplication> {
+  await dbConnect();
+
+  const post = await Post.findOne({ postId: input.postId }).lean();
+  if (!post) {
+    throw new NotFoundError("Post");
+  }
+  if (post.status !== "open") {
+    throw new ConflictError("This tuition post is not open for applications.");
+  }
+
+  const existing = await Application.findOne({
+    postId: input.postId,
+    applicantId: input.applicantId,
+    applicantType: input.applicantType,
+  }).lean();
+
+  if (existing) {
+    throw new ConflictError("You have already applied to this tuition post.");
+  }
+
+  const application = await Application.create({
+    applicationId: generateApplicationId(),
+    postId: input.postId,
+    applicantId: input.applicantId,
+    profileId: input.profileId,
+    applicantType: input.applicantType,
+    applicantSnapshot: input.applicantSnapshot,
+    coverLetter: input.coverLetter,
+    status: "applied",
+    isActive: true,
+    appliedAt: new Date(),
+  });
+
+  return application;
+}
+
+export async function createJobApplication(
+  input: CreateJobApplicationParams,
+): Promise<IApplication> {
+  await dbConnect();
+
+  const job = await Job.findOne({ jobId: input.jobIdPublic }).lean();
+  if (!job) {
+    throw new NotFoundError("Job");
+  }
+  if (job.status !== "open") {
+    throw new ConflictError("This job is not open for applications.");
+  }
+
+  const existing = await Application.findOne({
+    jobIdPublic: input.jobIdPublic,
+    applicantId: input.applicantId,
+  }).lean();
+
+  if (existing) {
+    throw new ConflictError("You have already applied to this job.");
+  }
+
+  const application = await Application.create({
+    applicationId: generateApplicationId(),
+    jobId: job._id,
+    jobIdPublic: input.jobIdPublic,
+    applicantId: input.applicantId,
+    profileId: input.profileId,
+    applicantType: input.applicantType,
+    applicantSnapshot: input.applicantSnapshot,
+    coverLetter: input.coverLetter,
+    status: "applied",
+    isActive: true,
+    appliedAt: new Date(),
+  });
+
+  return application;
 }
 
 // ─── Service Functions ──────────────────────────────────────────────────
@@ -75,7 +410,7 @@ export async function deleteApplicationsByIds(
   await dbConnect();
 
   const result = await Application.deleteMany({
-    applicationId: { $in: applicationIds },
+    applicationId: mongoose.trusted({ $in: applicationIds }),
   });
 
   return result.deletedCount;
@@ -107,4 +442,280 @@ export async function deleteAllApplicationsByJobIdPublic(
   const result = await Application.deleteMany({ jobIdPublic });
 
   return result.deletedCount;
+}
+
+// ─── Status Update Functions ────────────────────────────────────────────
+
+export type UpdateableApplicationStatus =
+  | "applied"
+  | "DC"
+  | "GC"
+  | "approved"
+  | "decline"
+  | "withdrawn";
+
+export interface UpdateApplicationStatusParams {
+  applicationId: string;
+  status: UpdateableApplicationStatus;
+  adminId?: mongoose.Types.ObjectId;
+  dcDate?: Date;
+  gcDate?: Date;
+  reason?: string;
+}
+
+const AUTO_DECLINE_MESSAGE =
+  "Application auto-declined, someone above you in the application queue was selected";
+
+/**
+ * Update the status of an application.
+ * Validates:
+ * - Only one applicant per post can be in DC/GC status at a time
+ * - DC status requires dcDate (must be future)
+ * - GC status requires gcDate (must be future)
+ * - decline status requires reason
+ * - When approving, auto-declines all other applicants for the same post/job
+ */
+export async function updateApplicationStatus(
+  params: UpdateApplicationStatusParams,
+): Promise<IApplication> {
+  await dbConnect();
+
+  const { applicationId, status, adminId, dcDate, gcDate, reason } = params;
+
+  console.log("[updateApplicationStatus] Received params:", {
+    applicationId,
+    status,
+    adminId: adminId?.toString(),
+    dcDate,
+    gcDate,
+    reason,
+  });
+
+  const application = await Application.findOne({ applicationId });
+  if (!application) {
+    throw new NotFoundError("Application");
+  }
+
+  const now = new Date();
+
+  // ─── Validation ───────────────────────────────────────────────────────
+
+  // DC status requires dcDate in the future (for tuition posts only)
+  if (status === "DC" && application.postId) {
+    if (!dcDate) {
+      throw new ConflictError("Demo class date is required for DC status");
+    }
+    if (dcDate <= now) {
+      throw new ConflictError("Demo class date must be in the future");
+    }
+
+    // Check if another applicant is already in DC or GC status for this post
+    const existingInProcess = await Application.findOne({
+      postId: application.postId,
+      applicationId: mongoose.trusted({ $ne: applicationId }),
+      status: mongoose.trusted({ $in: ["DC", "GC"] }),
+    }).lean();
+
+    if (existingInProcess) {
+      throw new ConflictError(
+        "Another applicant is already in the evaluation process (DC/GC) for this post. Complete or revert their status first.",
+      );
+    }
+  }
+
+  // GC status requires gcDate in the future (for tuition posts only)
+  if (status === "GC" && application.postId) {
+    if (!gcDate) {
+      throw new ConflictError(
+        "Guardian confirmation date is required for GC status",
+      );
+    }
+    if (gcDate <= now) {
+      throw new ConflictError(
+        "Guardian confirmation date must be in the future",
+      );
+    }
+
+    // Check if another applicant is already in DC or GC status for this post
+    const existingInProcess = await Application.findOne({
+      postId: application.postId,
+      applicationId: mongoose.trusted({ $ne: applicationId }),
+      status: mongoose.trusted({ $in: ["DC", "GC"] }),
+    }).lean();
+
+    if (existingInProcess) {
+      throw new ConflictError(
+        "Another applicant is already in the evaluation process (DC/GC) for this post. Complete or revert their status first.",
+      );
+    }
+  }
+
+  // decline requires reason
+  if (status === "decline") {
+    if (!reason || reason.trim().length === 0) {
+      throw new ConflictError(
+        "A reason is required when declining an application",
+      );
+    }
+  }
+
+  // ─── Build update object ──────────────────────────────────────────────
+
+  const updateData: Record<string, unknown> = { status };
+
+  // Set DC meta when moving to DC
+  console.log("[updateApplicationStatus] Before DC check:", {
+    status,
+    statusIsDC: status === "DC",
+    dcDate,
+    dcDateType: typeof dcDate,
+    dcDateValue: dcDate instanceof Date ? dcDate.toISOString() : dcDate,
+    adminId: adminId?.toString(),
+    adminIdTruthy: !!adminId,
+  });
+
+  if (status === "DC" && dcDate && adminId) {
+    console.log("[updateApplicationStatus] Setting dcMeta:", {
+      scheduledDate: dcDate,
+      setByAdminId: adminId,
+      setAt: now,
+    });
+    updateData.dcDate = dcDate;
+    updateData.dcMeta = {
+      scheduledDate: dcDate,
+      setByAdminId: adminId,
+      setAt: now,
+    };
+  }
+
+  // Set GC meta when moving to GC
+  if (status === "GC" && gcDate && adminId) {
+    updateData.gcMeta = {
+      scheduledDate: gcDate,
+      setByAdminId: adminId,
+      setAt: now,
+    };
+  }
+
+  // Set approval meta when approving
+  if (status === "approved" && adminId) {
+    updateData.approvalMeta = {
+      approvedByAdminId: adminId,
+      approvedAt: now,
+    };
+  }
+
+  // Set decline meta when declining
+  if (status === "decline" && adminId) {
+    updateData.declineMeta = {
+      reason: reason?.trim(),
+      declinedByAdminId: adminId,
+      declinedAt: now,
+    };
+  }
+
+  // Clear locked metas when reverting from approved
+  if (
+    application.status === "approved" &&
+    (status === "DC" || status === "GC" || status === "applied")
+  ) {
+    updateData.approvalMeta = null;
+    // Clear old dates since they're expired - new ones will be set if provided
+    if (status === "applied") {
+      updateData.dcMeta = null;
+      updateData.gcMeta = null;
+    }
+  }
+
+  console.log("[updateApplicationStatus] Final updateData before DB update:", {
+    updateData,
+    updateDataStringified: JSON.stringify(updateData, null, 2),
+  });
+
+  const updated = await Application.findOneAndUpdate(
+    { applicationId },
+    { $set: updateData },
+    { new: true, runValidators: true },
+  ).lean<IApplication>();
+
+  console.log("[updateApplicationStatus] DB Update Result:", {
+    status: updated?.status,
+    dcDate: updated?.dcDate,
+    dcMeta: updated?.dcMeta,
+    gcMeta: updated?.gcMeta,
+  });
+
+  if (!updated) {
+    throw new NotFoundError("Application");
+  }
+
+  // ─── Auto-decline others when approved ────────────────────────────────
+
+  if (status === "approved") {
+    const filter: Record<string, unknown> = {
+      applicationId: mongoose.trusted({ $ne: applicationId }),
+      status: mongoose.trusted({
+        $nin: ["approved", "decline", "auto_declined", "withdrawn"],
+      }),
+    };
+
+    if (application.postId) {
+      filter.postId = application.postId;
+    } else if (application.jobIdPublic) {
+      filter.jobIdPublic = application.jobIdPublic;
+    }
+
+    await Application.updateMany(filter, {
+      $set: {
+        status: "auto_declined",
+        declineMeta: {
+          autoDeclinedBecauseApplicationId: application._id,
+          declinedAt: now,
+          reason: AUTO_DECLINE_MESSAGE,
+        },
+      },
+    });
+  }
+
+  // ─── Un-auto-decline others when reverting from approved ──────────────
+
+  if (
+    application.status === "approved" &&
+    status !== "approved" &&
+    status !== "decline" &&
+    status !== "withdrawn"
+  ) {
+    // Revert auto-declined applications back to applied
+    const filter: Record<string, unknown> = {
+      status: "auto_declined",
+      "declineMeta.autoDeclinedBecauseApplicationId": application._id,
+    };
+
+    if (application.postId) {
+      filter.postId = application.postId;
+    } else if (application.jobIdPublic) {
+      filter.jobIdPublic = application.jobIdPublic;
+    }
+
+    await Application.updateMany(filter, {
+      $set: {
+        status: "applied",
+        declineMeta: null,
+      },
+    });
+  }
+
+  return updated;
+}
+
+/**
+ * Get an application by its applicationId string (for validation in routes).
+ */
+export async function getApplicationById(
+  applicationId: string,
+): Promise<IApplication | null> {
+  await dbConnect();
+
+  const application = await Application.findOne({ applicationId }).lean();
+  return application as IApplication | null;
 }

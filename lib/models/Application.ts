@@ -63,6 +63,36 @@ const ApprovalMetaSchema = new Schema<IApprovalMeta>(
   { _id: false },
 );
 
+export interface IDCMeta {
+  scheduledDate: Date;
+  setByAdminId: mongoose.Types.ObjectId;
+  setAt: Date;
+}
+
+const DCMetaSchema = new Schema<IDCMeta>(
+  {
+    scheduledDate: { type: Date, required: true },
+    setByAdminId: { type: Schema.Types.ObjectId, required: true },
+    setAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
+export interface IGCMeta {
+  scheduledDate: Date;
+  setByAdminId: mongoose.Types.ObjectId;
+  setAt: Date;
+}
+
+const GCMetaSchema = new Schema<IGCMeta>(
+  {
+    scheduledDate: { type: Date, required: true },
+    setByAdminId: { type: Schema.Types.ObjectId, required: true },
+    setAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
 // ─── Main Document: Application ─────────────────────────────────────────
 
 export interface IApplication extends Document {
@@ -76,6 +106,9 @@ export interface IApplication extends Document {
   applicantSnapshot: IApplicantSnapshot;
   coverLetter?: string;
   status: ApplicationStatus;
+  dcDate?: Date;
+  dcMeta?: IDCMeta;
+  gcMeta?: IGCMeta;
   declineMeta?: IDeclineMeta;
   approvalMeta?: IApprovalMeta;
   isActive: boolean;
@@ -86,7 +119,7 @@ export interface IApplication extends Document {
 
 const ApplicationSchema = new Schema<IApplication>(
   {
-    applicationId: { type: String, required: true, unique: true },
+    applicationId: { type: String, required: true },
     jobId: { type: Schema.Types.ObjectId, ref: "Job" },
     jobIdPublic: { type: String },
     postId: { type: String },
@@ -108,6 +141,9 @@ const ApplicationSchema = new Schema<IApplication>(
       required: true,
       default: "applied",
     },
+    dcDate: { type: Date },
+    dcMeta: { type: DCMetaSchema },
+    gcMeta: { type: GCMetaSchema },
     declineMeta: { type: DeclineMetaSchema },
     approvalMeta: { type: ApprovalMetaSchema },
     isActive: { type: Boolean, required: true, default: true },
@@ -124,13 +160,27 @@ const ApplicationSchema = new Schema<IApplication>(
 ApplicationSchema.index({ applicationId: 1 }, { unique: true });
 ApplicationSchema.index({ applicantId: 1 });
 ApplicationSchema.index({ jobId: 1 });
+ApplicationSchema.index({ postId: 1 });
 ApplicationSchema.index({ status: 1 });
 ApplicationSchema.index(
   { jobId: 1, applicantId: 1 },
   { unique: true, sparse: true },
 );
+ApplicationSchema.index(
+  { postId: 1, applicantId: 1, applicantType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      postId: { $type: "string" },
+      applicantId: { $exists: true },
+      applicantType: { $exists: true },
+    },
+  },
+);
 ApplicationSchema.index({ jobId: 1, status: 1 });
+ApplicationSchema.index({ postId: 1, status: 1 });
 ApplicationSchema.index({ applicantId: 1, status: 1 });
+ApplicationSchema.index({ applicantType: 1, status: 1 });
 ApplicationSchema.index({ appliedAt: -1 });
 
 const Application: Model<IApplication> =

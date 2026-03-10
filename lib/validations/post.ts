@@ -43,7 +43,9 @@ export const createPostSchema = z.object({
     .number()
     .int()
     .min(1, "Frequency must be at least 1")
-    .max(7, "Frequency cannot exceed 7"),  preferredDays: z.array(z.string().trim().min(1)).optional().default([]),
+    .max(7, "Frequency cannot exceed 7"),
+
+  preferredDays: z.array(z.string().trim().min(1)).optional().default([]),
 
   preferredTime: z.string().trim().optional(),
 
@@ -68,7 +70,7 @@ export const createPostSchema = z.object({
     .optional()
     .default("open"),
 
-  createdByAdminId: z.string().optional(),
+  matchedTeacherClerkId: z.string().trim().optional(),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
@@ -76,7 +78,7 @@ export type CreatePostInput = z.infer<typeof createPostSchema>;
 // ─── Admin-facing: update a tuition post ────────────────────────────────
 
 export const updatePostSchema = createPostSchema.partial().extend({
-  updatedByAdminId: z.string().optional(),
+  updatedByAdminClerkId: z.string().trim().optional(),
 });
 
 export type UpdatePostInput = z.infer<typeof updatePostSchema>;
