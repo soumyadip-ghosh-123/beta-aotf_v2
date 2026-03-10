@@ -55,6 +55,9 @@ const roleBadgeBg: Record<IdCardData["role"], string> = {
 // ─── Single-sided ID Card ─────────────────────────────────────────────────────
 
 export function IdCard({ data }: { data: IdCardData }) {
+  const verifyBaseUrl =
+    typeof window !== "undefined" ? window.location.origin : siteConfig.url;
+
   return (
     <div className="w-full select-none rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-white dark:bg-zinc-900 flex flex-col">
       {/* ── Top gradient banner ── */}
@@ -184,7 +187,10 @@ export function IdCard({ data }: { data: IdCardData }) {
         {/* QR placeholder */}
         <div className="w-16 h-16 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-dashed border-zinc-300 dark:border-zinc-600 flex items-center justify-center shrink-0">
           <div className="bg-white p-2 w-fit rounded-xl">
-            <QRCode value={`${siteConfig.url}/verify/${encodeURIComponent(data.uniqId)}`} size={50} />
+            <QRCode
+              value={`${verifyBaseUrl}/verify/${encodeURIComponent(data.uniqId)}`}
+              size={50}
+            />
           </div>
         </div>
 
@@ -214,7 +220,7 @@ export function IdCard({ data }: { data: IdCardData }) {
       {/* ── Terms strip ── */}
       <div className="bg-zinc-100 dark:bg-zinc-800 px-5 py-2 text-[8px] text-zinc-400 dark:text-zinc-500 leading-tight space-y-0.5">
         <p>
-          This card is the property of Academy of the Future (AOTF). If found,
+          This card is the property of Academy of Tutorials and Freelancers (AOTF). If found,
           please return to the nearest AOTF office.
         </p>
         <p>Unauthorized use is prohibited. Contact: support@aotf.in</p>
@@ -261,7 +267,7 @@ export function UpgradeCandidateCard({
           />
           <div>
             <p className="text-white font-bold text-sm leading-tight tracking-wide">
-              Academy of the Future
+              Academy of Tutorials and Freelancers
             </p>
             <p className="text-[10px] text-white/70 tracking-widest uppercase">
               Candidate Program

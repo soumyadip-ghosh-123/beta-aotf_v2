@@ -150,7 +150,7 @@ const SAMPLE_ADS: Ad[] = [
     placement: "home_banner",
     imageUrl: "https://placehold.co/728x90/4f46e5/ffffff?text=Summer+Tuition+50%25+Off",
     targetUrl: "https://aotf.in/posts",
-    advertiser: "Academy of the Future",
+    advertiser: "Academy of Tutorials and Freelancers",
     status: "active",
     startDate: "2026-03-01T00:00:00.000Z",
     endDate: "2026-04-30T23:59:59.000Z",

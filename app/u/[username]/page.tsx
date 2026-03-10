@@ -21,10 +21,8 @@ import {
 import { ShieldCheck, IdCard as IdCardIcon } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import ButtonGroup from "@/components/ButtonGroup";
-import Stack from "@/components/reactbits/ui/Stack";
 import {
   IdCard,
-  UpgradeCandidateCard,
   type IdCardData,
 } from "@/components/teacher/profile/IdCardView";
 
@@ -94,6 +92,9 @@ export default function ProfilePage() {
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
   const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
+    "idle",
+  );
 
   const isOwnProfile =
     clerkUser?.username?.toLowerCase() === username?.toLowerCase();
@@ -310,41 +311,36 @@ export default function ProfilePage() {
     event.target.value = "";
   };
 
-  // Build IdCard data
-  const teacherCardData: IdCardData = {
-    role: "teacher",
-    name: accountHolderName,
-    photo: avatarUrl ?? "/AOTF.svg",
-    designation: profile.qualification
-      ? `${profile.qualification} Educator`
-      : "Educator",
-    qualification: profile.qualification ?? undefined,
-    subjects: profile.subjects,
-    employeeId: `AOTF-T-${profile.username.toUpperCase()}`,
-    phone: phone ?? "—",
-    email: email ?? "—",
-    address: profile.address ?? "—",
-    joinDate: joinMonth,
-    expiryDate: "—",
-    isVerified: userData.onboardingCompleted,
-    uniqId: `AOTF-T-${profile.username.toUpperCase()}`,
-  };
+  // Build a single canonical ID card based on account role.
+  const canonicalIdRole: "teacher" | "candidate" =
+    userData.role === "teacher_candidate" ? "candidate" : "teacher";
+  const canonicalIdCode = canonicalIdRole === "candidate" ? "C" : "T";
+  const canonicalId = `AOTF-${canonicalIdCode}-${profile.username.toUpperCase()}`;
+  const canonicalVerifyUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/verify/${encodeURIComponent(canonicalId)}`
+      : `/verify/${encodeURIComponent(canonicalId)}`;
 
-  const candidateCardData: IdCardData = {
-    role: "candidate",
+  const primaryCardData: IdCardData = {
+    role: canonicalIdRole,
     name: accountHolderName,
     photo: avatarUrl ?? "/AOTF.svg",
-    designation: "Aspiring Educator",
+    designation:
+      canonicalIdRole === "candidate"
+        ? "Aspiring Educator"
+        : profile.qualification
+          ? `${profile.qualification} Educator`
+          : "Educator",
     qualification: profile.qualification ?? undefined,
     subjects: profile.subjects,
-    employeeId: `AOTF-C-${profile.username.toUpperCase()}`,
+    employeeId: canonicalId,
     phone: phone ?? "—",
     email: email ?? "—",
     address: profile.address ?? "—",
     joinDate: joinMonth,
     expiryDate: "—",
     isVerified: userData.onboardingCompleted,
-    uniqId: `AOTF-C-${profile.username.toUpperCase()}`,
+    uniqId: canonicalId,
   };
 
   const actionItems = [
@@ -364,6 +360,17 @@ export default function ProfilePage() {
       link: "/terms",
     },
   ];
+
+  const copyCanonicalVerifyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(canonicalVerifyUrl);
+      setCopyStatus("copied");
+      setTimeout(() => setCopyStatus("idle"), 1800);
+    } catch {
+      setCopyStatus("failed");
+      setTimeout(() => setCopyStatus("idle"), 2200);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -576,52 +583,46 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <FaChalkboardTeacher className="text-indigo-500" />
                   <h3 className="text-lg font-bold text-default-900">
-                    {isOwnProfile ? "Your ID Cards" : `${accountHolderName}'s ID`}
+                    {isOwnProfile ? "Your ID Card" : `${accountHolderName}'s ID`}
                   </h3>
                 </div>
                 <Chip
                   size="sm"
                   variant="flat"
-                  color={isCandidate ? "success" : "primary"}
+                  color={canonicalIdRole === "candidate" ? "success" : "primary"}
                   className="text-[10px] uppercase font-semibold"
                 >
-                  {userData.plan.current === "teacher_candidate"
-                    ? "Teacher & Candidate"
-                    : "Teacher"}{" "}
-                  plan
+                  {canonicalIdRole === "candidate" ? "Candidate" : "Teacher"} ID
                 </Chip>
               </div>
 
-              <div className="mx-auto" style={{ width: 340, height: 540 }}>
-                <Stack
-                  randomRotation={false}
-                  sensitivity={180}
-                  sendToBackOnClick
-                  mobileClickOnly
-                  cards={[
-                    <IdCard key="teacher" data={teacherCardData} />,
-                    isCandidate ? (
-                      <IdCard key="candidate" data={candidateCardData} />
-                    ) : (
-                        <UpgradeCandidateCard
-                          key="upgrade"
-                          onUpgrade={
-                            canUpgradeToCandidate
-                              ? handleCandidateUpgrade
-                              : undefined
-                          }
-                          isLoading={isUpgradeLoading}
-                          error={canUpgradeToCandidate ? upgradeError : null}
-                        />
-                    ),
-                  ]}
-                  pauseOnHover
-                />
+              <div className="mx-auto" style={{ width: 340 }}>
+                <IdCard data={primaryCardData} />
               </div>
 
-              <p className="text-center text-xs text-default-400">
-                Swipe or tap to switch cards &nbsp;↻
-              </p>
+              <div className="rounded-xl border border-default-200 bg-default-50/60 px-3 py-2.5 text-xs">
+                <p className="text-default-500">Canonical verify URL</p>
+                <p className="mt-1 font-mono text-[11px] text-default-700 break-all">
+                  {canonicalVerifyUrl}
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    onPress={copyCanonicalVerifyUrl}
+                  >
+                    Copy URL
+                  </Button>
+                  <span className="text-[11px] text-default-500">
+                    {copyStatus === "copied"
+                      ? "Copied"
+                      : copyStatus === "failed"
+                        ? "Copy failed"
+                        : "Use this exact link for verification"}
+                  </span>
+                </div>
+              </div>
             </div>
           </Tab>
         </Tabs>

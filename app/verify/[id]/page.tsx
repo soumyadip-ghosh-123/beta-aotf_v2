@@ -14,7 +14,6 @@ import {
   ShieldAlert,
   GraduationCap,
   Phone,
-  Mail,
   MapPin,
   CalendarDays,
   Clock,
@@ -31,19 +30,21 @@ import { siteConfig } from "@/config/site";
 
 interface VerifiedPerson {
   role: "teacher" | "candidate";
+  username?: string;
   name: string;
+  bio?: string | null;
   photo: string;
-  designation?: string;
   qualification?: string;
   subjects?: string[];
   employeeId: string;
   phone: string;
-  email: string;
+  location?: string | null;
   joinDate: string;
   expiryDate: string;
   isVerified: boolean;
   plan?: string;
   status: "active" | "expired" | "suspended";
+  profileUrl?: string;
 }
 
 type VerifyState =
@@ -54,54 +55,78 @@ type VerifyState =
   | { kind: "not_found" }
   | { kind: "error"; message: string };
 
+function maskPhoneForPublicView(phone: string): string {
+  const trimmed = phone.trim();
+  if (!trimmed || trimmed === "—") return "—";
+  if (/x/i.test(trimmed)) return trimmed;
+
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  if (digitsOnly.length < 3) return "—";
+
+  const localNumber = digitsOnly.slice(-10);
+  const countryDigits = digitsOnly.slice(0, -10);
+  const countryCode = countryDigits ? `+${countryDigits}` : "+91";
+
+  return `${countryCode} ${"X".repeat(Math.max(localNumber.length - 3, 0))}${localNumber.slice(-3)}`;
+}
+
 // ─── Sample data (fallback when DB is unavailable) ────────────────────────────
 
 const SAMPLE_RECORDS: Record<string, VerifiedPerson> = {
   "AOTF-T-2024-0042": {
     role: "teacher",
+    username: "somnath-roy",
     name: "Somnath Roy",
+    bio: "Senior faculty focused on exam-oriented Physics coaching.",
     photo: "https://i.pravatar.cc/150?u=a04258114e29026708c",
     designation: "Senior Physics Faculty",
     qualification: "M.Sc in Physics — Jadavpur University",
     subjects: ["Physics", "Mathematics", "Chemistry"],
     employeeId: "AOTF-T-2024-0042",
     phone: "+91 94567-38901",
-    email: "soumyadip@example.com",
+    location: "Kolkata",
     joinDate: "Jan 2024",
     expiryDate: "Dec 2026",
     isVerified: true,
     status: "active",
+    profileUrl: "/u/somnath-roy",
   },
   "AOTF-C-2025-0118": {
     role: "candidate",
+    username: "somnath-roy",
     name: "Somnath Roy",
+    bio: "Aspiring educator open to school and tuition opportunities.",
     photo: "https://i.pravatar.cc/150?u=a04258114e29026708c",
     designation: "Aspiring Educator",
     qualification: "M.Sc in Physics — Jadavpur University",
     subjects: ["Physics", "Mathematics"],
     employeeId: "AOTF-C-2025-0118",
     phone: "+91 94567-38901",
-    email: "soumyadip@example.com",
+    location: "Kolkata",
     joinDate: "Mar 2025",
     expiryDate: "Mar 2026",
     isVerified: true,
     plan: "premium",
     status: "active",
+    profileUrl: "/u/somnath-roy",
   },
   "AOTF-T-2023-0007": {
     role: "teacher",
+    username: "ananya-mukherjee",
     name: "Ananya Mukherjee",
+    bio: "Mathematics educator with strong board exam mentorship track record.",
     photo: "https://i.pravatar.cc/150?u=ananya007",
     designation: "Mathematics Head",
     qualification: "M.Sc in Mathematics — IIT Kharagpur",
     subjects: ["Mathematics", "Statistics"],
     employeeId: "AOTF-T-2023-0007",
     phone: "+91 98765-12345",
-    email: "ananya@example.com",
+    location: "Howrah",
     joinDate: "Aug 2023",
     expiryDate: "Aug 2024",
     isVerified: true,
     status: "expired",
+    profileUrl: "/u/ananya-mukherjee",
   },
 };
 
@@ -126,7 +151,7 @@ const statusConfig: Record<
     color: "text-green-500",
     bg: "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
     label: "Verified & Active",
-    description: "This ID card is valid and the holder is an active member of Academy of the Future.",
+    description: "This ID card is valid and the holder is an active member of Academy of Tutorials and Freelancers.",
   },
   expired: {
     icon: ShieldAlert,
@@ -415,9 +440,9 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
                   <BadgeCheck size={16} className="text-blue-500 shrink-0" />
                 )}
               </div>
-              {person.designation && (
+              {person.bio && (
                 <p className="text-xs text-default-500 truncate">
-                  {person.designation}
+                  {person.bio}
                 </p>
               )}
               <div className="flex items-center gap-1.5 mt-1">
@@ -482,19 +507,30 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
             <DetailRow
               icon={<Phone size={14} className="text-default-400" />}
               label="Phone"
-              value={person.phone}
-            />
-            <DetailRow
-              icon={<Mail size={14} className="text-default-400" />}
-              label="Email"
-              value={person.email}
+              value={maskPhoneForPublicView(person.phone)}
             />
 
-            {/* Validity */}
+            {person.location && (
+              <DetailRow
+                icon={<MapPin size={14} className="text-default-400" />}
+                label="Location"
+                value={person.location}
+              />
+            )}
+
+            {person.username && (
+              <DetailRow
+                icon={<ExternalLink size={14} className="text-default-400" />}
+                label="Username"
+                value={`@${person.username}`}
+              />
+            )}
+
+            {/* Account opened date */}
             <DetailRow
               icon={<CalendarDays size={14} className="text-default-400" />}
-              label="Valid"
-              value={`${person.joinDate} — ${person.expiryDate}`}
+              label="From"
+              value={person.joinDate}
             />
           </div>
         </CardBody>
@@ -504,7 +540,7 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
       <div className="text-center">
         <Button
           as={Link}
-          href={`/u/${encodeURIComponent(person.name.toLowerCase().replace(/\s+/g, "-"))}`}
+          href={person.profileUrl ?? (person.username ? `/u/${encodeURIComponent(person.username)}` : "/")}
           variant="flat"
           color="primary"
           size="sm"
