@@ -12,6 +12,7 @@ import { Spinner } from "@heroui/spinner";
 import { LuNotebookPen } from "react-icons/lu";
 import { FcPrivacy } from "react-icons/fc";
 import { FaLocationDot } from "react-icons/fa6";
+import { Badge } from "@heroui/badge";
 import {
   FaBook,
   FaChalkboardTeacher,
@@ -23,6 +24,7 @@ import {
   IdCard as IdCardIcon,
   GlobeLock,
   ReceiptText,
+  CameraIcon,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import ButtonGroup from "@/components/ButtonGroup";
@@ -381,7 +383,7 @@ export default function ProfilePage() {
 
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div className="md:flex justify-between items-center max-w-3xl mx-auto">
-        <div className="flex flex-row items-center justify-start gap-4 py-4">
+        <div className="flex flex-row align-items-start justify-start gap-4 py-4">
           <Avatar
             className="w-20 h-20 text-large"
             src={avatarUrl}

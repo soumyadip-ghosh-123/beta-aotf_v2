@@ -68,13 +68,13 @@ async function generateJobId(): Promise<string> {
 async function attachEnquiryReferences<
   T extends { enquiryId?: mongoose.Types.ObjectId | string | null },
 >(jobs: T[]): Promise<Array<T & { enquiryReferenceId: string | null }>> {
-  const linkedEnquiryIds = [
-    ...new Set(
+  const linkedEnquiryIds = Array.from(
+    new Set(
       jobs
         .map((job) => job.enquiryId?.toString())
         .filter((enquiryId): enquiryId is string => Boolean(enquiryId)),
     ),
-  ];
+  );
 
   const enquiryObjectIds = linkedEnquiryIds
     .filter((enquiryId) => mongoose.Types.ObjectId.isValid(enquiryId))

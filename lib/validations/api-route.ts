@@ -46,7 +46,7 @@ export const updateApplicationStatusBodySchema = z
     status: z.enum(
       ["applied", "DC", "GC", "approved", "decline", "withdrawn"],
       {
-        errorMap: () => ({ message: "Invalid status value" }),
+        error: "Invalid status value",
       },
     ),
     dcDate: z

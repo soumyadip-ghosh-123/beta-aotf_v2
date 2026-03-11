@@ -170,39 +170,41 @@ export default function SettingsPage() {
       </h1>
 
       {/* Tab Navigation */}
-      <Tabs
-        selectedKey={activeTab}
-        onSelectionChange={(key) => setActiveTab(key as SettingsTab)}
-        aria-label="Settings sections"
-        color="primary"
-        variant="underlined"
-        classNames={{
-          tabList:
-            "gap-1 w-full relative rounded-none p-0 border-b border-divider",
-          cursor: "w-full bg-primary",
-          tab: "max-w-fit px-2 h-12",
-          tabContent: "group-data-[selected=true]:text-primary",
-        }}
-      >
-        <Tab
-          key="accounts"
-          title={
-            <div className="flex items-center gap-2">
-              <Shield size={16} />
-              <span>Admin Accounts</span>
-            </div>
-          }
-        />
-        <Tab
-          key="notifications"
-          title={
-            <div className="flex items-center gap-2">
-              <Bell size={16} />
-              <span>Notifications</span>
-            </div>
-          }
-        />
-      </Tabs>
+      <div className="w-full flex justify-center">
+        <Tabs
+          selectedKey={activeTab}
+          onSelectionChange={(key) => setActiveTab(key as SettingsTab)}
+          aria-label="Settings sections"
+          color="primary"
+          variant="underlined"
+          classNames={{
+            tabList:
+              "gap-1 w-full relative rounded-none p-0 border-b border-divider",
+            cursor: "w-full bg-primary",
+            tab: "max-w-fit px-2 h-12",
+            tabContent: "group-data-[selected=true]:text-primary",
+          }}
+        >
+          <Tab
+            key="accounts"
+            title={
+              <div className="flex items-center gap-2">
+                <Shield size={16} />
+                <span>Admin Accounts</span>
+              </div>
+            }
+          />
+          <Tab
+            key="notifications"
+            title={
+              <div className="flex items-center gap-2">
+                <Bell size={16} />
+                <span>Notifications</span>
+              </div>
+            }
+          />
+        </Tabs>
+      </div>
 
       {/* Tab Content */}
       <AnimatePresence mode="wait">
@@ -469,7 +471,6 @@ function AdminAccountsSection() {
           {supportAdminCount} Support Admin
           {supportAdminCount !== 1 ? "s" : ""}
         </Chip>
-        <div className="flex-1" />
         <Button
           color="primary"
           startContent={<UserPlus size={16} />}
@@ -1017,7 +1018,7 @@ function AdminCard({
         </p>
       </CardBody>
 
-      <CardFooter className="gap-2 pt-0 border-t border-divider/50">
+      <CardFooter className="gap-2 pt-0">
         <Button
           size="sm"
           variant="flat"

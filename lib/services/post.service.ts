@@ -87,14 +87,13 @@ function normalizeStudents(
 
 async function attachEnquiryReferences<
   T extends { enquiryId?: mongoose.Types.ObjectId | string | null },
->(posts: T[]): Promise<Array<T & { enquiryReferenceId: string | null }>> {
-  const linkedEnquiryIds = [
-    ...new Set(
+>(posts: T[]): Promise<Array<T & { enquiryReferenceId: string | null }>> {  const linkedEnquiryIds = Array.from(
+    new Set(
       posts
         .map((post) => post.enquiryId?.toString())
         .filter((enquiryId): enquiryId is string => Boolean(enquiryId)),
     ),
-  ];
+  );
 
   const enquiryObjectIds = linkedEnquiryIds
     .filter((enquiryId) => mongoose.Types.ObjectId.isValid(enquiryId))

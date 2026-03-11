@@ -10,7 +10,7 @@ export interface AdminAuthorSummary {
 async function fetchClerkAvatarMap(
   clerkIds: string[],
 ): Promise<Map<string, string | null>> {
-  const uniqueClerkIds = [...new Set(clerkIds.filter(Boolean))];
+  const uniqueClerkIds = Array.from(new Set(clerkIds.filter(Boolean)));
 
   if (uniqueClerkIds.length === 0) {
     return new Map();
@@ -38,7 +38,7 @@ async function fetchClerkAvatarMap(
 export async function getAdminAuthorsByClerkIds(
   clerkIds: string[],
 ): Promise<Map<string, AdminAuthorSummary>> {
-  const uniqueClerkIds = [...new Set(clerkIds.filter(Boolean))];
+  const uniqueClerkIds = Array.from(new Set(clerkIds.filter(Boolean)));
 
   if (uniqueClerkIds.length === 0) {
     return new Map();
@@ -67,10 +67,9 @@ export async function getAdminAuthorsByClerkIds(
 
 export async function getAdminAuthorsByAdminIds(
   adminIds: Array<mongoose.Types.ObjectId | string | null | undefined>,
-): Promise<Map<string, AdminAuthorSummary>> {
-  const uniqueAdminIds = [
-    ...new Set(adminIds.map((adminId) => adminId?.toString())),
-  ].filter((adminId): adminId is string => Boolean(adminId));
+): Promise<Map<string, AdminAuthorSummary>> {  const uniqueAdminIds = Array.from(
+    new Set(adminIds.map((adminId) => adminId?.toString())),
+  ).filter((adminId): adminId is string => Boolean(adminId));
 
   if (uniqueAdminIds.length === 0) {
     return new Map();

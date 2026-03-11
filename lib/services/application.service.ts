@@ -7,8 +7,8 @@ import Application, {
   type IApplicantSnapshot,
   ensureApplicationIndexes,
 } from "@/lib/models/Application";
-import Job from "@/lib/models/Job";
-import Post from "@/lib/models/Post";
+import Job, { type IJob } from "@/lib/models/Job";
+import Post, { type IPost } from "@/lib/models/Post";
 import User from "@/lib/models/User";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { ensureUserRecord } from "@/lib/utils/ensure-user";
@@ -26,17 +26,13 @@ export interface ApplicationListResult {
 }
 
 export interface AppliedPostResult {
-  post: Awaited<ReturnType<typeof Post.findOne>> extends { lean(): infer T }
-    ? T
-    : never;
+  post: mongoose.FlattenMaps<IPost> & { _id: mongoose.Types.ObjectId };
   application: IApplication;
   applicantCount: number;
 }
 
 export interface AppliedJobResult {
-  job: Awaited<ReturnType<typeof Job.findOne>> extends { lean(): infer T }
-    ? T
-    : never;
+  job: mongoose.FlattenMaps<IJob> & { _id: mongoose.Types.ObjectId };
   application: IApplication;
 }
 
@@ -170,11 +166,11 @@ export async function getApplicantPermissionsByClerkId(
   const user = options.ensureUser
     ? await ensureUserRecord(clerkId)
     : await User.findOne({ clerkId }).lean<{
-        _id: mongoose.Types.ObjectId;
-        role: "teacher" | "teacher_candidate" | "admin";
-        status: "active" | "blocked" | "deleted";
-        plan?: { hasCandidateAccess?: boolean | null } | null;
-      }>();
+      _id: mongoose.Types.ObjectId;
+      role: "teacher" | "teacher_candidate" | "admin";
+      status: "active" | "blocked" | "deleted";
+      plan?: { hasCandidateAccess?: boolean | null } | null;
+    }>();
 
   if (!user) {
     return null;
@@ -252,9 +248,10 @@ export async function getAppliedPostsForApplicant(
   if (postIds.length === 0) {
     return [];
   }
-
   const [posts, counts] = await Promise.all([
-    Post.find({ postId: mongoose.trusted({ $in: postIds }) }).lean(),
+    Post.find({ postId: mongoose.trusted({ $in: postIds }) }).lean<
+      Array<mongoose.FlattenMaps<IPost> & { _id: mongoose.Types.ObjectId }>
+    >(),
     Application.aggregate<{ _id: string; count: number }>([
       { $match: { postId: mongoose.trusted({ $in: postIds }) } },
       { $group: { _id: "$postId", count: { $sum: 1 } } },
@@ -306,10 +303,11 @@ export async function getAppliedJobsForApplicant(
   if (jobIdsPublic.length === 0) {
     return [];
   }
-
   const jobs = await Job.find({
     jobId: mongoose.trusted({ $in: jobIdsPublic }),
-  }).lean();
+  }).lean<
+    Array<mongoose.FlattenMaps<IJob> & { _id: mongoose.Types.ObjectId }>
+  >();
   const jobMap = new Map(jobs.map((job) => [job.jobId, job]));
 
   return applications

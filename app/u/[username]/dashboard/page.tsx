@@ -25,7 +25,9 @@ export default async function DashboardPage({
   const { userId: clerkId } = await auth();
 
   if (!clerkId) {
-    redirect(`/sign-in?redirect_url=${encodeURIComponent(`/u/${username}/dashboard`)}`);
+    redirect(
+      `/sign-in?redirect_url=${encodeURIComponent(`/u/${username}/dashboard`)}`
+    );
   }
 
   await dbConnect();
@@ -33,7 +35,10 @@ export default async function DashboardPage({
     username: string;
   }>();
 
-  if (!currentUser || currentUser.username.toLowerCase() !== username.toLowerCase()) {
+  if (
+    !currentUser ||
+    currentUser.username.toLowerCase() !== username.toLowerCase()
+  ) {
     notFound();
   }
 
@@ -86,12 +91,12 @@ export default async function DashboardPage({
         ? new Date(application.dcDate).toISOString()
         : application.dcMeta?.scheduledDate
           ? new Date(application.dcMeta.scheduledDate).toISOString()
-        : undefined,
+          : undefined,
       gcDate: application.gcMeta?.scheduledDate
         ? new Date(application.gcMeta.scheduledDate).toISOString()
         : undefined,
       declineReason: application.declineMeta?.reason,
-    }),
+    })
   );
 
   const jobItems: DashboardJobItem[] = appliedJobs.map(({ job }) => ({

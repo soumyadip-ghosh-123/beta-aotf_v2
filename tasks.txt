@@ -185,3 +185,25 @@ backend -->
     1. calender images
     2. Ads backend
     3. + button hide in other pages except dashboard
+
+    user navbar
+    admin hamburger menu -> dashboard, settings, database, logout
+    admin can add renowned teacher
+
+
+
+
+
+1. admin e hamburger ui
+2. admin er settings ui 
+3. database ui
+4. dashboard ui
+5. ads ui & backend
+6. teacher add (home page) ui
+7. 
+
+1. user e testing
+2. homepage e initial avatar https://ui-avatars.com/
+3. calendar ui
+4. invoice
+5. certificate?
