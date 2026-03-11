@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   GripVertical,
   RefreshCw,
+  CameraIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -70,15 +71,27 @@ export default function RenownedTeachersPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // ── Add / Edit modal ──────────────────────────────────────────────────
-  const { isOpen: isFormOpen, onOpen: openForm, onClose: closeForm } = useDisclosure();
+  const {
+    isOpen: isFormOpen,
+    onOpen: openForm,
+    onClose: closeForm,
+  } = useDisclosure();
   const [editTarget, setEditTarget] = useState<RenownedTeacher | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Delete modal ──────────────────────────────────────────────────────
-  const { isOpen: isDeleteOpen, onOpen: openDelete, onClose: closeDelete } = useDisclosure();
-  const [deleteTarget, setDeleteTarget] = useState<RenownedTeacher | null>(null);
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: openDelete,
+    onClose: closeDelete,
+  } = useDisclosure();
+  const [deleteTarget, setDeleteTarget] = useState<RenownedTeacher | null>(
+    null
+  );
   const [isDeleting, setIsDeleting] = useState(false);
 
   // ── Fetch ─────────────────────────────────────────────────────────────
@@ -135,7 +148,8 @@ export default function RenownedTeachersPage() {
     const errors: Record<string, string> = {};
     if (!form.name.trim()) errors.name = "Name is required";
     else if (form.name.trim().length < 2) errors.name = "At least 2 characters";
-    if (!form.designation.trim()) errors.designation = "Designation is required";
+    if (!form.designation.trim())
+      errors.designation = "Designation is required";
     if (!form.image.trim()) errors.image = "Image URL is required";
     else {
       try {
@@ -145,9 +159,51 @@ export default function RenownedTeachersPage() {
       }
     }
     if (!form.quote.trim()) errors.quote = "Quote is required";
-    else if (form.quote.trim().length < 5) errors.quote = "At least 5 characters";
+    else if (form.quote.trim().length < 5)
+      errors.quote = "At least 5 characters";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // ── Upload image ──────────────────────────────────────────────────────
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+
+      setForm((p) => ({ ...p, image: data.url }));
+      setFormErrors((e) => {
+        const n = { ...e };
+        delete n.image;
+        return n;
+      });
+      addToast({
+        description: "Image uploaded successfully",
+        color: "success",
+      });
+    } catch (err) {
+      addToast({
+        description: err instanceof Error ? err.message : "Upload failed",
+        color: "danger",
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   // ── Save (create or update) ───────────────────────────────────────────
@@ -174,9 +230,12 @@ export default function RenownedTeachersPage() {
         if (!res.ok) throw new Error("Update failed");
         const data = await res.json();
         setTeachers((prev) =>
-          prev.map((t) => (t._id === editTarget._id ? data.teacher : t)),
+          prev.map((t) => (t._id === editTarget._id ? data.teacher : t))
         );
-        addToast({ description: "Teacher updated successfully", color: "success" });
+        addToast({
+          description: "Teacher updated successfully",
+          color: "success",
+        });
       } else {
         const res = await fetch("/api/v1/renowned-teachers", {
           method: "POST",
@@ -186,13 +245,19 @@ export default function RenownedTeachersPage() {
         if (!res.ok) throw new Error("Create failed");
         const data = await res.json();
         setTeachers((prev) =>
-          [...prev, data.teacher].sort((a, b) => a.order - b.order),
+          [...prev, data.teacher].sort((a, b) => a.order - b.order)
         );
-        addToast({ description: "Teacher added successfully", color: "success" });
+        addToast({
+          description: "Teacher added successfully",
+          color: "success",
+        });
       }
       closeForm();
     } catch {
-      addToast({ description: "Failed to save. Please try again.", color: "danger" });
+      addToast({
+        description: "Failed to save. Please try again.",
+        color: "danger",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -210,7 +275,7 @@ export default function RenownedTeachersPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setTeachers((prev) =>
-        prev.map((t) => (t._id === teacher._id ? data.teacher : t)),
+        prev.map((t) => (t._id === teacher._id ? data.teacher : t))
       );
       addToast({
         description: `${teacher.name} is now ${!teacher.isVisible ? "visible" : "hidden"}`,
@@ -237,7 +302,10 @@ export default function RenownedTeachersPage() {
       });
       if (!res.ok) throw new Error();
       setTeachers((prev) => prev.filter((t) => t._id !== deleteTarget._id));
-      addToast({ description: `"${deleteTarget.name}" deleted`, color: "success" });
+      addToast({
+        description: `"${deleteTarget.name}" deleted`,
+        color: "success",
+      });
       closeDelete();
     } catch {
       addToast({ description: "Failed to delete", color: "danger" });
@@ -276,14 +344,22 @@ export default function RenownedTeachersPage() {
 
       {/* Summary */}
       <div className="flex flex-wrap gap-3 items-center">
-        <Chip variant="flat" color="primary" startContent={<GraduationCap size={14} />}>
+        <Chip
+          variant="flat"
+          color="primary"
+          startContent={<GraduationCap size={14} />}
+        >
           {teachers.length} Total
         </Chip>
         <Chip variant="flat" color="success" startContent={<Eye size={14} />}>
           {visibleCount} Visible
         </Chip>
         {teachers.length - visibleCount > 0 && (
-          <Chip variant="flat" color="default" startContent={<EyeOff size={14} />}>
+          <Chip
+            variant="flat"
+            color="default"
+            startContent={<EyeOff size={14} />}
+          >
             {teachers.length - visibleCount} Hidden
           </Chip>
         )}
@@ -307,9 +383,16 @@ export default function RenownedTeachersPage() {
       ) : teachers.length === 0 ? (
         <Card>
           <CardBody className="py-16 text-center">
-            <GraduationCap size={48} className="mx-auto text-default-300 mb-3" />
+            <GraduationCap
+              size={48}
+              className="mx-auto text-default-300 mb-3"
+            />
             <p className="text-default-500 mb-4">No renowned teachers yet.</p>
-            <Button color="primary" startContent={<UserPlus size={16} />} onPress={openAdd}>
+            <Button
+              color="primary"
+              startContent={<UserPlus size={16} />}
+              onPress={openAdd}
+            >
               Add First Teacher
             </Button>
           </CardBody>
@@ -354,7 +437,12 @@ export default function RenownedTeachersPage() {
       </div>
 
       {/* ── Add / Edit Modal ── */}
-      <Modal isOpen={isFormOpen} onClose={closeForm} size="lg" scrollBehavior="inside">
+      <Modal
+        isOpen={isFormOpen}
+        onClose={closeForm}
+        size="lg"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <GraduationCap size={20} className="text-primary" />
@@ -367,7 +455,11 @@ export default function RenownedTeachersPage() {
               value={form.name}
               onValueChange={(v) => {
                 setForm((p) => ({ ...p, name: v }));
-                setFormErrors((e) => { const n = { ...e }; delete n.name; return n; });
+                setFormErrors((e) => {
+                  const n = { ...e };
+                  delete n.name;
+                  return n;
+                });
               }}
               isRequired
               variant="bordered"
@@ -380,34 +472,53 @@ export default function RenownedTeachersPage() {
               value={form.designation}
               onValueChange={(v) => {
                 setForm((p) => ({ ...p, designation: v }));
-                setFormErrors((e) => { const n = { ...e }; delete n.designation; return n; });
+                setFormErrors((e) => {
+                  const n = { ...e };
+                  delete n.designation;
+                  return n;
+                });
               }}
               isRequired
               variant="bordered"
               isInvalid={!!formErrors.designation}
               errorMessage={formErrors.designation}
             />
-            <Input
-              label="Photo URL"
-              placeholder="https://example.com/photo.jpg"
-              value={form.image}
-              onValueChange={(v) => {
-                setForm((p) => ({ ...p, image: v }));
-                setFormErrors((e) => { const n = { ...e }; delete n.image; return n; });
-              }}
-              isRequired
-              variant="bordered"
-              isInvalid={!!formErrors.image}
-              errorMessage={formErrors.image}
-              description="Paste a direct image URL (HTTPS recommended)"
-            />
+            <div className="flex gap-3 items-start">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <Button
+                isIconOnly
+                size="lg"
+                variant="flat"
+                isLoading={isUploading}
+                title="Upload photo"
+                onPress={() => fileInputRef.current?.click()}
+              >
+                {!isUploading && <CameraIcon size={18} />}
+              </Button>
+            </div>
             {/* Image preview */}
             {form.image && !formErrors.image && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-default-50">
-                <Avatar src={form.image} size="lg" radius="full" name={form.name || "?"} />
+                <Avatar
+                  src={form.image}
+                  size="lg"
+                  radius="full"
+                  name={form.name || "?"}
+                />
                 <div>
-                  <p className="text-sm font-medium">{form.name || "Preview"}</p>
-                  <p className="text-xs text-default-500">{form.designation || "—"}</p>
+                  <p className="text-sm font-medium">
+                    {form.name || "Preview"}
+                  </p>
+                  <p className="text-xs text-default-500">
+                    {form.designation || "—"}
+                  </p>
                 </div>
               </div>
             )}
@@ -417,7 +528,11 @@ export default function RenownedTeachersPage() {
               value={form.quote}
               onValueChange={(v) => {
                 setForm((p) => ({ ...p, quote: v }));
-                setFormErrors((e) => { const n = { ...e }; delete n.quote; return n; });
+                setFormErrors((e) => {
+                  const n = { ...e };
+                  delete n.quote;
+                  return n;
+                });
               }}
               isRequired
               variant="bordered"
@@ -436,18 +551,24 @@ export default function RenownedTeachersPage() {
                 onValueChange={(v) => setForm((p) => ({ ...p, order: v }))}
                 variant="bordered"
                 className="max-w-30"
-                startContent={<GripVertical size={16} className="text-default-400" />}
+                startContent={
+                  <GripVertical size={16} className="text-default-400" />
+                }
                 description="Lower = shown first"
               />
               <div className="flex items-center gap-2 mt-4">
                 <Switch
                   isSelected={form.isVisible}
-                  onValueChange={(v) => setForm((p) => ({ ...p, isVisible: v }))}
+                  onValueChange={(v) =>
+                    setForm((p) => ({ ...p, isVisible: v }))
+                  }
                   size="sm"
                   color="success"
                 />
                 <span className="text-sm text-default-600">
-                  {form.isVisible ? "Visible on homepage" : "Hidden from homepage"}
+                  {form.isVisible
+                    ? "Visible on homepage"
+                    : "Hidden from homepage"}
                 </span>
               </div>
             </div>
@@ -472,7 +593,8 @@ export default function RenownedTeachersPage() {
           </ModalHeader>
           <ModalBody>
             <p className="text-default-600">
-              Are you sure you want to permanently remove this teacher card from the homepage?
+              Are you sure you want to permanently remove this teacher card from
+              the homepage?
             </p>
             {deleteTarget && (
               <div className="flex items-center gap-3 mt-3 p-3 rounded-lg bg-danger-50/40">
@@ -484,17 +606,29 @@ export default function RenownedTeachersPage() {
                 />
                 <div>
                   <p className="text-sm font-semibold">{deleteTarget.name}</p>
-                  <p className="text-xs text-default-500">{deleteTarget.designation}</p>
+                  <p className="text-xs text-default-500">
+                    {deleteTarget.designation}
+                  </p>
                 </div>
               </div>
             )}
-            <p className="text-sm text-danger-500 mt-2">This action cannot be undone.</p>
+            <p className="text-sm text-danger-500 mt-2">
+              This action cannot be undone.
+            </p>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={closeDelete} isDisabled={isDeleting}>
+            <Button
+              variant="flat"
+              onPress={closeDelete}
+              isDisabled={isDeleting}
+            >
               Cancel
             </Button>
-            <Button color="danger" onPress={confirmDelete} isLoading={isDeleting}>
+            <Button
+              color="danger"
+              onPress={confirmDelete}
+              isLoading={isDeleting}
+            >
               Delete
             </Button>
           </ModalFooter>
@@ -527,7 +661,12 @@ function TeacherCard({
     >
       <CardHeader className="pb-1">
         <div className="flex items-center gap-3 w-full">
-          <Avatar src={teacher.image} name={teacher.name} size="md" radius="full" />
+          <Avatar
+            src={teacher.image}
+            name={teacher.name}
+            size="md"
+            radius="full"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-base font-semibold text-default-900 truncate">
@@ -542,9 +681,16 @@ function TeacherCard({
                 {teacher.isVisible ? "Visible" : "Hidden"}
               </Chip>
             </div>
-            <p className="text-xs text-default-500 truncate">{teacher.designation}</p>
+            <p className="text-xs text-default-500 truncate">
+              {teacher.designation}
+            </p>
           </div>
-          <Chip size="sm" variant="flat" color="default" classNames={{ content: "text-xs font-mono" }}>
+          <Chip
+            size="sm"
+            variant="flat"
+            color="default"
+            classNames={{ content: "text-xs font-mono" }}
+          >
             #{teacher.order}
           </Chip>
         </div>
@@ -556,7 +702,9 @@ function TeacherCard({
       </CardBody>
       <CardFooter className="gap-2 pt-0">
         <Tooltip
-          content={teacher.isVisible ? "Hide from homepage" : "Show on homepage"}
+          content={
+            teacher.isVisible ? "Hide from homepage" : "Show on homepage"
+          }
           color={teacher.isVisible ? "default" : "success"}
         >
           <Button

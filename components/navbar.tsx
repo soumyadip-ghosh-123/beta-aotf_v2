@@ -31,7 +31,7 @@ export const Navbar = () => {
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky" className="z-50 h-fit top-0">
-      <NavbarContent className="h-fit" justify="start">
+      <NavbarContent className="h-fit ml-10" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
             <Image src="/AOTF.svg" alt="Logo" width={50} height={50} />

@@ -126,13 +126,8 @@ export default function UsersPage() {
             Manage teachers and candidates
           </p>
         </div>
-        <Button
-          isIconOnly
-          color="primary"
-          startContent={<UserPlus size={18} />}
-          onPress={onOpen}
-        ></Button>
-      </div>      <Tabs
+      </div>
+      <Tabs
         selectedKey={selectedTab}
         onSelectionChange={(key) => {
           setSelectedTab(key as Role);
@@ -151,7 +146,6 @@ export default function UsersPage() {
           title={`Candidates (${users.filter((u) => u.role === "candidate").length})`}
         />
       </Tabs>
-
       <AdminSearchBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -160,7 +154,6 @@ export default function UsersPage() {
         resultLabel="user"
         onClearAll={() => setSearchQuery("")}
       />
-
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {filteredUsers.map((user) => (
           <Card key={user.id} className="w-full">
@@ -211,7 +204,6 @@ export default function UsersPage() {
           </Card>
         ))}
       </div>
-
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <User size={48} className="mx-auto text-default-300 mb-4" />
@@ -220,7 +212,6 @@ export default function UsersPage() {
           </p>
         </div>
       )}
-
       {/* Create User Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalContent>

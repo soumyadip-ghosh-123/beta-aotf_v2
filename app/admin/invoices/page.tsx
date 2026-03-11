@@ -139,7 +139,7 @@ export default function AdminInvoicePage() {
   const [grandTotal, setGrandTotal] = useState<number>(0);
   const [notes, setNotes] = useState<string>("");
   const [signature, setSignature] = useState<string>(
-    "/api/admin/private-image?name=sign.png"
+    "/api/v1/admin/private-image?name=sign.png"
   );
   const [websiteUrl, setWebsiteUrl] = useState<string>(
     siteConfig.url || "https://www.aotf.in"
@@ -191,7 +191,7 @@ export default function AdminInvoicePage() {
         setNotes(parsedData.notes || "");
         setSelectedCurrency(parsedData.selectedCurrency || "INR");
         setSignature(
-          parsedData.signature || "/api/admin/private-image?name=sign.png"
+          parsedData.signature || "/api/v1/admin/private-image?name=sign.png"
         );
         setWebsiteUrl(
           parsedData.websiteUrl || siteConfig.url || "https://www.aotf.in"
@@ -925,7 +925,7 @@ export default function AdminInvoicePage() {
     setItems([]);
     setTaxPercentage(0);
     setNotes("");
-    setSignature("/api/admin/private-image?name=sign.png");
+    setSignature("/api/v1/admin/private-image?name=sign.png");
     setWebsiteUrl(siteConfig.url || "https://www.aotf.in");
     setPaymentStatus("unpaid");
     setIsInvoiceSaved(false);
@@ -1320,7 +1320,7 @@ export default function AdminInvoicePage() {
                   </span>
                 </div>                <div className="border rounded bg-white p-4 flex items-center justify-center">
                   <Image
-                    src="/api/admin/private-image?name=sign.png"
+                    src="/api/v1/admin/private-image?name=sign.png"
                     alt="Signature"
                     className="max-h-32 object-contain"
                     width={128}

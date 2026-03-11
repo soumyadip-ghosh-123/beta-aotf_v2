@@ -52,6 +52,7 @@ const ReknownedSection = async () => {
               <CardHeader className="flex gap-3 items-center">
                 <Avatar
                   src={item.image}
+                  name={item.name}
                   alt={item.name}
                   size="lg"
                   radius="full"

@@ -166,7 +166,7 @@ export default function SettingsPage() {
       {/* Header */}
       <h1 className="text-2xl font-bold text-default-900 flex items-center gap-2">
         <Settings size={24} className="text-default-500" />
-        Settings
+        Admin Settings
       </h1>
 
       {/* Tab Navigation */}
