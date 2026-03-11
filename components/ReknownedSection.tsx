@@ -1,75 +1,37 @@
-"use client";
-
 import React from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Avatar } from "@heroui/avatar";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import Underline from "./ui/Underline";
 
-const testimonials = [
-  {
-    name: "Dr. Ananya Sharma",
-    designation: "Physics Faculty • IIT-JEE",
-    image: "https://i.pravatar.cc/150?img=32",
-    quote:
-      "Concept clarity and consistent practice are the keys to cracking competitive exams.",
-  },
-  {
-    name: "Prof. Rajiv Mehta",
-    designation: "Mathematics Mentor",
-    image: "https://i.pravatar.cc/150?img=12",
-    quote:
-      "Focus on fundamentals first — speed and accuracy will follow naturally.",
-  },
-  {
-    name: "Neha Verma",
-    designation: "Chemistry Educator",
-    image: "https://i.pravatar.cc/150?img=45",
-    quote: "Learning should be engaging, practical, and driven by curiosity.",
-  },
-  {
-    name: "Amitabh Singh",
-    designation: "Biology Tutor",
-    image: "https://i.pravatar.cc/150?img=22",
-    quote: "Understanding concepts deeply is the key to success in biology.",
-  },
-  {
-    name: "Sonal Kapoor",
-    designation: "English Language Coach",
-    image: "https://i.pravatar.cc/150?img=30",
-    quote:
-      "Language is the road map of a culture. It tells you where its people come from and where they are going.",
-  },
-  {
-    name: "Vikram Joshi",
-    designation: "History Instructor",
-    image: "https://i.pravatar.cc/150?img=18",
-    quote:
-      "History is not just about the past; it's a guide to understanding the present and shaping the future.",
-  },
-  {
-    name: "Dr. Ananya Sharma",
-    designation: "Physics Faculty • IIT-JEE",
-    image: "https://i.pravatar.cc/150?img=32",
-    quote:
-      "Concept clarity and consistent practice are the keys to cracking competitive exams.",
-  },
-  {
-    name: "Prof. Rajiv Mehta",
-    designation: "Mathematics Mentor",
-    image: "https://i.pravatar.cc/150?img=12",
-    quote:
-      "Focus on fundamentals first — speed and accuracy will follow naturally.",
-  },
-  {
-    name: "Neha Verma",
-    designation: "Chemistry Educator",
-    image: "https://i.pravatar.cc/150?img=45",
-    quote: "Learning should be engaging, practical, and driven by curiosity.",
-  }
-];
+interface RenownedTeacher {
+  _id: string;
+  name: string;
+  designation: string;
+  image: string;
+  quote: string;
+  order: number;
+}
 
-const ReknownedSection = () => {
+async function fetchRenownedTeachers(): Promise<RenownedTeacher[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/v1/renowned-teachers`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.teachers ?? [];
+  } catch {
+    return [];
+  }
+}
+
+const ReknownedSection = async () => {
+  const teachers = await fetchRenownedTeachers();
+
+  if (teachers.length === 0) return null;
+
   return (
     <div className="w-full max-w-7xl flex flex-col my-5 md:my-10">
       <Underline
@@ -82,12 +44,10 @@ const ReknownedSection = () => {
         className="w-full py-4 no-scrollbar"
       >
         <div className="flex gap-4 px-4">
-          {testimonials.map((item, index) => (
+          {teachers.map((item) => (
             <Card
-              key={index}
-              className="min-w-70 max-w-70
-            shadow-sm border border-slate-100
-            dark:border-slate-800"
+              key={item._id}
+              className="min-w-70 max-w-70 shadow-sm border border-slate-100 dark:border-slate-800"
             >
               <CardHeader className="flex gap-3 items-center">
                 <Avatar
@@ -96,7 +56,6 @@ const ReknownedSection = () => {
                   size="lg"
                   radius="full"
                 />
-
                 <div className="flex flex-col">
                   <p className="font-semibold text-slate-800 dark:text-slate-100">
                     {item.name}
@@ -106,10 +65,9 @@ const ReknownedSection = () => {
                   </span>
                 </div>
               </CardHeader>
-
               <CardBody className="pt-0">
                 <p className="text-sm italic text-slate-600 dark:text-slate-300 leading-relaxed">
-                  “{item.quote}”
+                  "{item.quote}"
                 </p>
               </CardBody>
             </Card>

@@ -27,9 +27,11 @@ export default function AdminHomePage() {
       try {
         // Get admin data from metadata or fetch from API
         const metadata = user?.publicMetadata;
-        
+
         if (metadata?.adminId) {
-          const response = await fetch(`/api/v1/admin/admins/${metadata.adminId}`);
+          const response = await fetch(
+            `/api/v1/admin/admins/${metadata.adminId}`
+          );
           if (response.ok) {
             const result = await response.json();
             setAdminData(result.admin);
@@ -136,7 +138,6 @@ export default function AdminHomePage() {
               </p>
             </Link>
           )}
-
           {adminData?.permissions?.canHandleFeedbacks && (
             <Link
               href="/admin/feedbacks"
@@ -149,7 +150,6 @@ export default function AdminHomePage() {
               </p>
             </Link>
           )}
-
           {adminData?.permissions?.canManagePosts && (
             <Link
               href="/admin/tuitions"
@@ -162,7 +162,6 @@ export default function AdminHomePage() {
               </p>
             </Link>
           )}
-
           {adminData?.permissions?.canManageJobs && (
             <Link
               href="/admin/jobs"
@@ -174,8 +173,7 @@ export default function AdminHomePage() {
                 Create and manage job postings
               </p>
             </Link>
-          )}
-
+          )}{" "}
           {adminData?.permissions?.canManageAdmins && (
             <Link
               href="/admin/settings"
@@ -188,7 +186,16 @@ export default function AdminHomePage() {
               </p>
             </Link>
           )}
-
+          <Link
+            href="/admin/renowned-teachers"
+            className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <div className="mb-2 text-3xl">🎓</div>
+            <h3 className="mb-1 font-semibold">Renowned Teachers</h3>
+            <p className="text-sm text-gray-600">
+              Manage teacher cards shown on the homepage
+            </p>
+          </Link>
           {adminData?.permissions?.canViewAnalytics && (
             <Link
               href="/admin/settings"

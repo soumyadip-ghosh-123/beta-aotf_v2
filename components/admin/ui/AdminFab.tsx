@@ -38,6 +38,12 @@ const PAGE_ACTIONS = [
   { matchPath: "/admin/users",    action: "user"    },
 ] as const;
 
+// Pages that render their own FAB — hide the global one to avoid duplicates
+const SELF_MANAGED_FAB_PATHS = [
+  "/admin/renowned-teachers",
+  "/admin/settings",
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminFab() {
@@ -48,6 +54,8 @@ export default function AdminFab() {
   const { isOpen: isUserOpen, onOpen: openUser, onClose: closeUser } = useDisclosure();
   const [newUser,     setNewUser]     = useState({ name: "", email: "", phone: "", role: "teacher" as Role });
   const [isCreating,  setIsCreating]  = useState(false);
+  // Pages that render their own FAB — suppress the global one
+  if (SELF_MANAGED_FAB_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   // Determine which action this page maps to (if any)
   const matched = PAGE_ACTIONS.find((p) => pathname.startsWith(p.matchPath));
