@@ -30,6 +30,7 @@ const isPublicRoute = createRouteMatcher([
   "/services(.*)",
   "/sso-callback(.*)",
   "/verify(.*)",
+  "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);

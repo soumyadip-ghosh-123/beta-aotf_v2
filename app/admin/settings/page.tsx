@@ -458,6 +458,32 @@ function AdminAccountsSection() {
 
   return (
     <div className="space-y-4">
+      {/* Floating Add Admin Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Tooltip content="Add Admin" placement="left" color="primary">
+          <Button
+            color="primary"
+            onPress={openAdd}
+            isIconOnly
+            radius="full"
+            size="lg"
+            className="shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all"
+          >
+            <UserPlus size={20} />
+          </Button>
+        </Tooltip>
+      </div>
+      {/* Search */}
+      <Input
+        placeholder="Search by name, email, phone or ID…"
+        value={searchTerm}
+        onValueChange={setSearchTerm}
+        variant="bordered"
+        size="sm"
+        isClearable
+        onClear={() => setSearchTerm("")}
+        classNames={{ inputWrapper: "bg-default-50" }}
+      />
       {/* Summary chips */}
       <div className="flex flex-wrap items-center gap-3">
         <Chip variant="flat" color="danger" startContent={<Crown size={14} />}>
@@ -471,28 +497,7 @@ function AdminAccountsSection() {
           {supportAdminCount} Support Admin
           {supportAdminCount !== 1 ? "s" : ""}
         </Chip>
-        <Button
-          color="primary"
-          startContent={<UserPlus size={16} />}
-          onPress={openAdd}
-          size="sm"
-        >
-          Add Admin
-        </Button>
       </div>
-
-      {/* Search */}
-      <Input
-        placeholder="Search by name, email, phone or ID…"
-        value={searchTerm}
-        onValueChange={setSearchTerm}
-        variant="bordered"
-        size="sm"
-        isClearable
-        onClear={() => setSearchTerm("")}
-        classNames={{ inputWrapper: "bg-default-50" }}
-      />
-
       {/* Admin Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filteredAdmins.map((admin) => (

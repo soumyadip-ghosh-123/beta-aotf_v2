@@ -188,14 +188,16 @@ backend -->
 
     user navbar
     admin hamburger menu -> dashboard, settings, database, logout
-    admin can add renowned teacher
-
 
 
 
 
 1. admin e hamburger ui
-2. admin er settings ui 
+2.   admin can add renowned teacher - DONE
+3. admin er settings ui - DONE
+
+
+
 3. database ui
 4. dashboard ui
 5. ads ui & backend
