@@ -4,6 +4,10 @@ import Post, { type PostStatus, type IPost } from "@/lib/models/Post";
 import Enquiry from "@/lib/models/Enquiry";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
+import {
+  getAdminAuthorsByClerkIds,
+  type AdminAuthorSummary,
+} from "@/lib/services/admin-author.service";
 import type {
   CreatePostInput,
   UpdatePostInput,
@@ -32,6 +36,7 @@ export interface PaginatedPosts {
 
 export type PostWithEnquiryReference = IPost & {
   enquiryReferenceId?: string | null;
+  author?: AdminAuthorSummary | null;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -116,6 +121,23 @@ async function attachEnquiryReferences<
   }));
 }
 
+async function attachPostAuthors<
+  T extends { createdByAdminClerkId?: string | null },
+>(posts: T[]): Promise<Array<T & { author: AdminAuthorSummary | null }>> {
+  const authorMap = await getAdminAuthorsByClerkIds(
+    posts
+      .map((post) => post.createdByAdminClerkId)
+      .filter((clerkId): clerkId is string => Boolean(clerkId)),
+  );
+
+  return posts.map((post) => ({
+    ...post,
+    author: post.createdByAdminClerkId
+      ? (authorMap.get(post.createdByAdminClerkId) ?? null)
+      : null,
+  }));
+}
+
 // ─── Service Functions ──────────────────────────────────────────────────
 
 /**
@@ -164,7 +186,8 @@ export async function getPostByPostId(
     throw new NotFoundError("Post");
   }
 
-  const [enrichedPost] = await attachEnquiryReferences([post]);
+  const [postWithEnquiryReference] = await attachEnquiryReferences([post]);
+  const [enrichedPost] = await attachPostAuthors([postWithEnquiryReference]);
   return enrichedPost;
 }
 
@@ -181,7 +204,8 @@ export async function getPostById(
     throw new NotFoundError("Post");
   }
 
-  const [enrichedPost] = await attachEnquiryReferences([post]);
+  const [postWithEnquiryReference] = await attachEnquiryReferences([post]);
+  const [enrichedPost] = await attachPostAuthors([postWithEnquiryReference]);
   return enrichedPost;
 }
 
@@ -225,7 +249,8 @@ export async function listPosts(
     Post.countDocuments(filter),
   ]);
 
-  const enrichedPosts = await attachEnquiryReferences(posts);
+  const postsWithEnquiryReferences = await attachEnquiryReferences(posts);
+  const enrichedPosts = await attachPostAuthors(postsWithEnquiryReferences);
 
   return {
     posts: enrichedPosts,

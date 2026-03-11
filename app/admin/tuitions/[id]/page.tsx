@@ -156,6 +156,7 @@ export default function ViewPostPage({
               name: app.applicantSnapshot?.name ?? "Unknown",
               email: app.applicantSnapshot?.email ?? "",
               phone: app.applicantSnapshot?.phone ?? "",
+              avatar: app.applicantSnapshot?.avatarUrl ?? undefined,
               applicantType: app.applicantType,
               status: app.status,
               appliedDate: app.appliedAt ?? app.createdAt,

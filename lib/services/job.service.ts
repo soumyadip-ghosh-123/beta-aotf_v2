@@ -4,6 +4,10 @@ import Job, { type IJob } from "@/lib/models/Job";
 import Enquiry from "@/lib/models/Enquiry";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
+import {
+  getAdminAuthorsByAdminIds,
+  type AdminAuthorSummary,
+} from "@/lib/services/admin-author.service";
 import type {
   CreateJobInput,
   UpdateJobInput,
@@ -24,6 +28,7 @@ export interface PaginatedJobs {
 
 export type JobWithEnquiryReference = IJob & {
   enquiryReferenceId?: string | null;
+  author?: AdminAuthorSummary | null;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -96,6 +101,23 @@ async function attachEnquiryReferences<
   }));
 }
 
+async function attachJobAuthors<
+  T extends { createdByAdminId?: mongoose.Types.ObjectId | string | null },
+>(jobs: T[]): Promise<Array<T & { author: AdminAuthorSummary | null }>> {
+  const authorMap = await getAdminAuthorsByAdminIds(
+    jobs.map((job) => job.createdByAdminId),
+  );
+
+  return jobs.map((job) => {
+    const adminId = job.createdByAdminId?.toString();
+
+    return {
+      ...job,
+      author: adminId ? (authorMap.get(adminId) ?? null) : null,
+    };
+  });
+}
+
 // ─── Service Functions ──────────────────────────────────────────────────
 
 /**
@@ -152,7 +174,8 @@ export async function getJobByJobId(
     throw new NotFoundError("Job");
   }
 
-  const [enrichedJob] = await attachEnquiryReferences([job]);
+  const [jobWithEnquiryReference] = await attachEnquiryReferences([job]);
+  const [enrichedJob] = await attachJobAuthors([jobWithEnquiryReference]);
   return enrichedJob;
 }
 
@@ -167,7 +190,8 @@ export async function getJobById(id: string): Promise<JobWithEnquiryReference> {
     throw new NotFoundError("Job");
   }
 
-  const [enrichedJob] = await attachEnquiryReferences([job]);
+  const [jobWithEnquiryReference] = await attachEnquiryReferences([job]);
+  const [enrichedJob] = await attachJobAuthors([jobWithEnquiryReference]);
   return enrichedJob;
 }
 
@@ -208,7 +232,8 @@ export async function listJobs(input: ListJobsInput): Promise<PaginatedJobs> {
     Job.countDocuments(filter),
   ]);
 
-  const enrichedJobs = await attachEnquiryReferences(jobs);
+  const jobsWithEnquiryReferences = await attachEnquiryReferences(jobs);
+  const enrichedJobs = await attachJobAuthors(jobsWithEnquiryReferences);
 
   return {
     jobs: enrichedJobs,

@@ -62,7 +62,7 @@ interface TuitionPostProps {
   updatedAt: Date;
   isEdited?: boolean;
   applicants?: string[];
-  createdByUserId?: { name?: string; avatar?: string };
+  createdByUserId?: { name?: string; avatar?: string | null };
   initialApplied?: boolean;
   isSignedIn?: boolean;
   canApply?: boolean;

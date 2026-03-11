@@ -22,6 +22,7 @@ export interface IApplicantSnapshot {
   name: string;
   email: string;
   phone: string;
+  avatarUrl?: string | null;
 }
 
 const ApplicantSnapshotSchema = new Schema<IApplicantSnapshot>(
@@ -29,6 +30,7 @@ const ApplicantSnapshotSchema = new Schema<IApplicantSnapshot>(
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String, required: true },
+    avatarUrl: { type: String, default: null },
   },
   { _id: false },
 );
@@ -164,7 +166,13 @@ ApplicationSchema.index({ postId: 1 });
 ApplicationSchema.index({ status: 1 });
 ApplicationSchema.index(
   { jobId: 1, applicantId: 1 },
-  { unique: true, sparse: true },
+  {
+    unique: true,
+    partialFilterExpression: {
+      jobId: { $exists: true, $type: "objectId" },
+      applicantId: { $exists: true },
+    },
+  },
 );
 ApplicationSchema.index(
   { postId: 1, applicantId: 1, applicantType: 1 },
@@ -186,5 +194,70 @@ ApplicationSchema.index({ appliedAt: -1 });
 const Application: Model<IApplication> =
   models.Application ||
   mongoose.model<IApplication>("Application", ApplicationSchema);
+
+let applicationIndexMigrationPromise: Promise<void> | null = null;
+
+type MongoIndexDefinition = {
+  name: string;
+  unique?: boolean;
+  partialFilterExpression?: {
+    jobId?: { $exists?: boolean; $type?: string };
+    applicantId?: { $exists?: boolean };
+  };
+};
+
+function isExpectedJobApplicantIndex(index?: MongoIndexDefinition): boolean {
+  return Boolean(
+    index?.unique &&
+    index.partialFilterExpression?.jobId?.$exists === true &&
+    index.partialFilterExpression?.jobId?.$type === "objectId" &&
+    index.partialFilterExpression?.applicantId?.$exists === true,
+  );
+}
+
+export async function ensureApplicationIndexes(): Promise<void> {
+  if (applicationIndexMigrationPromise) {
+    return applicationIndexMigrationPromise;
+  }
+
+  applicationIndexMigrationPromise = (async () => {
+    const collection = Application.collection;
+    let indexes = (await collection.indexes()) as MongoIndexDefinition[];
+    const existingJobApplicantIndex = indexes.find(
+      (index) => index.name === "jobId_1_applicantId_1",
+    );
+
+    if (
+      existingJobApplicantIndex &&
+      !isExpectedJobApplicantIndex(existingJobApplicantIndex)
+    ) {
+      await collection.dropIndex("jobId_1_applicantId_1");
+      indexes = (await collection.indexes()) as MongoIndexDefinition[];
+    }
+
+    const jobApplicantIndex = indexes.find(
+      (index) => index.name === "jobId_1_applicantId_1",
+    );
+
+    if (!isExpectedJobApplicantIndex(jobApplicantIndex)) {
+      await collection.createIndex(
+        { jobId: 1, applicantId: 1 },
+        {
+          name: "jobId_1_applicantId_1",
+          unique: true,
+          partialFilterExpression: {
+            jobId: { $exists: true, $type: "objectId" },
+            applicantId: { $exists: true },
+          },
+        },
+      );
+    }
+  })().catch((error) => {
+    applicationIndexMigrationPromise = null;
+    throw error;
+  });
+
+  return applicationIndexMigrationPromise;
+}
 
 export default Application;

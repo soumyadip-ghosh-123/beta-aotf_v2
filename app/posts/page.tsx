@@ -72,6 +72,10 @@ export default async function DocsPage({
                 status={post.status}
                 createdAt={post.createdAt}
                 updatedAt={post.updatedAt}
+                createdByUserId={{
+                  name: post.author?.name,
+                  avatar: post.author?.avatarUrl,
+                }}
                 initialApplied={appliedPostIds.has(post.postId)}
                 isSignedIn={Boolean(clerkId)}
                 canApply={canApplyToPosts}

@@ -152,6 +152,7 @@ export async function POST(
         "User",
       email: primaryEmail,
       phone,
+      avatarUrl: clerkUser.imageUrl || null,
     };
 
     const application = await createPostApplication({

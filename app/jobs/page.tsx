@@ -56,7 +56,7 @@ export default async function JobsPage({
               <JobPost
                 key={job.jobId}
                 jobId={job.jobId}
-                clientName="Soumyadip Ghosh"
+                clientName={job.clientName}
                 companyType={job.companyType}
                 title={job.title}
                 workType={job.workType}
@@ -73,6 +73,10 @@ export default async function JobsPage({
                 brief={job.brief}
                 status={job.status}
                 createdAt={job.createdAt?.toISOString()}
+                createdByUserId={{
+                  name: job.author?.name,
+                  avatar: job.author?.avatarUrl,
+                }}
                 initialApplied={appliedJobIds.has(job.jobId)}
                 isSignedIn={Boolean(clerkId)}
                 canApply={canApplyToJobs}

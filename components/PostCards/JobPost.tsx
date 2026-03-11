@@ -37,6 +37,7 @@ interface JobPostProps {
   initialApplied?: boolean;
   isSignedIn?: boolean;
   canApply?: boolean;
+  createdByUserId?: { name?: string; avatar?: string | null };
 }
 
 /* ---------- FORMATTERS ---------- */
@@ -87,6 +88,7 @@ const JobPost = ({
   initialApplied = false,
   isSignedIn = false,
   canApply,
+  createdByUserId = {},
 }: JobPostProps) => {
   const router = useRouter();
 
@@ -116,8 +118,12 @@ const JobPost = ({
       {/* HEADER */}
       <CardHeader className="justify-between z-0">
         <User
-          name={clientName}
-          description={formatCompanyType(companyType)}
+          avatarProps={{
+            src: createdByUserId.avatar || "",
+            alt: `${createdByUserId.name || "Admin"} avatar`,
+          }}
+          name={createdByUserId.name || "Admin"}
+          description="Posted by admin"
         />
         <Chip radius="sm" size="sm" color={statusColor(status)}>
           {formatStatus(status)}

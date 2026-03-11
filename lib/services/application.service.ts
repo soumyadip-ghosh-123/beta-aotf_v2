@@ -1,15 +1,22 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Application, {
   type ApplicantType,
   type IApplication,
   type IApplicantSnapshot,
+  ensureApplicationIndexes,
 } from "@/lib/models/Application";
 import Job from "@/lib/models/Job";
 import Post from "@/lib/models/Post";
 import User from "@/lib/models/User";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { ensureUserRecord } from "@/lib/utils/ensure-user";
+
+async function ensureApplicationStorageReady() {
+  await dbConnect();
+  await ensureApplicationIndexes();
+}
 
 // ─── Types returned to route handlers ───────────────────────────────────
 
@@ -58,6 +65,85 @@ export interface CreateJobApplicationParams {
   applicantType: ApplicantType;
   applicantSnapshot: IApplicantSnapshot;
   coverLetter?: string;
+}
+
+async function attachApplicantAvatars(
+  applications: IApplication[],
+): Promise<IApplication[]> {
+  const uniqueApplicantIds = Array.from(
+    new Set(
+      applications.map((application) => application.applicantId?.toString()),
+    ),
+  ).filter(
+    (applicantId): applicantId is string =>
+      Boolean(applicantId) && mongoose.Types.ObjectId.isValid(applicantId),
+  );
+
+  if (uniqueApplicantIds.length === 0) {
+    return applications;
+  }
+
+  const users = await User.find(
+    {
+      _id: mongoose.trusted({
+        $in: uniqueApplicantIds.map(
+          (applicantId) => new mongoose.Types.ObjectId(applicantId),
+        ),
+      }),
+    },
+    { _id: 1, clerkId: 1 },
+  ).lean<Array<{ _id: mongoose.Types.ObjectId; clerkId?: string | null }>>();
+
+  const applicantClerkIdMap = new Map(
+    users.map((user) => [String(user._id), user.clerkId ?? null]),
+  );
+  const uniqueClerkIds = Array.from(
+    new Set(
+      users
+        .map((user) => user.clerkId)
+        .filter((clerkId): clerkId is string => Boolean(clerkId)),
+    ),
+  );
+
+  const avatarMap = new Map<string, string | null>();
+
+  if (uniqueClerkIds.length > 0) {
+    const client = await clerkClient();
+    const avatarEntries = await Promise.allSettled(
+      uniqueClerkIds.map(async (clerkId) => {
+        const clerkUser = await client.users.getUser(clerkId);
+        return [clerkId, clerkUser.imageUrl ?? null] as const;
+      }),
+    );
+
+    for (const entry of avatarEntries) {
+      if (entry.status === "fulfilled") {
+        avatarMap.set(entry.value[0], entry.value[1]);
+      }
+    }
+  }
+
+  return applications.map((application) => {
+    const applicantId = application.applicantId?.toString();
+    const applicantClerkId = applicantId
+      ? applicantClerkIdMap.get(applicantId)
+      : null;
+
+    const nextApplication = {
+      ...application,
+      applicantSnapshot: {
+        ...application.applicantSnapshot,
+        avatarUrl:
+          (applicantClerkId
+            ? (avatarMap.get(applicantClerkId) ?? null)
+            : null) ??
+          application.applicantSnapshot?.avatarUrl ??
+          null,
+      },
+    };
+
+    return nextApplication as IApplication;
+  });
 }
 
 function isCandidateApplicant(user: {
@@ -269,7 +355,7 @@ export async function hasAppliedToJob(
 export async function createPostApplication(
   input: CreatePostApplicationParams,
 ): Promise<IApplication> {
-  await dbConnect();
+  await ensureApplicationStorageReady();
 
   const post = await Post.findOne({ postId: input.postId }).lean();
   if (!post) {
@@ -289,26 +375,33 @@ export async function createPostApplication(
     throw new ConflictError("You have already applied to this tuition post.");
   }
 
-  const application = await Application.create({
-    applicationId: generateApplicationId(),
-    postId: input.postId,
-    applicantId: input.applicantId,
-    profileId: input.profileId,
-    applicantType: input.applicantType,
-    applicantSnapshot: input.applicantSnapshot,
-    coverLetter: input.coverLetter,
-    status: "applied",
-    isActive: true,
-    appliedAt: new Date(),
-  });
+  try {
+    const application = await Application.create({
+      applicationId: generateApplicationId(),
+      postId: input.postId,
+      applicantId: input.applicantId,
+      profileId: input.profileId,
+      applicantType: input.applicantType,
+      applicantSnapshot: input.applicantSnapshot,
+      coverLetter: input.coverLetter,
+      status: "applied",
+      isActive: true,
+      appliedAt: new Date(),
+    });
 
-  return application;
+    return application;
+  } catch (error: any) {
+    if (error.code === 11000) {
+      throw new ConflictError("You have already applied to this tuition post.");
+    }
+    throw error;
+  }
 }
 
 export async function createJobApplication(
   input: CreateJobApplicationParams,
 ): Promise<IApplication> {
-  await dbConnect();
+  await ensureApplicationStorageReady();
 
   const job = await Job.findOne({ jobId: input.jobIdPublic }).lean();
   if (!job) {
@@ -327,21 +420,29 @@ export async function createJobApplication(
     throw new ConflictError("You have already applied to this job.");
   }
 
-  const application = await Application.create({
-    applicationId: generateApplicationId(),
-    jobId: job._id,
-    jobIdPublic: input.jobIdPublic,
-    applicantId: input.applicantId,
-    profileId: input.profileId,
-    applicantType: input.applicantType,
-    applicantSnapshot: input.applicantSnapshot,
-    coverLetter: input.coverLetter,
-    status: "applied",
-    isActive: true,
-    appliedAt: new Date(),
-  });
+  try {
+    const application = await Application.create({
+      applicationId: generateApplicationId(),
+      jobId: job._id,
+      jobIdPublic: input.jobIdPublic,
+      applicantId: input.applicantId,
+      profileId: input.profileId,
+      applicantType: input.applicantType,
+      applicantSnapshot: input.applicantSnapshot,
+      coverLetter: input.coverLetter,
+      status: "applied",
+      isActive: true,
+      appliedAt: new Date(),
+    });
 
-  return application;
+    return application;
+  } catch (error: any) {
+    // Handle MongoDB duplicate key error (race condition)
+    if (error.code === 11000) {
+      throw new ConflictError("You have already applied to this job.");
+    }
+    throw error;
+  }
 }
 
 // ─── Service Functions ──────────────────────────────────────────────────
@@ -356,11 +457,13 @@ export async function getApplicationsByPostId(
 
   const applications = await Application.find({ postId })
     .sort({ appliedAt: -1 })
-    .lean();
+    .lean<IApplication[]>();
+
+  const enrichedApplications = await attachApplicantAvatars(applications);
 
   return {
-    applications: applications as IApplication[],
-    total: applications.length,
+    applications: enrichedApplications,
+    total: enrichedApplications.length,
   };
 }
 
@@ -374,11 +477,13 @@ export async function getApplicationsByJobIdPublic(
 
   const applications = await Application.find({ jobIdPublic })
     .sort({ appliedAt: -1 })
-    .lean();
+    .lean<IApplication[]>();
+
+  const enrichedApplications = await attachApplicantAvatars(applications);
 
   return {
-    applications: applications as IApplication[],
-    total: applications.length,
+    applications: enrichedApplications,
+    total: enrichedApplications.length,
   };
 }
 
@@ -395,7 +500,11 @@ export async function getApplicationByApplicationId(
     throw new NotFoundError("Application");
   }
 
-  return application as IApplication;
+  const [enrichedApplication] = await attachApplicantAvatars([
+    application as IApplication,
+  ]);
+
+  return enrichedApplication;
 }
 
 // ─── Delete Functions ───────────────────────────────────────────────────
@@ -717,5 +826,13 @@ export async function getApplicationById(
   await dbConnect();
 
   const application = await Application.findOne({ applicationId }).lean();
-  return application as IApplication | null;
+  if (!application) {
+    return null;
+  }
+
+  const [enrichedApplication] = await attachApplicantAvatars([
+    application as IApplication,
+  ]);
+
+  return enrichedApplication;
 }

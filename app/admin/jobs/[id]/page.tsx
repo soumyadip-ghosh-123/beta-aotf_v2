@@ -102,6 +102,7 @@ export default function ViewJobPostPage({
               name: app.applicantSnapshot?.name ?? "Unknown",
               email: app.applicantSnapshot?.email ?? "",
               phone: app.applicantSnapshot?.phone ?? "",
+              avatar: app.applicantSnapshot?.avatarUrl ?? undefined,
               applicantType: app.applicantType,
               status: app.status === "applied" ? "applied" : app.status,
               appliedDate: app.appliedAt ?? app.createdAt,
