@@ -18,13 +18,19 @@ import {
   FaMailBulk,
   FaPhone,
 } from "react-icons/fa";
-import { ShieldCheck, IdCard as IdCardIcon } from "lucide-react";
+import {
+  ShieldCheck,
+  IdCard as IdCardIcon,
+  GlobeLock,
+  ReceiptText,
+} from "lucide-react";
 import BackButton from "@/components/BackButton";
 import ButtonGroup from "@/components/ButtonGroup";
 import {
   IdCard,
   type IdCardData,
 } from "@/components/teacher/profile/IdCardView";
+import { RiRefund2Line } from "react-icons/ri";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -93,7 +99,7 @@ export default function ProfilePage() {
   const [isUpgradeLoading, setIsUpgradeLoading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">(
-    "idle",
+    "idle"
   );
 
   const isOwnProfile =
@@ -107,19 +113,17 @@ export default function ProfilePage() {
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
           throw new Error(
-            (d as { error?: string }).error ?? "Failed to load profile",
+            (d as { error?: string }).error ?? "Failed to load profile"
           );
         }
         return res.json();
       })
-      .then(
-        (data: { profile: ProfileData; user: UserData }) => {
-          setProfile(data.profile);
-          setUserData(data.user);
-        },
-      )
+      .then((data: { profile: ProfileData; user: UserData }) => {
+        setProfile(data.profile);
+        setUserData(data.user);
+      })
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Something went wrong"),
+        setError(err instanceof Error ? err.message : "Something went wrong")
       )
       .finally(() => setLoading(false));
   }, [username]);
@@ -150,10 +154,9 @@ export default function ProfilePage() {
     "Account Holder";
   const displayName = profile.displayName?.trim() || accountHolderName;
   const avatarUrl = isOwnProfile
-    ? clerkUser?.imageUrl ?? profile.avatarUrl ?? undefined
-    : profile.avatarUrl ?? undefined;
-  const email =
-    clerkUser?.primaryEmailAddress?.emailAddress ?? undefined;
+    ? (clerkUser?.imageUrl ?? profile.avatarUrl ?? undefined)
+    : (profile.avatarUrl ?? undefined);
+  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? undefined;
   const phone = profile.phone ? `+91 ${profile.phone}` : null;
   const memberSince = new Date(userData.memberSince);
   const joinMonth = memberSince.toLocaleDateString("en-IN", {
@@ -187,7 +190,7 @@ export default function ProfilePage() {
       if (!orderRes.ok) {
         const data = await orderRes.json().catch(() => ({}));
         throw new Error(
-          (data as { error?: string }).error ?? "Failed to create order",
+          (data as { error?: string }).error ?? "Failed to create order"
         );
       }
 
@@ -228,7 +231,7 @@ export default function ProfilePage() {
                 const data = await verifyRes.json().catch(() => ({}));
                 throw new Error(
                   (data as { error?: string }).error ??
-                    "Payment verification failed",
+                    "Payment verification failed"
                 );
               }
 
@@ -265,7 +268,7 @@ export default function ProfilePage() {
         setUpgradeError(
           upgradeErr instanceof Error
             ? upgradeErr.message
-            : "Upgrade failed. Please try again.",
+            : "Upgrade failed. Please try again."
         );
       }
       setIsUpgradeLoading(false);
@@ -303,7 +306,7 @@ export default function ProfilePage() {
   };
 
   const handleAvatarInputChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -345,17 +348,17 @@ export default function ProfilePage() {
 
   const actionItems = [
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <GlobeLock size={22} />,
       title: "Privacy Policy",
       link: "/privacy-policy",
     },
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <RiRefund2Line size={22} />,
       title: "Refund Policy",
       link: "/refund-policy",
     },
     {
-      icon: <FcPrivacy size={22} />,
+      icon: <ReceiptText size={22} />,
       title: "Terms & Conditions",
       link: "/terms",
     },
@@ -431,7 +434,9 @@ export default function ProfilePage() {
                   </Button>
                 </label>
                 {avatarMessage && (
-                  <p className="mt-1 text-xs text-default-500">{avatarMessage}</p>
+                  <p className="mt-1 text-xs text-default-500">
+                    {avatarMessage}
+                  </p>
                 )}
               </div>
             )}
@@ -583,13 +588,17 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <FaChalkboardTeacher className="text-indigo-500" />
                   <h3 className="text-lg font-bold text-default-900">
-                    {isOwnProfile ? "Your ID Card" : `${accountHolderName}'s ID`}
+                    {isOwnProfile
+                      ? "Your ID Card"
+                      : `${accountHolderName}'s ID`}
                   </h3>
                 </div>
                 <Chip
                   size="sm"
                   variant="flat"
-                  color={canonicalIdRole === "candidate" ? "success" : "primary"}
+                  color={
+                    canonicalIdRole === "candidate" ? "success" : "primary"
+                  }
                   className="text-[10px] uppercase font-semibold"
                 >
                   {canonicalIdRole === "candidate" ? "Candidate" : "Teacher"} ID
@@ -653,7 +662,8 @@ function ProfessionalDetailsCard({
   teachingExp: string | null;
   jobExp: string | null;
 }) {
-  const hasContent = qualification || schoolBoard || subjects.length > 0 || teachingExp;
+  const hasContent =
+    qualification || schoolBoard || subjects.length > 0 || teachingExp;
   if (!hasContent) return null;
 
   return (

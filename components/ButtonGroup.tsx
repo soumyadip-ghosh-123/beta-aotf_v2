@@ -27,14 +27,12 @@ const ButtonGroup: React.FC<ButtonGroupProps> = ({ items, className }) => {
       <div className="rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
-
           return (
             <div key={index}>
               <Button
                 className="w-full rounded-none justify-between bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
                 size="lg"
                 onClick={() => router.push(item.link)}
-                
               >
                 <span className="flex items-center gap-2">
                   {item.icon}

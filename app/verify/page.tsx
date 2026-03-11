@@ -246,16 +246,13 @@ export default function VerifyScannerPage() {
 
   return (
     <div className="w-full min-h-[70vh]">
-      <BackButton title="Verify ID" />
+      <BackButton title="Scan &amp; Verify" />
 
       <div className="max-w-md mx-auto px-2 pb-8">
         {/* ── Header ── */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-3">
-            <ScanLine size={24} className="text-primary" />
-          </div>
           <h1 className="text-xl font-bold text-default-900">
-            Scan &amp; Verify
+            
           </h1>
           <p className="text-sm text-default-500 mt-1">
             Scan the QR code on any {siteConfig.shortName} ID card to verify its

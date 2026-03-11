@@ -70,66 +70,6 @@ function maskPhoneForPublicView(phone: string): string {
   return `${countryCode} ${"X".repeat(Math.max(localNumber.length - 3, 0))}${localNumber.slice(-3)}`;
 }
 
-// ─── Sample data (fallback when DB is unavailable) ────────────────────────────
-
-const SAMPLE_RECORDS: Record<string, VerifiedPerson> = {
-  "AOTF-T-2024-0042": {
-    role: "teacher",
-    username: "somnath-roy",
-    name: "Somnath Roy",
-    bio: "Senior faculty focused on exam-oriented Physics coaching.",
-    photo: "https://i.pravatar.cc/150?u=a04258114e29026708c",
-    designation: "Senior Physics Faculty",
-    qualification: "M.Sc in Physics — Jadavpur University",
-    subjects: ["Physics", "Mathematics", "Chemistry"],
-    employeeId: "AOTF-T-2024-0042",
-    phone: "+91 94567-38901",
-    location: "Kolkata",
-    joinDate: "Jan 2024",
-    expiryDate: "Dec 2026",
-    isVerified: true,
-    status: "active",
-    profileUrl: "/u/somnath-roy",
-  },
-  "AOTF-C-2025-0118": {
-    role: "candidate",
-    username: "somnath-roy",
-    name: "Somnath Roy",
-    bio: "Aspiring educator open to school and tuition opportunities.",
-    photo: "https://i.pravatar.cc/150?u=a04258114e29026708c",
-    designation: "Aspiring Educator",
-    qualification: "M.Sc in Physics — Jadavpur University",
-    subjects: ["Physics", "Mathematics"],
-    employeeId: "AOTF-C-2025-0118",
-    phone: "+91 94567-38901",
-    location: "Kolkata",
-    joinDate: "Mar 2025",
-    expiryDate: "Mar 2026",
-    isVerified: true,
-    plan: "premium",
-    status: "active",
-    profileUrl: "/u/somnath-roy",
-  },
-  "AOTF-T-2023-0007": {
-    role: "teacher",
-    username: "ananya-mukherjee",
-    name: "Ananya Mukherjee",
-    bio: "Mathematics educator with strong board exam mentorship track record.",
-    photo: "https://i.pravatar.cc/150?u=ananya007",
-    designation: "Mathematics Head",
-    qualification: "M.Sc in Mathematics — IIT Kharagpur",
-    subjects: ["Mathematics", "Statistics"],
-    employeeId: "AOTF-T-2023-0007",
-    phone: "+91 98765-12345",
-    location: "Howrah",
-    joinDate: "Aug 2023",
-    expiryDate: "Aug 2024",
-    isVerified: true,
-    status: "expired",
-    profileUrl: "/u/ananya-mukherjee",
-  },
-};
-
 // ─── Gradient + color maps ────────────────────────────────────────────────────
 
 const roleGradient: Record<string, string> = {
@@ -144,28 +84,37 @@ const roleBadge: Record<string, { bg: string; label: string }> = {
 
 const statusConfig: Record<
   string,
-  { icon: typeof ShieldCheck; color: string; bg: string; label: string; description: string }
+  {
+    icon: typeof ShieldCheck;
+    color: string;
+    bg: string;
+    label: string;
+    description: string;
+  }
 > = {
   active: {
     icon: ShieldCheck,
     color: "text-green-500",
     bg: "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800",
     label: "Verified & Active",
-    description: "This ID card is valid and the holder is an active member of Academy of Tutorials and Freelancers.",
+    description:
+      "This ID card is valid and the holder is an active member of Academy of Tutorials and Freelancers.",
   },
   expired: {
     icon: ShieldAlert,
     color: "text-amber-500",
     bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800",
     label: "Expired",
-    description: "This ID card has expired. The holder was previously a member but needs to renew.",
+    description:
+      "This ID card has expired. The holder was previously a member but needs to renew.",
   },
   suspended: {
     icon: ShieldX,
     color: "text-red-500",
     bg: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800",
     label: "Suspended",
-    description: "This ID card has been suspended. Please contact AOTF for more information.",
+    description:
+      "This ID card has been suspended. Please contact AOTF for more information.",
   },
 };
 
@@ -205,28 +154,14 @@ export default function VerifyPage() {
           }
           if (res.status === 404) {
             // Fall through to sample data
+            setState({ kind: "not_found" });
           } else {
             // Fall through to sample data
+            setState({ kind: "not_found" });
           }
         }
       } catch {
         // API unavailable — fall through to sample data
-      }
-
-      // Fallback: sample data
-      if (!cancelled) {
-        const sample = SAMPLE_RECORDS[id];
-        if (sample) {
-          if (sample.status === "expired") {
-            setState({ kind: "expired", person: sample });
-          } else if (sample.status === "suspended") {
-            setState({ kind: "suspended", person: sample });
-          } else {
-            setState({ kind: "verified", person: sample });
-          }
-        } else {
-          setState({ kind: "not_found" });
-        }
       }
     }
 
@@ -238,17 +173,11 @@ export default function VerifyPage() {
 
   return (
     <div className="w-full min-h-[70vh]">
-      <BackButton title="Verify ID" />
+      <BackButton title="ID Card Verification" />
 
       <div className="max-w-md mx-auto px-2 pb-8">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-3">
-            <Search size={24} className="text-primary" />
-          </div>
-          <h1 className="text-xl font-bold text-default-900">
-            ID Card Verification
-          </h1>
           <p className="text-sm text-default-500 mt-1">
             {siteConfig.name} — Official Verification Portal
           </p>
@@ -257,7 +186,11 @@ export default function VerifyPage() {
         {/* Queried ID chip */}
         {id && (
           <div className="flex justify-center mb-5">
-            <Chip variant="bordered" size="sm" className="font-mono text-xs tracking-wider">
+            <Chip
+              variant="bordered"
+              size="sm"
+              className="font-mono text-xs tracking-wider"
+            >
               ID: {id}
             </Chip>
           </div>
@@ -281,7 +214,9 @@ export default function VerifyPage() {
           <Card className="border border-red-200 dark:border-red-800">
             <CardBody className="flex flex-col items-center gap-3 p-6 text-center">
               <ShieldX size={48} className="text-red-400" />
-              <h2 className="text-lg font-bold text-red-600">Verification Error</h2>
+              <h2 className="text-lg font-bold text-red-600">
+                Verification Error
+              </h2>
               <p className="text-sm text-default-500">{state.message}</p>
             </CardBody>
           </Card>
@@ -338,15 +273,17 @@ function NotFoundCard({ id }: { id: string }) {
       <CardBody className="p-5 space-y-3 text-center">
         <p className="text-sm text-default-600">
           The ID{" "}
-          <span className="font-mono font-semibold text-default-900">{id || "—"}</span>{" "}
+          <span className="font-mono font-semibold text-default-900">
+            {id || "—"}
+          </span>{" "}
           does not match any teacher or candidate in our system.
         </p>
 
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900 rounded-xl p-3 text-xs text-red-600 dark:text-red-400 space-y-1">
           <p className="font-semibold">⚠️ This ID card may be fraudulent</p>
           <p>
-            If someone presented this card to you, please do not trust it. Report
-            it to AOTF immediately.
+            If someone presented this card to you, please do not trust it.
+            Report it to AOTF immediately.
           </p>
         </div>
 
@@ -377,7 +314,9 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
     <div className="space-y-4">
       {/* ── Status banner ── */}
       <Card className={`border ${sc.bg} overflow-hidden`}>
-        <div className={`bg-linear-to-br ${gradient} px-5 py-3 flex items-center gap-3`}>
+        <div
+          className={`bg-linear-to-br ${gradient} px-5 py-3 flex items-center gap-3`}
+        >
           <img
             src="/AOTF.svg"
             alt="AOTF"
@@ -396,13 +335,15 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
         <CardBody className="p-5">
           {/* Status icon + label */}
           <div className="flex items-center gap-3 mb-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              person.status === "active"
-                ? "bg-green-100 dark:bg-green-900/30"
-                : person.status === "expired"
-                  ? "bg-amber-100 dark:bg-amber-900/30"
-                  : "bg-red-100 dark:bg-red-900/30"
-            }`}>
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                person.status === "active"
+                  ? "bg-green-100 dark:bg-green-900/30"
+                  : person.status === "expired"
+                    ? "bg-amber-100 dark:bg-amber-900/30"
+                    : "bg-red-100 dark:bg-red-900/30"
+              }`}
+            >
               <StatusIcon size={24} className={sc.color} />
             </div>
             <div>
@@ -414,7 +355,19 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
           {/* Timestamp */}
           <div className="flex items-center gap-1.5 text-[10px] text-default-400 mb-1">
             <Clock size={10} />
-            <span>Verified on {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })} at {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+            <span>
+              Verified on{" "}
+              {new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              at{" "}
+              {new Date().toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
           </div>
         </CardBody>
       </Card>
@@ -454,7 +407,12 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
                   {badge.label}
                 </Chip>
                 {person.plan && (
-                  <Chip size="sm" variant="flat" color="success" className="text-[10px] uppercase font-semibold">
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color="success"
+                    className="text-[10px] uppercase font-semibold"
+                  >
                     {person.plan}
                   </Chip>
                 )}
@@ -489,12 +447,22 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
             {/* Subjects */}
             {person.subjects && person.subjects.length > 0 && (
               <div className="flex items-start gap-2.5">
-                <FaChalkboardTeacher size={14} className="text-default-400 shrink-0 mt-0.5" />
+                <FaChalkboardTeacher
+                  size={14}
+                  className="text-default-400 shrink-0 mt-0.5"
+                />
                 <div>
-                  <p className="text-[10px] text-default-400 uppercase font-medium mb-1">Subjects</p>
+                  <p className="text-[10px] text-default-400 uppercase font-medium mb-1">
+                    Subjects
+                  </p>
                   <div className="flex flex-wrap gap-1">
                     {person.subjects.map((s) => (
-                      <Chip key={s} size="sm" variant="flat" className="text-[10px]">
+                      <Chip
+                        key={s}
+                        size="sm"
+                        variant="flat"
+                        className="text-[10px]"
+                      >
                         {s}
                       </Chip>
                     ))}
@@ -540,7 +508,12 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
       <div className="text-center">
         <Button
           as={Link}
-          href={person.profileUrl ?? (person.username ? `/u/${encodeURIComponent(person.username)}` : "/")}
+          href={
+            person.profileUrl ??
+            (person.username
+              ? `/u/${encodeURIComponent(person.username)}`
+              : "/")
+          }
           variant="flat"
           color="primary"
           size="sm"
@@ -568,7 +541,9 @@ function DetailRow({
     <div className="flex items-start gap-2.5">
       <div className="shrink-0 mt-0.5">{icon}</div>
       <div className="min-w-0">
-        <p className="text-[10px] text-default-400 uppercase font-medium">{label}</p>
+        <p className="text-[10px] text-default-400 uppercase font-medium">
+          {label}
+        </p>
         <p className="text-sm text-default-700 wrap-break-word">{value}</p>
       </div>
     </div>

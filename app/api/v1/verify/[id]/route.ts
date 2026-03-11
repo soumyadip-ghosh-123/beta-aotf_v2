@@ -147,7 +147,7 @@ export async function GET(
     qualification: profile.qualification,
     subjects: profile.subjects,
     employeeId: `AOTF-${isCandidateId ? "C" : "T"}-${profile.username.toUpperCase()}`,
-    phone: formatMaskedPhone(profile.phone),
+    phone: formatMaskedPhone(`${profile.phone}`),
     location: profile.location || profile.address,
     joinDate: new Date(user.createdAt).toLocaleDateString("en-IN", {
       day: "numeric",

@@ -49,6 +49,7 @@ interface Application {
     name: string;
     email: string;
     phone: string;
+    avatarUrl?: string;
   };
   status: ApplicationStatus;
   appliedAt: string;
@@ -159,7 +160,9 @@ export default function CandidateDetailPage({
     } catch (error) {
       addToast({
         description:
-          error instanceof Error ? error.message : "Failed to delete application",
+          error instanceof Error
+            ? error.message
+            : "Failed to delete application",
         color: "danger",
       });
       setIsDeleting(false);
@@ -246,10 +249,10 @@ export default function CandidateDetailPage({
         dcMeta: updated.dcMeta,
         gcMeta: updated.gcMeta,
       });
-      
+
       setApplication(updated);
       setSelectedStatus(updated.status);
-      
+
       // Re-populate dates from the updated application
       const updatedDcDate = updated.dcDate || updated.dcMeta?.scheduledDate;
       if (updatedDcDate) {
@@ -258,14 +261,14 @@ export default function CandidateDetailPage({
       } else {
         setDcDate("");
       }
-      
+
       if (updated.gcMeta?.scheduledDate) {
         const gcDateTime = new Date(updated.gcMeta.scheduledDate);
         setGcDate(gcDateTime.toISOString().slice(0, 16));
       } else {
         setGcDate("");
       }
-      
+
       if (updated.declineMeta?.reason) {
         setDeclineReason(updated.declineMeta.reason);
       } else {
@@ -315,13 +318,13 @@ export default function CandidateDetailPage({
       case "applied":
         return "Applied";
       case "DC":
-        return "Demo Class Scheduled";
+        return "Demo ✅";
       case "GC":
-        return "Guardian Confirmed";
+        return "Guardian Confirmed ✅";
       case "approved":
-        return "Approved";
+        return "Approved ✅";
       case "decline":
-        return "Declined";
+        return "Declined ❌";
       case "auto_declined":
         return "Auto Declined";
       case "withdrawn":
@@ -371,7 +374,9 @@ export default function CandidateDetailPage({
     const checkpointIndex = statusOrder.indexOf(checkpointStatus);
 
     // Handle terminal states
-    if (["decline", "auto_declined", "withdrawn"].includes(application.status)) {
+    if (
+      ["decline", "auto_declined", "withdrawn"].includes(application.status)
+    ) {
       if (checkpointIndex <= statusOrder.indexOf("applied")) return "completed";
       return "pending";
     }
@@ -397,7 +402,7 @@ export default function CandidateDetailPage({
   // Loading state
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-2 max-w-4xl">
         <div className="flex justify-center py-20">
           <Spinner size="lg" />
         </div>
@@ -408,7 +413,7 @@ export default function CandidateDetailPage({
   // Error state
   if (fetchError || !application) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="container mx-auto px-2 max-w-4xl">
         <Button
           size="sm"
           variant="light"
@@ -420,7 +425,9 @@ export default function CandidateDetailPage({
         </Button>
         <Card className="bg-danger-50">
           <CardBody className="py-10 text-center">
-            <p className="text-danger">{fetchError || "Application not found"}</p>
+            <p className="text-danger">
+              {fetchError || "Application not found"}
+            </p>
           </CardBody>
         </Card>
       </div>
@@ -431,7 +438,7 @@ export default function CandidateDetailPage({
     application.applicantType === "teacher" ? "Teacher" : "Candidate";
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="container mx-auto px-2 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button
@@ -459,13 +466,10 @@ export default function CandidateDetailPage({
           <div className="flex justify-between gap-3 w-full">
             <div className="flex items-center gap-3">
               <User
-                avatarProps={{ src: undefined }}
+                avatarProps={{ src: application.applicantSnapshot.avatarUrl }}
                 name={application.applicantSnapshot.name}
-                description={`Email: ${application.applicantSnapshot.email}`}
+                description={`${application.applicantSnapshot.email}`}
               />
-              <Chip size="sm" variant="bordered">
-                {applicantTypeLabel}
-              </Chip>
             </div>
             <Chip
               size="sm"
@@ -593,15 +597,18 @@ export default function CandidateDetailPage({
                       {checkpoint.date && (
                         <p className="text-sm text-default-500">
                           {checkpoint.id === "DC" || checkpoint.id === "GC"
-                            ? new Date(checkpoint.date).toLocaleString("en-IN", {
-                                weekday: "short",
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                                hour12: true,
-                              })
+                            ? new Date(checkpoint.date).toLocaleString(
+                                "en-IN",
+                                {
+                                  weekday: "short",
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )
                             : new Date(checkpoint.date).toLocaleDateString()}
                         </p>
                       )}
@@ -722,9 +729,7 @@ export default function CandidateDetailPage({
               Are you sure you want to delete the application from{" "}
               <strong>{application.applicantSnapshot.name}</strong>?
             </p>
-            <p className="text-sm text-danger">
-              This action cannot be undone.
-            </p>
+            <p className="text-sm text-danger">This action cannot be undone.</p>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>

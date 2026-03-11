@@ -125,7 +125,8 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
       postId: post.id,
       className: classDisplay || "N/A",
       board: boardDisplay || "N/A",
-      subjects: subjectDisplay,      monthlyBudget: post.budget,
+      subjects: subjectDisplay,
+      monthlyBudget: post.budget,
       classType: post.classType,
       frequencyPerWeek: post.frequency,
       preferredDays: post.preferredDays,
@@ -236,7 +237,8 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
                 {getFrequencyLabel(post.frequency)}
               </span>
             </div>
-          </div>          {post.preferredTime && (
+          </div>{" "}
+          {post.preferredTime && (
             <div className="flex items-center gap-2 text-sm">
               <Clock size={16} className="text-default-400" />
               <div>
@@ -294,17 +296,17 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
               <User size={16} className="text-default-400" />
               <span className="text-default-600">{post.guardian}</span>
             </div>
-             |
+            |
             <div className="flex items-center gap-2 text-sm">
               <Phone size={16} className="text-default-400" />
               <span className="text-default-600">{post.guardianPhone}</span>
             </div>
           </div>
         </div>
-        <Divider />
+        {/* <Divider /> */}
         {/* Application Statistics */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-default-700">
                 Applications
@@ -313,9 +315,9 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <Chip size="sm" color="primary" variant="flat">
               {post.applicantCount} Total
             </Chip>
-          </div>
+          </div> */}
 
-          <div className="grid grid-cols-3 gap-2">
+          {/* <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col items-center p-2 bg-warning-50 rounded-lg">
               <p className="text-xs text-warning-600">Pending</p>
               <p className="text-lg font-bold text-warning-700">
@@ -334,13 +336,15 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
                 {post.applicationStats.declined}
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
       </CardBody>
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3">        <Button
+      <CardFooter className="gap-2 py-3">
+        {" "}
+        <Button
           size="sm"
           color="primary"
           variant="solid"

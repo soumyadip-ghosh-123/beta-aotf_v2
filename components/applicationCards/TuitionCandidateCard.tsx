@@ -7,7 +7,8 @@ import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { User } from "@heroui/user";
 import { Phone, Eye } from "lucide-react";
-
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 export interface Candidate {
   id: string;
   name: string;
@@ -15,7 +16,14 @@ export interface Candidate {
   phone: string;
   applicantType?: "teacher" | "candidate";
   avatar?: string;
-  status: "applied" | "DC" | "GC" | "approved" | "decline" | "auto_declined" | "withdrawn";
+  status:
+    | "applied"
+    | "DC"
+    | "GC"
+    | "approved"
+    | "decline"
+    | "auto_declined"
+    | "withdrawn";
   appliedDate: string;
   coverLetter?: string;
 }
@@ -62,15 +70,15 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
       case "applied":
         return "Applied";
       case "DC":
-        return "Demo Confirmed";
+        return "Demo ✅";
       case "GC":
-        return "Guardian Confirmed";
+        return "Guardian Confirmed ✅";
       case "approved":
-        return "Approved";
+        return "Approved ✅";
       case "decline":
-        return "Declined";
+        return "Declined ❌";
       case "auto_declined":
-        return "Auto Declined";
+        return "Auto Declined ❌";
       case "withdrawn":
         return "Withdrawn";
       default:
@@ -80,9 +88,12 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
 
   const applicantTypeLabel =
     candidate.applicantType === "teacher" ? "Teacher" : "Candidate";
+  const router = useRouter();
 
   return (
-    <Card className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}>
+    <Card
+      className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}
+    >
       <CardBody className="p-4 pb-2">
         <div className="space-y-3">
           {/* Avatar */}
@@ -98,16 +109,16 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                   size="sm"
                 />
               )}
+              {/* onclick push the user to the user profile without reload using useRouter */}
               <User
+                onClick={() => router.push(`/profile/${candidate.id}`)}
+                style={{ cursor: "pointer" }}
                 avatarProps={{
                   src: candidate.avatar,
                 }}
-                name={candidate.name}
-                description={`Email: ${candidate.email}`}
+                name={`${candidate.name}`}
+                description={`${candidate.email}`}
               />
-              <Chip size="sm" variant="bordered">
-                {applicantTypeLabel}
-              </Chip>
             </div>
             <Chip
               size="sm"

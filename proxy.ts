@@ -79,10 +79,9 @@ const middleware = clerkMiddleware(async (auth, req) => {
         { clerkId: userId },
         { username: 1, onboardingCompleted: 1 },
       ).lean();
-
       if (userDoc?.onboardingCompleted && userDoc?.username) {
         return NextResponse.redirect(
-          new URL(`/u/${userDoc.username}/profile`, req.url),
+          new URL(`/u/${userDoc.username}/dashboard`, req.url),
         );
       }
       // Payment not completed yet — send to onboarding
@@ -276,8 +275,8 @@ export async function proxy(request: NextRequest) {
 
   const event = {
     sourcePage: "/",
-    waitUntil: () => {},
-    passThroughOnException: () => {},
+    waitUntil: () => { },
+    passThroughOnException: () => { },
   } as unknown as NextFetchEvent;
 
   return middleware(request, event);

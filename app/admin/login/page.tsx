@@ -86,7 +86,7 @@ function AdminLoginContent() {
         routing="hash"
         forceRedirectUrl="/admin/tuitions"
         fallbackRedirectUrl="/admin/tuitions"
-        signUpUrl={null}
+        signUpUrl={"/admin/signup"}
         appearance={{
           elements: {
             rootBox: "mx-auto",

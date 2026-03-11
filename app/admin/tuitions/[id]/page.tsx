@@ -89,8 +89,7 @@ export default function ViewPostPage({
       return { dialer: null, whatsapp: null };
     }
 
-    const whatsapp =
-      digitsOnly.length === 10 ? `91${digitsOnly}` : digitsOnly;
+    const whatsapp = digitsOnly.length === 10 ? `91${digitsOnly}` : digitsOnly;
 
     return {
       dialer: dialer || null,
@@ -124,7 +123,7 @@ export default function ViewPostPage({
     window.open(
       `https://wa.me/${phoneTargets.whatsapp}`,
       "_blank",
-      "noopener,noreferrer",
+      "noopener,noreferrer"
     );
   };
 
@@ -381,57 +380,6 @@ export default function ViewPostPage({
             >
               Back to Posts
             </Button>
-            <div className="flex gap-2">
-              {candidates.length > 0 && !selectionMode && (
-                <>
-                  <Button
-                    size="sm"
-                    color="danger"
-                    variant="flat"
-                    startContent={<MousePointerClick size={18} />}
-                    onPress={() => setSelectionMode(true)}
-                  >
-                    Select &amp; Delete
-                  </Button>
-                  <Button
-                    size="sm"
-                    color="danger"
-                    variant="solid"
-                    startContent={<Trash2 size={18} />}
-                    onPress={onOpen}
-                  >
-                    Delete All ({candidates.length})
-                  </Button>
-                </>
-              )}
-              {selectionMode && (
-                <>
-                  <Button size="sm" variant="flat" onPress={toggleSelectAll}>
-                    {selectedIds.size === candidates.length
-                      ? "Deselect All"
-                      : "Select All"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    color="danger"
-                    variant="solid"
-                    startContent={<Trash2 size={18} />}
-                    isDisabled={selectedIds.size === 0}
-                    onPress={onOpen}
-                  >
-                    Delete ({selectedIds.size})
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    startContent={<X size={18} />}
-                    onPress={exitSelectionMode}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-2">
@@ -505,7 +453,10 @@ export default function ViewPostPage({
 
               {/* Two button call and whats */}
               <CardFooter className="flex flex-col items-start py-0 pb-2">
-                <p className="text-md font-bold text-default-500"> Contact Guardian: </p>
+                <p className="text-md font-bold text-default-500">
+                  {" "}
+                  Contact Guardian:{" "}
+                </p>
                 <div className="grid grid-cols-2 gap-2 mt-1 w-full">
                   <Button
                     size="sm"
@@ -549,6 +500,58 @@ export default function ViewPostPage({
                 </Card>
               ))}
             </div>
+            
+            <div className="grid grid-cols-3 gap-2 w-full">
+              {candidates.length > 0 && !selectionMode && (
+                <>
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="flat"
+                    startContent={<MousePointerClick size={18} />}
+                    onPress={() => setSelectionMode(true)}
+                  >
+                    Select &amp; Delete
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="solid"
+                    startContent={<Trash2 size={18} />}
+                    onPress={onOpen}
+                  >
+                    Delete All ({candidates.length})
+                  </Button>
+                </>
+              )}
+              {selectionMode && (
+                <>
+                  <Button size="sm" variant="flat" onPress={toggleSelectAll}>
+                    {selectedIds.size === candidates.length
+                      ? "Deselect All"
+                      : "Select All"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="solid"
+                    startContent={<Trash2 size={18} />}
+                    isDisabled={selectedIds.size === 0}
+                    onPress={onOpen}
+                  >
+                    Delete ({selectedIds.size})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    startContent={<X size={18} />}
+                    onPress={exitSelectionMode}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
           <Divider />
@@ -561,7 +564,9 @@ export default function ViewPostPage({
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <CheckCircle size={20} className="text-success" />
-                    <h2 className="text-xl font-semibold">Approved Applicant</h2>
+                    <h2 className="text-xl font-semibold">
+                      Approved Applicant
+                    </h2>
                     <Chip size="sm" color="success" variant="flat">
                       {categorizedCandidates.approved.length}
                     </Chip>

@@ -319,7 +319,7 @@ async function handleAdminCreated(data: Record<string, unknown>) {
       permissions,
       isActive: true,
       isLocked: false,
-      requirePasswordChange: publicMetadata.requirePasswordChange || false,
+      requirePasswordChange: publicMetadata.requirePasswordChange === true,
       createdBy: null, // Will be updated via API when admin creates another admin
     });
 
