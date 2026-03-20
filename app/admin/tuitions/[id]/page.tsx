@@ -445,7 +445,9 @@ export default function ViewPostPage({
                     <span className="text-default-500">Monthly Fees:</span>{" "}
                     <br />
                     <span className="font-medium text-sm text-success">
-                      ₹{postData.monthlyBudget}
+                      {postData.monthlyBudget
+                        ? `₹${postData.monthlyBudget.toLocaleString()}`
+                        : "To be decided"}
                     </span>
                   </div>
                 </div>
@@ -500,7 +502,7 @@ export default function ViewPostPage({
                 </Card>
               ))}
             </div>
-            
+
             <div className="grid grid-cols-3 gap-2 w-full">
               {candidates.length > 0 && !selectionMode && (
                 <>

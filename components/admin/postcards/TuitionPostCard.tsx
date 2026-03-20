@@ -254,7 +254,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <div>
               <span className="text-default-500">Monthly Fees:</span>{" "}
               <span className="font-medium text-success-600">
-                ₹{post.budget}
+                {post.budget ? `₹${post.budget.toLocaleString()}` : "To be decided"}
               </span>
             </div>
           </div>

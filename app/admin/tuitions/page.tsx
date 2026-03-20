@@ -273,7 +273,7 @@ const Page = () => {
         <AdminSearchBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          placeholder="Search by guardian, location, subject…"
+          placeholder="Guardian, location, subject…"
           filters={tuitionListFilterConfigs as unknown as FilterConfig[]}
           filterValues={tuitionFilterValues}
           onFilterChange={handleFilterChange}

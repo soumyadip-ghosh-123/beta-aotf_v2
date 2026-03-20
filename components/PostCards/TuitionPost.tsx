@@ -393,7 +393,7 @@ const TuitionPost = ({
                   ₹ {monthlyBudget.toLocaleString()}/month
                 </>
               ) : (
-                "Not specified"
+                "To be decided"
               )}
             </p>
           </div>

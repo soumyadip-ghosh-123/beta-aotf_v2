@@ -54,6 +54,16 @@ import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 
 type ClassType = "in-person" | "online" | "both";
 
+const PREFERRED_TIME_SUGGESTIONS = [
+  "8 AM - 10 AM",
+  "12 PM - 2 PM",
+  "2 PM - 4 PM",
+  "4 PM - 6 PM",
+  "6 PM - 8 PM",
+  "8 PM - 10 PM",
+  "Late Night",
+] as const;
+
 interface TuitionPostFormProps {
   mode?: "create" | "edit";
   postId?: string;
@@ -786,21 +796,48 @@ export default function TuitionPostForm({
                       <SelectItem key={freq.key}>{freq.label}</SelectItem>
                     ))}
                   </Select>{" "}
-                  <Input
-                    label="Preferred Time"
-                    placeholder="e.g. 4:00 PM – 6:00 PM"
-                    value={formData.preferredTime}
-                    onValueChange={(value) =>
-                      handleChange("preferredTime", value)
-                    }
-                    startContent={
-                      <Clock size={16} className="text-default-400 shrink-0" />
-                    }
-                    isInvalid={!!errors.preferredTime}
-                    errorMessage={errors.preferredTime}
-                    variant="bordered"
-                    description="Enter a time range, e.g. 5:00 PM – 7:00 PM"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      label="Preferred Time"
+                      placeholder="e.g. 4:00 PM – 6:00 PM"
+                      value={formData.preferredTime}
+                      onValueChange={(value) =>
+                        handleChange("preferredTime", value)
+                      }
+                      startContent={
+                        <Clock
+                          size={16}
+                          className="text-default-400 shrink-0"
+                        />
+                      }
+                      isInvalid={!!errors.preferredTime}
+                      errorMessage={errors.preferredTime}
+                      variant="bordered"
+                      description={
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {PREFERRED_TIME_SUGGESTIONS.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  preferredTime: prev.preferredTime
+                                    ? `${prev.preferredTime}, ${t}`
+                                    : t,
+                                }))
+                              }
+                              className="px-2 py-0.5 text-xs rounded-full border border-default-300
+          bg-default-100 hover:bg-primary hover:text-white hover:border-primary
+          text-default-600 transition-colors cursor-pointer"
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      }
+                    />
+                  </div>
                 </div>{" "}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-default-700">
@@ -929,6 +966,14 @@ export default function TuitionPostForm({
                     Review Your Tuition Post
                   </h4>
 
+                  <div className="bg-warning/10 p-4 rounded-lg border border-warning/20">
+                    <p className="text-sm text-warning-700">
+                      Please review all information carefully before confirming.
+                      Once submitted, the tuition post will be{" "}
+                      {isEditMode ? "updated" : "created"}.
+                    </p>
+                  </div>
+
                   <Card>
                     <CardBody className="gap-2">
                       {/* Guardian Information */}
@@ -957,7 +1002,7 @@ export default function TuitionPostForm({
                       {/* Students Information */}
                       <div>
                         <p className="text-sm font-semibold text-default-700 mb-2">
-                          Students ({formData.students.length})
+                          Total Students: {formData.students.length}
                         </p>
                         <div className="space-y-3">
                           {formData.students.map((student, index) => (
@@ -1121,14 +1166,6 @@ export default function TuitionPostForm({
                       )}
                     </CardBody>
                   </Card>
-
-                  <div className="bg-warning/10 p-4 rounded-lg border border-warning/20">
-                    <p className="text-sm text-warning-700">
-                      <strong>Note:</strong> Please review all information
-                      carefully before confirming. Once submitted, the tuition
-                      post will be {isEditMode ? "updated" : "created"}.
-                    </p>
-                  </div>
                 </>
               </div>
             </Step>
@@ -1144,7 +1181,9 @@ export default function TuitionPostForm({
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-default-600">
-              If you have multiple students under one guardian, you can add them here. <br /><br />
+              If you have multiple students under one guardian, you can add them
+              here. <br />
+              <br />
               Copy the previous student's details
             </p>
             <div className="p-2 bg-default-50 rounded-lg text-sm text-default-500 space-y-1">

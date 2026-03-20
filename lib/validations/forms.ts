@@ -392,12 +392,10 @@ export const tuitionNotesSuggestions = [
   "Only Female Teacher Required",
   "Only Male Teacher Required",
   "Local Teacher Preferred",
-  "Experienced Teacher Required",
-  "Must Speak Bengali",
+  "Must Speak English",
   "Home Tuition Only",
   "Online Classes Preferred",
   "Weekends Only",
-  "Urgent Requirement",
   "Budget is Negotiable",
 ] as const;
 

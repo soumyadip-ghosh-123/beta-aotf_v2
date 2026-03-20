@@ -33,32 +33,46 @@ type Role = "teacher" | "candidate";
 
 const PAGE_ACTIONS = [
   { matchPath: "/admin/tuitions", action: "tuition" },
-  { matchPath: "/admin/jobs",     action: "job"     },
-  { matchPath: "/admin/ads",      action: "ad"      },
-  { matchPath: "/admin/users",    action: "user"    },
+  { matchPath: "/admin/jobs", action: "job" },
+  { matchPath: "/admin/ads", action: "ad" },
+  { matchPath: "/admin/users", action: "user" },
 ] as const;
 
 // Pages that render their own FAB — hide the global one to avoid duplicates
-const SELF_MANAGED_FAB_PATHS = [
-  "/admin/renowned-teachers",
-  "/admin/settings",
-];
+const SELF_MANAGED_FAB_PATHS = ["/admin/renowned-teachers", "/admin/settings"];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminFab() {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   // User creation modal
-  const { isOpen: isUserOpen, onOpen: openUser, onClose: closeUser } = useDisclosure();
-  const [newUser,     setNewUser]     = useState({ name: "", email: "", phone: "", role: "teacher" as Role });
-  const [isCreating,  setIsCreating]  = useState(false);
+  const {
+    isOpen: isUserOpen,
+    onOpen: openUser,
+    onClose: closeUser,
+  } = useDisclosure();
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "teacher" as Role,
+  });
+  const [isCreating, setIsCreating] = useState(false);
   // Pages that render their own FAB — suppress the global one
   if (SELF_MANAGED_FAB_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   // Determine which action this page maps to (if any)
-  const matched = PAGE_ACTIONS.find((p) => pathname.startsWith(p.matchPath));
+  const matched = PAGE_ACTIONS.find((p) => {
+    // exact match only
+    if (pathname === p.matchPath) return true;
+
+    // allow query params but block subroutes like /create
+    if (pathname.startsWith(p.matchPath + "?")) return true;
+
+    return false;
+  });
 
   // Don't render the FAB on unrelated pages
   if (!matched) return null;
@@ -69,8 +83,7 @@ export default function AdminFab() {
       // Scroll to the create-ad form section on the ads page
       const el = document.getElementById("create-ad-section");
       if (el) el.scrollIntoView({ behavior: "smooth" });
-    }
-    else if (matched.action === "user") openUser();
+    } else if (matched.action === "user") openUser();
   };
 
   const handleCreateUser = async () => {
@@ -82,7 +95,10 @@ export default function AdminFab() {
     try {
       // TODO: wire to real API — for now just toast success
       await new Promise((r) => setTimeout(r, 600));
-      addToast({ description: `${newUser.role === "teacher" ? "Teacher" : "Candidate"} created!`, color: "success" });
+      addToast({
+        description: `${newUser.role === "teacher" ? "Teacher" : "Candidate"} created!`,
+        color: "success",
+      });
       setNewUser({ name: "", email: "", phone: "", role: "teacher" });
       closeUser();
     } catch {
@@ -140,7 +156,9 @@ export default function AdminFab() {
             <Select
               label="Role"
               selectedKeys={[newUser.role]}
-              onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value as Role }))}
+              onChange={(e) =>
+                setNewUser((p) => ({ ...p, role: e.target.value as Role }))
+              }
               isRequired
               variant="bordered"
             >
@@ -152,7 +170,11 @@ export default function AdminFab() {
             <Button variant="flat" onPress={closeUser} isDisabled={isCreating}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleCreateUser} isLoading={isCreating}>
+            <Button
+              color="primary"
+              onPress={handleCreateUser}
+              isLoading={isCreating}
+            >
               Create User
             </Button>
           </ModalFooter>

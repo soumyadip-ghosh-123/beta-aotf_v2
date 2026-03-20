@@ -210,3 +210,23 @@ backend -->
 
 1. user e testing
 5. certificate?
+
+
+
+
+navbar 
+user signup/admin login race condition - testing
+sign in -> posts 
+
+
+review posts the user should in academy
+invoice beside the id number with logo
+cancel revert
+add all fields in search and filter
+
+
+calendar
+31 days calendar
+
+ask for payment done or not to approve a candidate - modal 
+    if no => remind me for payment on current date + 1 month suggestions it can be changeable 

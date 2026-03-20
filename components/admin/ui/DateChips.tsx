@@ -20,17 +20,16 @@ function buildChips(): { label: string; value: string }[] {
   const chips: { label: string; value: string }[] = [];
   const today = new Date();
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 1; i <= 7; i++) {
     const d = new Date(today);
-    d.setDate(today.getDate() - i);
+    d.setDate(today.getDate() - i); // past dates
 
     const day = d.getDate();
-    const month = d.toLocaleString("en-IN", { month: "short" }); // "Feb"
-    const value = d.toISOString().slice(0, 10); // "2026-02-28"
+    const month = d.toLocaleString("en-IN", { month: "short" });
+    const value = d.toISOString().slice(0, 10);
 
     let label: string;
-    if (i === 0) label = `Today, ${day} ${month}`;
-    else if (i === 1) label = `Yesterday, ${day} ${month}`;
+    if (i === 1) label = `Yesterday, ${day} ${month}`;
     else label = `${day} ${month}`;
 
     chips.push({ label, value });
@@ -43,11 +42,7 @@ export default function DateChips({ selected, onChange }: DateChipsProps) {
   const chips = buildChips();
 
   return (
-    <ScrollShadow
-      orientation="horizontal"
-      className="w-full"
-      hideScrollBar
-    >
+    <ScrollShadow orientation="horizontal" className="w-full" hideScrollBar>
       <div className="flex gap-2 pb-1">
         {chips.map((chip) => {
           const isActive = selected === chip.value;

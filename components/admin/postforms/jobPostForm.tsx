@@ -24,7 +24,8 @@ import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
-import {  jobFormSchema,
+import {
+  jobFormSchema,
   companyTypes,
   workTypes,
   commissionBasisTypes,
@@ -61,7 +62,8 @@ export default function JobPostForm({
   const isEditMode = mode === "edit";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(isEditMode);
-  const [notFound, setNotFound] = useState(false);  const [formData, setFormData] = useState({ ...jobFormDefaults });
+  const [notFound, setNotFound] = useState(false);
+  const [formData, setFormData] = useState({ ...jobFormDefaults });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -702,10 +704,38 @@ export default function JobPostForm({
                     label="Working Hours/Timing"
                     placeholder="e.g., 9 AM - 6 PM"
                     value={formData.timing}
-                    onChange={(e) => handleChange("timing", e.target.value)}
+                    onValueChange={(value) => handleChange("timing", value)}
                     variant="bordered"
                     startContent={
-                      <Clock size={18} className="text-default-400" />
+                      <Clock size={18} className="text-default-400 shrink-0" />
+                    }
+                    description={
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {[
+                          "8 AM - 10 AM",
+                          "12 PM - 2 PM",
+                          "2 PM - 4 PM",
+                          "4 PM - 6 PM",
+                          "6 PM - 8 PM",
+                          "8 PM - 10 PM",
+                        ].map((time) => (
+                          <button
+                            key={time}
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                timing: prev.timing
+                                  ? `${prev.timing}, ${time}`
+                                  : time,
+                              }))
+                            }
+                            className="px-2 py-0.5 text-xs rounded-full border border-default-300 bg-default-100 hover:bg-primary hover:text-white hover:border-primary text-default-600 transition-colors cursor-pointer"
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
                     }
                   />
                   <Input
@@ -847,7 +877,8 @@ export default function JobPostForm({
                   }
                   variant="bordered"
                   minRows={3}
-                />{" "}                <Textarea
+                />{" "}
+                <Textarea
                   label="Additional Notes"
                   placeholder="Any other job details, benefits, perks, responsibilities..."
                   value={formData.notes}

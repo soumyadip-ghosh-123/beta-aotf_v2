@@ -640,7 +640,7 @@ export default function CandidateDetailPage({
                 if (val !== "decline") setDeclineReason("");
               }}
             >
-              <Radio value="applied">Applied (Revert)</Radio>
+              <Radio value="applied">Applied</Radio>
               <Radio value="DC">Demo Class (DC)</Radio>
               <Radio value="GC">Guardian Confirmed (GC)</Radio>
               <Radio value="approved">Approved</Radio>
