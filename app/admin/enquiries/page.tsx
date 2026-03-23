@@ -41,7 +41,7 @@ export default function EnquiriesPage() {
 
       if (!res.ok) {
         throw new Error(
-          data?.error || `Failed to fetch enquiries (${res.status})`,
+          data?.error || `Failed to fetch enquiries (${res.status})`
         );
       }
 
@@ -118,13 +118,15 @@ export default function EnquiriesPage() {
           No enquiries match your search.
         </p>
       ) : (
-        filteredEnquiries.map((enq) => (
-          <EnquiryCard
-            key={enq._id}
-            enquiry={enq}
-            onStatusUpdated={fetchEnquiries}
-          />
-        ))
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredEnquiries.map((enq) => (
+            <EnquiryCard
+              key={enq._id}
+              enquiry={enq}
+              onStatusUpdated={fetchEnquiries}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

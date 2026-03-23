@@ -117,12 +117,13 @@ const Page = () => {
       filtered = filtered.filter((post) => {
         const jobId = post.id;
         if (!jobId || jobId.length < 10) return true;
-        const day   = parseInt(jobId.substring(2, 4), 10);
+        const day = parseInt(jobId.substring(2, 4), 10);
         const month = parseInt(jobId.substring(4, 6), 10);
-        const year  = parseInt("20" + jobId.substring(6, 8), 10);
-        if (selectedYear  && year  !== parseInt(selectedYear,  10)) return false;
-        if (selectedMonth && month !== parseInt(selectedMonth, 10)) return false;
-        if (selectedDay   && day   !== parseInt(selectedDay,   10)) return false;
+        const year = parseInt("20" + jobId.substring(6, 8), 10);
+        if (selectedYear && year !== parseInt(selectedYear, 10)) return false;
+        if (selectedMonth && month !== parseInt(selectedMonth, 10))
+          return false;
+        if (selectedDay && day !== parseInt(selectedDay, 10)) return false;
         return true;
       });
     }
@@ -138,9 +139,13 @@ const Page = () => {
     return filtered;
   }, [posts, selectedYear, selectedMonth, selectedDay, selectedDateChip]);
 
-  const handleViewPost  = (post: JobPost) => router.push(`/admin/jobs/${post.id}`);
-  const handleEditPost  = (post: JobPost) => router.push(`/admin/jobs/${post.id}/edit`);
-  const handleSharePost = (_post: JobPost) => { /* handled inside card */ };
+  const handleViewPost = (post: JobPost) =>
+    router.push(`/admin/jobs/${post.id}`);
+  const handleEditPost = (post: JobPost) =>
+    router.push(`/admin/jobs/${post.id}/edit`);
+  const handleSharePost = (_post: JobPost) => {
+    /* handled inside card */
+  };
 
   const handleCancelPost = (post: JobPost) => {
     setCancelTarget(post);
@@ -151,22 +156,36 @@ const Page = () => {
     if (!cancelTarget) return;
     setIsCancelling(true);
     try {
+      const nextStatus =
+        cancelTarget.status === "cancelled" ? "open" : "cancelled";
+      const actionLabel = nextStatus === "cancelled" ? "cancel" : "restore";
+
       const res = await fetch(`/api/v1/jobs/${cancelTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
+        body: JSON.stringify({ status: nextStatus }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to cancel job post");
+        throw new Error(data.error || `Failed to ${actionLabel} job post`);
       }
-      addToast({ description: "Job post cancelled successfully!", color: "success" });
+
+      addToast({
+        description:
+          nextStatus === "cancelled"
+            ? "Job post cancelled successfully!"
+            : "Job post restored successfully!",
+        color: "success",
+      });
       onClose();
       setCancelTarget(null);
       fetchJobs();
     } catch (error) {
       addToast({
-        description: error instanceof Error ? error.message : "Failed to cancel post",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update post status",
         color: "danger",
       });
     } finally {
@@ -184,18 +203,18 @@ const Page = () => {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    if      (key === "status") setFilterStatus(value);
-    else if (key === "year")   setSelectedYear(value);
-    else if (key === "month")  setSelectedMonth(value);
-    else if (key === "day")    setSelectedDay(value);
+    if (key === "status") setFilterStatus(value);
+    else if (key === "year") setSelectedYear(value);
+    else if (key === "month") setSelectedMonth(value);
+    else if (key === "day") setSelectedDay(value);
   };
 
   // Filter values map — sourced from lib/validations/forms.ts
   const jobFilterValues: Record<string, string> = {
     status: filterStatus,
-    year:   selectedYear,
-    month:  selectedMonth,
-    day:    selectedDay,
+    year: selectedYear,
+    month: selectedMonth,
+    day: selectedDay,
   };
 
   return (
@@ -233,7 +252,9 @@ const Page = () => {
         <Card className="bg-danger-50">
           <CardBody className="py-10 text-center">
             <p className="text-danger">{fetchError}</p>
-            <Button size="sm" className="mt-3" onPress={fetchJobs}>Retry</Button>
+            <Button size="sm" className="mt-3" onPress={fetchJobs}>
+              Retry
+            </Button>
           </CardBody>
         </Card>
       )}
@@ -267,28 +288,45 @@ const Page = () => {
       {/* Cancel Confirmation Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>
-          {() => (
-            <>
-              <ModalHeader>Cancel Job Post</ModalHeader>
-              <ModalBody>
-                <p>
-                  Are you sure you want to cancel{" "}
-                  <strong>{cancelTarget?.title}</strong> ({cancelTarget?.id})?
-                </p>
-                <p className="text-sm text-default-500">
-                  This will mark the post as cancelled.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="light" onPress={onClose} isDisabled={isCancelling}>
-                  No, Keep Post
-                </Button>
-                <Button color="danger" onPress={confirmCancel} isLoading={isCancelling}>
-                  Yes, Cancel Post
-                </Button>
-              </ModalFooter>
-            </>
-          )}
+          {() => {
+            const willRestore = cancelTarget?.status === "cancelled";
+            return (
+              <>
+                <ModalHeader>
+                  {willRestore ? "Restore Job Post" : "Cancel Job Post"}
+                </ModalHeader>
+                <ModalBody>
+                  <p>
+                    Are you sure you want to{" "}
+                    {willRestore ? "restore" : "cancel"}{" "}
+                    <strong>{cancelTarget?.title}</strong> ({cancelTarget?.id})?
+                  </p>
+                  <p className="text-sm text-default-500">
+                    {willRestore
+                      ? "This will mark the post as open again."
+                      : "This will mark the post as cancelled. You can restore it later."}
+                  </p>
+                </ModalBody>
+                <ModalFooter>
+                  <Button
+                    color="default"
+                    variant="light"
+                    onPress={onClose}
+                    isDisabled={isCancelling}
+                  >
+                    No, Keep Post
+                  </Button>
+                  <Button
+                    color={willRestore ? "success" : "danger"}
+                    onPress={confirmCancel}
+                    isLoading={isCancelling}
+                  >
+                    {willRestore ? "Yes, Restore Post" : "Yes, Cancel Post"}
+                  </Button>
+                </ModalFooter>
+              </>
+            );
+          }}
         </ModalContent>
       </Modal>
     </div>

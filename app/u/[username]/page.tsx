@@ -31,8 +31,10 @@ import ButtonGroup from "@/components/ButtonGroup";
 import {
   IdCard,
   type IdCardData,
+  UpgradeCandidateCard,
 } from "@/components/teacher/profile/IdCardView";
 import { RiRefund2Line } from "react-icons/ri";
+import Stack from "@/components/reactbits/ui/Stack";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -424,17 +426,26 @@ export default function ProfilePage() {
                     onChange={handleAvatarInputChange}
                     disabled={isAvatarSaving}
                   />
-                  <Button
-                    as="span"
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    isLoading={isAvatarSaving}
-                    className="cursor-pointer"
-                  >
-                    Change Avatar
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      as="span"
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      isLoading={isAvatarSaving}
+                      className="cursor-pointer"
+                    >
+                      Change Avatar
+                    </Button>
+                    {/* If already upgraded, show a small status chip */}
+                    {isOwnProfile && isCandidate && (
+                      <Chip size="sm" color="success" variant="flat">
+                        Candidate plan active
+                      </Chip>
+                    )}
+                  </div>
                 </label>
+
                 {avatarMessage && (
                   <p className="mt-1 text-xs text-default-500">
                     {avatarMessage}
@@ -608,7 +619,26 @@ export default function ProfilePage() {
               </div>
 
               <div className="mx-auto" style={{ width: 340 }}>
-                <IdCard data={primaryCardData} />
+                <Stack
+                  randomRotation={false}
+                  sensitivity={200}
+                  sendToBackOnClick={true}
+                  cards={<IdCard data={primaryCardData} />, <IdCard data={primaryCardData} />}
+                  autoplay={false}
+                  autoplayDelay={3000}
+                  pauseOnHover={false}
+                />
+                {/* <IdCard data={primaryCardData} /> */}
+                {/* Upgrade option (Teacher → Candidate) */}
+                {canUpgradeToCandidate && (
+                  <div className="mt-3 max-w-lg">
+                    <UpgradeCandidateCard
+                      onUpgrade={handleCandidateUpgrade}
+                      isLoading={isUpgradeLoading}
+                      error={upgradeError}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-default-200 bg-default-50/60 px-3 py-2.5 text-xs">

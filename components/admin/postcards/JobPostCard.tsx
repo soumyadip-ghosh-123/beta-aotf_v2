@@ -85,7 +85,8 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
   onCancel,
   onView,
   onEdit,
-}) => {  const getStatusColor = (status: string) => {
+}) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
         return "success";
@@ -329,7 +330,8 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3">        <Button
+      <CardFooter className="gap-2 py-3">
+        <Button
           size="sm"
           color="primary"
           variant="solid"
@@ -341,13 +343,13 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
         </Button>
         <Button
           size="sm"
-          color="danger"
+          color={post.status === "cancelled" ? "success" : "danger"}
           variant="solid"
           startContent={<XCircle size={16} />}
           onPress={() => onCancel?.(post)}
           className="flex-1"
         >
-          Cancel
+          {post.status === "cancelled" ? "Restore" : "Cancel"}
         </Button>
         <Button
           size="sm"

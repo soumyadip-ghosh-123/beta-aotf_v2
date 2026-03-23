@@ -10,9 +10,7 @@ import AdminSearchBar, {
   FilterConfig,
 } from "@/components/admin/ui/AdminSearchBar";
 import DateChips from "@/components/admin/ui/DateChips";
-import {
-  tuitionListFilterConfigs,
-} from "@/lib/validations/forms";
+import { tuitionListFilterConfigs } from "@/lib/validations/forms";
 import {
   Modal,
   ModalContent,
@@ -26,6 +24,8 @@ import {
   TuitionPost,
 } from "@/components/admin/postcards/TuitionPostCard";
 import { AlertTriangle, Plus } from "lucide-react";
+import { addToast } from "@heroui/toast";
+
 /** Map a DB post (from API) to the TuitionPost interface used by the card. */
 function mapApiPost(p: Record<string, any>): TuitionPost {
   return {
@@ -76,6 +76,7 @@ const Page = () => {
   const [selectedDateChip, setSelectedDateChip] = useState<string>("");
   const [postToCancel, setPostToCancel] = useState<TuitionPost | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // ── Data fetching state ──────────────────────────────────────────────
   const [posts, setPosts] = useState<TuitionPost[]>([]);
@@ -198,7 +199,7 @@ const Page = () => {
     dateRange,
     filterStatus,
     selectedDateChip,
-  ]);  // Filter configs for AdminSearchBar — sourced from lib/validations/forms.ts
+  ]); // Filter configs for AdminSearchBar — sourced from lib/validations/forms.ts
   const tuitionFilterValues: Record<string, string> = {
     status: filterStatus,
     year: selectedYear,
@@ -231,26 +232,46 @@ const Page = () => {
     onOpen();
   };
   const confirmCancel = async () => {
-    if (postToCancel) {
-      try {
-        const res = await fetch(`/api/v1/posts/${postToCancel.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "cancelled" }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          console.error("Cancel failed:", data.error);
-        }
-        // Refresh the list after cancelling
-        fetchPosts();
-      } catch (err) {
-        console.error("Cancel error:", err);
+    if (!postToCancel) return;
+    setIsCancelling(true);
+    try {
+      const nextStatus =
+        postToCancel.status === "cancelled" ? "open" : "cancelled";
+      const actionLabel = nextStatus === "cancelled" ? "cancel" : "restore";
+
+      const res = await fetch(`/api/v1/posts/${postToCancel.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to ${actionLabel} post`);
       }
+
+      addToast({
+        description:
+          nextStatus === "cancelled"
+            ? "Post cancelled successfully!"
+            : "Post restored successfully!",
+        color: "success",
+      });
+
+      // Refresh the list after updating
+      fetchPosts();
+      onClose();
+      setPostToCancel(null);
+    } catch (err) {
+      addToast({
+        description:
+          err instanceof Error ? err.message : "Failed to update post status",
+        color: "danger",
+      });
+    } finally {
+      setIsCancelling(false);
     }
-    onClose();
-    setPostToCancel(null);
   };
+
   const handleView = (post: TuitionPost) => {
     router.push(`/admin/tuitions/${post.id}`);
   };
@@ -333,68 +354,98 @@ const Page = () => {
       {/* Cancel Confirmation Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={24} className="text-danger" />
-                  <span>Cancel Post Confirmation</span>
-                </div>
-              </ModalHeader>
-              <ModalBody>
-                <p className="text-default-600">
-                  Are you sure you want to cancel this post?
-                </p>
-                {postToCancel && (
-                  <Card className="mt-2">
-                    <CardBody className="gap-2">
-                      <p className="text-sm">
-                        <span className="font-semibold">Post ID:</span>{" "}
-                        <span className="text-primary">{postToCancel.id}</span>
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Guardian:</span>{" "}
-                        {postToCancel.guardian}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Location:</span>{" "}
-                        {postToCancel.location}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Status:</span>{" "}
-                        <Chip
-                          size="sm"
-                          color={
-                            postToCancel.status === "open"
-                              ? "success"
-                              : postToCancel.status === "matched"
-                                ? "warning"
-                                : "danger"
-                          }
-                          variant="flat"
-                          className="capitalize"
-                        >
-                          {postToCancel.status}
-                        </Chip>
-                      </p>
-                    </CardBody>
-                  </Card>
-                )}
-                <p className="text-sm text-danger-500 mt-2">
-                  This action cannot be undone. The post will be marked as
-                  cancelled and teachers will no longer be able to apply.
-                </p>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="default" variant="light" onPress={onClose}>
-                  No, Keep Post
-                </Button>
-                <Button color="danger" onPress={confirmCancel}>
-                  Yes, Cancel Post
-                </Button>
-              </ModalFooter>
-            </>
-          )}
+          {() => {
+            const willRestore = postToCancel?.status === "cancelled";
+            return (
+              <>
+                <ModalHeader className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle
+                      size={24}
+                      className={willRestore ? "text-warning" : "text-danger"}
+                    />
+                    <span>
+                      {willRestore
+                        ? "Restore Post Confirmation"
+                        : "Cancel Post Confirmation"}
+                    </span>
+                  </div>
+                </ModalHeader>
+                <ModalBody>
+                  <p className="text-default-600">
+                    Are you sure you want to{" "}
+                    {willRestore ? "restore" : "cancel"} this post?
+                  </p>
+
+                  {postToCancel && (
+                    <Card className="mt-2">
+                      <CardBody className="gap-2">
+                        <p className="text-sm">
+                          <span className="font-semibold">Post ID:</span>{" "}
+                          <span className="text-primary">
+                            {postToCancel.id}
+                          </span>
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Guardian:</span>{" "}
+                          {postToCancel.guardian}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Location:</span>{" "}
+                          {postToCancel.location}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Status:</span>{" "}
+                          <Chip
+                            size="sm"
+                            color={
+                              postToCancel.status === "open"
+                                ? "success"
+                                : postToCancel.status === "matched"
+                                  ? "warning"
+                                  : "danger"
+                            }
+                            variant="flat"
+                            className="capitalize"
+                          >
+                            {postToCancel.status}
+                          </Chip>
+                        </p>
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  <p
+                    className={
+                      "text-sm mt-2 " +
+                      (willRestore ? "text-default-500" : "text-danger-500")
+                    }
+                  >
+                    {willRestore
+                      ? "This will mark the post as open again."
+                      : "You can restore this post later if it was cancelled by mistake."}
+                  </p>
+                </ModalBody>
+                <ModalFooter>
+                  <Button
+                    color="default"
+                    variant="light"
+                    onPress={onClose}
+                    isDisabled={isCancelling}
+                  >
+                    No, Keep Post
+                  </Button>
+                  <Button
+                    color={willRestore ? "success" : "danger"}
+                    onPress={confirmCancel}
+                    isLoading={isCancelling}
+                  >
+                    {willRestore ? "Yes, Restore Post" : "Yes, Cancel Post"}
+                  </Button>
+                </ModalFooter>
+              </>
+            );
+          }}
         </ModalContent>
       </Modal>
     </div>

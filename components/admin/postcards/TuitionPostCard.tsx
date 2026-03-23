@@ -254,7 +254,9 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             <div>
               <span className="text-default-500">Monthly Fees:</span>{" "}
               <span className="font-medium text-success-600">
-                {post.budget ? `₹${post.budget.toLocaleString()}` : "To be decided"}
+                {post.budget
+                  ? `₹${post.budget.toLocaleString()}`
+                  : "To be decided"}
               </span>
             </div>
           </div>
@@ -356,13 +358,13 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
         </Button>
         <Button
           size="sm"
-          color="danger"
+          color={post.status === "cancelled" ? "success" : "danger"}
           variant="solid"
           startContent={<XCircle size={16} />}
           onPress={() => onCancel?.(post)}
           className="flex-1"
         >
-          Cancel
+          {post.status === "cancelled" ? "Restore" : "Cancel"}
         </Button>
         <Button
           size="sm"

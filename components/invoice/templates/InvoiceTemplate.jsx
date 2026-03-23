@@ -116,7 +116,7 @@ const InvoiceTemplate = ({ data }) => {
             {items.map((item, index) => (
               <div
                 key={index}
-                className="border-2 border-purple-200 rounded-lg p-4 bg-gradient-to-r from-purple-50 to-white"
+                className="border-2 border-purple-200 rounded-lg p-4 bg-linear-to-r from-purple-50 to-white"
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
