@@ -619,16 +619,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="mx-auto" style={{ width: 340 }}>
-                <Stack
-                  randomRotation={false}
-                  sensitivity={200}
-                  sendToBackOnClick={true}
-                  cards={<IdCard data={primaryCardData} />, <IdCard data={primaryCardData} />}
-                  autoplay={false}
-                  autoplayDelay={3000}
-                  pauseOnHover={false}
-                />
-                {/* <IdCard data={primaryCardData} /> */}
+                <IdCard key="primary-2" data={primaryCardData} />
                 {/* Upgrade option (Teacher → Candidate) */}
                 {canUpgradeToCandidate && (
                   <div className="mt-3 max-w-lg">

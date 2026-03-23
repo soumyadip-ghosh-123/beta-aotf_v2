@@ -215,9 +215,9 @@ backend -->
 
 
 navbar 
-review posts the user should in academy
-terms and conditions accept korche oi page ta disni
-account upgrade er jonno je button ta laganor chilo, ota bosiyechis?
+review posts the user should in academy - DONE
+terms and conditions accept korche oi page ta disni 
+account upgrade er jonno je button ta laganor chilo, ota bosiyechis? - DONE
 
 calendar
 1. 31 days calendar ui

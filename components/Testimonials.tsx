@@ -1,48 +1,107 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Underline from "./ui/Underline";
 
+type ReviewCard = {
+  id: string;
+  image: string;
+  name: string;
+  handle: string;
+  message: string;
+  rating: number;
+};
+
+const fallbackCards: ReviewCard[] = [
+  {
+    id: "fallback-1",
+    image:
+      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200",
+    name: "Briar Martin",
+    handle: "@neilstellar",
+    message: "Radiant made undercutting all of our competitors an absolute breeze.",
+    rating: 5,
+  },
+  {
+    id: "fallback-2",
+    image:
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
+    name: "Avery Johnson",
+    handle: "@averywrites",
+    message: "Radiant made undercutting all of our competitors an absolute breeze.",
+    rating: 5,
+  },
+  {
+    id: "fallback-3",
+    image:
+      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60",
+    name: "Jordan Lee",
+    handle: "@jordantalks",
+    message: "Radiant made undercutting all of our competitors an absolute breeze.",
+    rating: 5,
+  },
+  {
+    id: "fallback-4",
+    image:
+      "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60",
+    name: "Avery Johnson",
+    handle: "@averywrites",
+    message: "Radiant made undercutting all of our competitors an absolute breeze.",
+    rating: 5,
+  },
+];
+
 const Testimonials = () => {
-  const cardsData = [
-    {
-      image:
-        "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200",
-      name: "Briar Martin",
-      handle: "@neilstellar",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
-      name: "Avery Johnson",
-      handle: "@averywrites",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60",
-      name: "Jordan Lee",
-      handle: "@jordantalks",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60",
-      name: "Avery Johnson",
-      handle: "@averywrites",
-    },
-  ];
+  const [cardsData, setCardsData] = useState<ReviewCard[]>(fallbackCards);
 
-  // card type
-  type Card = {
-    image: string;
-    name: string;
-    handle: string;
-  };
+  useEffect(() => {
+    let cancelled = false;
 
-  const CreateCard = ({ card }: { card: Card }) => (
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/reviews?public=1&limit=20", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          reviews?: Array<{
+            id: string;
+            rating: number;
+            title: string | null;
+            message: string;
+            createdAt: string;
+            user: { username: string; name: string; imageUrl: string | null };
+          }>;
+        };
+
+        const mapped: ReviewCard[] = (data.reviews ?? []).map((r) => ({
+          id: r.id,
+          image:
+            r.user.imageUrl ||
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
+          name: r.user.name,
+          handle: `@${r.user.username}`,
+          message: r.message,
+          rating: r.rating,
+        }));
+
+        if (!cancelled && mapped.length > 0) setCardsData(mapped);
+      } catch {
+        // keep fallback
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const doubled = useMemo(() => [...cardsData, ...cardsData], [cardsData]);
+
+  const CreateCard = ({ card }: { card: ReviewCard }) => (
     <div className="p-4 rounded-lg mx-4 shadow hover:shadow-lg transition-all duration-200 w-72 shrink-0">
       <div className="flex gap-2">
-        <img
-          className="size-11 rounded-full"
-          src={card.image}
-          alt="User Image"
-        />
+        <img className="size-11 rounded-full" src={card.image} alt="User" />
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
             <p>{card.name}</p>
@@ -63,9 +122,7 @@ const Testimonials = () => {
           <span className="text-xs text-slate-500">{card.handle}</span>
         </div>
       </div>
-      <p className="text-sm py-4 text-gray-800">
-        Radiant made undercutting all of our competitors an absolute breeze.
-      </p>
+      <p className="text-sm py-4 text-gray-800 line-clamp-4">{card.message}</p>
     </div>
   );
 
@@ -94,23 +151,23 @@ const Testimonials = () => {
         />
         <div className="w-full">
           <div className="marquee-row w-full mx-auto max-w-5xl overflow-hidden relative">
-            <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-gradient-to-r from-white dark:from-black to-transparent"></div>
+            <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-linear-to-r from-white dark:from-black to-transparent"></div>
             <div className="marquee-inner flex transform-gpu py-5">
-              {[...cardsData, ...cardsData].map((card, index) => (
-                <CreateCard key={index} card={card} />
+              {doubled.map((card) => (
+                <CreateCard key={`row1-${card.id}`} card={card} />
               ))}
             </div>
-            <div className="absolute right-0 top-0 h-full w-20 z-10 pointer-events-none bg-gradient-to-l from-white dark:from-black to-transparent"></div>
+            <div className="absolute right-0 top-0 h-full w-20 z-10 pointer-events-none bg-linear-to-l from-white dark:from-black to-transparent"></div>
           </div>
 
           <div className="marquee-row w-full mx-auto max-w-5xl overflow-hidden relative">
-            <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-gradient-to-r from-white dark:from-black to-transparent"></div>
+            <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-linear-to-r from-white dark:from-black to-transparent"></div>
             <div className="marquee-inner marquee-reverse flex transform-gpu py-5">
-              {[...cardsData, ...cardsData].map((card, index) => (
-                <CreateCard key={index} card={card} />
+              {doubled.map((card) => (
+                <CreateCard key={`row2-${card.id}`} card={card} />
               ))}
             </div>
-            <div className="absolute right-0 top-0 h-full w-20 z-10 pointer-events-none bg-gradient-to-l from-white dark:from-black to-transparent"></div>
+            <div className="absolute right-0 top-0 h-full w-20 z-10 pointer-events-none bg-linear-to-l from-white dark:from-black to-transparent"></div>
           </div>
         </div>
       </div>
