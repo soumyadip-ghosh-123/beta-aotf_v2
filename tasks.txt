@@ -216,7 +216,7 @@ backend -->
 
 navbar 
 review posts the user should in academy - DONE
-terms and conditions accept korche oi page ta disni 
+add step to show terms and conditions agreement after /onboarding
 account upgrade er jonno je button ta laganor chilo, ota bosiyechis? - DONE
 
 calendar

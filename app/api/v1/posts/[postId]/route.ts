@@ -15,6 +15,7 @@ import {
   updatePost,
   deletePost,
 } from "@/lib/services/post.service";
+import { upsertPostLedger } from "@/lib/services/postLedger.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { postIdParamSchema } from "@/lib/validations/api-route";
 
@@ -98,6 +99,8 @@ export async function PATCH(
       ...input,
       updatedByAdminClerkId: currentAdmin.clerkId,
     });
+
+    await upsertPostLedger(postId);
 
     return NextResponse.json({
       message: "Post updated successfully",
