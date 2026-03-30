@@ -3,6 +3,7 @@ import {
   Navbar as HeroUINavbar,
   NavbarContent,
   NavbarBrand,
+  NavbarItem,
 } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
@@ -21,6 +22,7 @@ import { RiDashboardHorizontalFill } from "react-icons/ri";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import Image from "next/image";
 import { MdFeedback } from "react-icons/md";
+import Link from "next/link";
 
 export const Navbar = () => {
   const { user } = useUser();
@@ -39,6 +41,28 @@ export const Navbar = () => {
         </NavbarBrand>
       </NavbarContent>
 
+      <NavbarContent className="h-fit hidden md:flex" justify="center">
+        <NavbarItem>
+          <Link color="foreground" href="/">
+            Home
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link color="foreground" href="/contact">
+            Contact
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link aria-current="page" href="/about">
+            About
+          </Link>
+        </NavbarItem>
+        <NavbarItem>
+          <Link color="foreground" href="/privacy-policy">
+            Privacy Policy
+          </Link>
+        </NavbarItem>
+      </NavbarContent>
       <NavbarContent className="flex h-fit" justify="end">
         <ThemeSwitch />
       </NavbarContent>

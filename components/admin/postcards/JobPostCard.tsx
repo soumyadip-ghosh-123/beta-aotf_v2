@@ -289,14 +289,14 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
             </span>
           </div>
 
-          <Divider />
+          {/* <Divider /> */}
 
           {/* Application Statistics */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-default-700">
-                  Applications
+                  Applications:
                 </span>
               </div>
               <Chip size="sm" color="primary" variant="flat">

@@ -145,11 +145,7 @@ export async function POST(
       .trim();
 
     const applicantSnapshot = {
-      name:
-        profile.displayName?.trim() ||
-        fallbackName ||
-        profile.username?.trim() ||
-        "User",
+      name: profile.displayName?.trim() || fallbackName || profile.username?.trim() || "User",
       email: primaryEmail,
       phone,
       avatarUrl: clerkUser.imageUrl || null,
@@ -157,10 +153,10 @@ export async function POST(
 
     const application = await createPostApplication({
       postId,
+      applicantSnapshot,
+      applicantType: permissions.applicantType,
       applicantId: permissions.applicantId,
       profileId: profile._id.toString(),
-      applicantType: permissions.applicantType,
-      applicantSnapshot,
     });
 
     return NextResponse.json(

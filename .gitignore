@@ -42,3 +42,6 @@ bun.lockb
 .vscode/settings.json
 ecosystem.config.js
 aotf-21-c52aced2c4d7.json
+
+# clerk configuration (can include secrets)
+/.clerk/

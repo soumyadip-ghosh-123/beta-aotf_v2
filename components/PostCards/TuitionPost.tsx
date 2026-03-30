@@ -19,7 +19,11 @@ import { LuNotebookText } from "react-icons/lu";
 import { FaEye } from "react-icons/fa";
 import { SlCalender } from "react-icons/sl";
 import { FaBookOpen } from "react-icons/fa";
-import { MdOutlinePendingActions, MdCheckCircle, MdCancel } from "react-icons/md";
+import {
+  MdOutlinePendingActions,
+  MdCheckCircle,
+  MdCancel,
+} from "react-icons/md";
 import { useRouter } from "next/navigation";
 import {
   formatTuitionShare,
@@ -27,6 +31,7 @@ import {
   type TuitionShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
+import { User2 } from "lucide-react";
 
 export type ApplicationStatus =
   | "applied"
@@ -139,7 +144,9 @@ const TuitionPost = ({
     initialApplied &&
     applicationId &&
     currentStatus &&
-    !["approved", "decline", "auto_declined", "withdrawn"].includes(currentStatus);
+    !["approved", "decline", "auto_declined", "withdrawn"].includes(
+      currentStatus
+    );
 
   const handleWithdraw = async () => {
     if (!applicationId) return;
@@ -222,13 +229,14 @@ const TuitionPost = ({
   // Helper function to get application status display info
   const getApplicationStatusDisplay = () => {
     if (!currentStatus) return null;
-    
+
     switch (currentStatus) {
       case "approved":
         return {
           label: "Approved! You have been selected for this tuition.",
           subLabel: null,
-          color: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30",
+          color:
+            "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30",
           textColor: "text-green-800 dark:text-green-400",
           Icon: MdCheckCircle,
           iconColor: "text-green-600 dark:text-green-400",
@@ -237,16 +245,19 @@ const TuitionPost = ({
         return {
           label: "Your application was not selected.",
           subLabel: declineReason || null,
-          color: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30",
+          color:
+            "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30",
           textColor: "text-red-800 dark:text-red-400",
           Icon: MdCancel,
           iconColor: "text-red-600 dark:text-red-400",
         };
       case "auto_declined":
         return {
-          label: "Application auto-declined, someone above you in the application queue was selected",
+          label:
+            "Application auto-declined, someone above you in the application queue was selected",
           subLabel: null,
-          color: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30",
+          color:
+            "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30",
           textColor: "text-red-800 dark:text-red-400",
           Icon: MdCancel,
           iconColor: "text-red-600 dark:text-red-400",
@@ -255,7 +266,8 @@ const TuitionPost = ({
         return {
           label: "You have withdrawn your application.",
           subLabel: null,
-          color: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800/30",
+          color:
+            "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800/30",
           textColor: "text-gray-800 dark:text-gray-400",
           Icon: MdCancel,
           iconColor: "text-gray-600 dark:text-gray-400",
@@ -266,7 +278,8 @@ const TuitionPost = ({
           subLabel: dcDate
             ? `Your demo class is on ${formatDate(dcDate)}`
             : "A demo class has been scheduled for you",
-          color: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30",
+          color:
+            "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30",
           textColor: "text-blue-800 dark:text-blue-400",
           Icon: MdOutlinePendingActions,
           iconColor: "text-blue-600 dark:text-blue-400",
@@ -277,7 +290,8 @@ const TuitionPost = ({
           subLabel: gcDate
             ? `Guardian meeting scheduled for ${formatDate(gcDate)}`
             : "Waiting for guardian confirmation",
-          color: "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30",
+          color:
+            "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/30",
           textColor: "text-purple-800 dark:text-purple-400",
           Icon: MdOutlinePendingActions,
           iconColor: "text-purple-600 dark:text-purple-400",
@@ -287,7 +301,8 @@ const TuitionPost = ({
         return {
           label: "Application is being evaluated",
           subLabel: "You will be notified when your demo class is scheduled",
-          color: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30",
+          color:
+            "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/30",
           textColor: "text-blue-800 dark:text-blue-400",
           Icon: MdOutlinePendingActions,
           iconColor: "text-blue-600 dark:text-blue-400",
@@ -306,9 +321,7 @@ const TuitionPost = ({
             alt: "Creator Avatar",
           }}
           description={
-            isEdited
-              ? `Posted ${getTimeAgo(createdAt)} • Edited`
-              : `Posted ${getTimeAgo(createdAt)}`
+            isEdited ? `${getTimeAgo(createdAt)}` : `${getTimeAgo(createdAt)}`
           }
           name={createdByUserId.name || "Admin"}
         />
@@ -324,28 +337,37 @@ const TuitionPost = ({
             </Chip>
           ) : null}
           <Chip radius="sm" size="sm" className="bg-default-200">
-            {applicants.length} Applicant{applicants.length !== 1 ? "s" : ""}
+            <div className="flex items-center">
+              {applicants.length} <User2 size={14} className="ml-1" />
+            </div>
           </Chip>
         </div>
       </CardHeader>
       <CardBody className="px-3 py-0 text-small text-default-400">
         {/* Application Status Banner */}
         {statusDisplay && (
-          <div className={`flex items-start gap-3 p-3 rounded-lg border mb-3 ${statusDisplay.color}`}>
-            <statusDisplay.Icon size={24} className={`${statusDisplay.iconColor} flex-shrink-0 mt-0.5`} />
+          <div
+            className={`flex items-start gap-3 p-3 rounded-lg border mb-3 ${statusDisplay.color}`}
+          >
+            <statusDisplay.Icon
+              size={24}
+              className={`${statusDisplay.iconColor} shrink-0 mt-0.5`}
+            />
             <div className="flex flex-col">
               <p className={`text-sm font-medium ${statusDisplay.textColor}`}>
                 {statusDisplay.label}
               </p>
               {statusDisplay.subLabel && (
-                <p className={`text-xs mt-1 ${statusDisplay.textColor} opacity-80`}>
+                <p
+                  className={`text-xs mt-1 ${statusDisplay.textColor} opacity-80`}
+                >
                   {statusDisplay.subLabel}
                 </p>
               )}
             </div>
           </div>
         )}
-        
+
         <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-snug">
           {subjectDisplay.toUpperCase() || "SUBJECTS NOT SPECIFIED"}
         </h1>
@@ -389,9 +411,7 @@ const TuitionPost = ({
             </span>
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
               {monthlyBudget ? (
-                <>
-                  ₹ {monthlyBudget.toLocaleString()}/month
-                </>
+                <>₹ {monthlyBudget.toLocaleString()}/month</>
               ) : (
                 "To be decided"
               )}
@@ -479,9 +499,13 @@ const TuitionPost = ({
         <ModalContent>
           <ModalHeader>Withdraw Application</ModalHeader>
           <ModalBody>
-            <p>Are you sure you want to withdraw your application for this tuition?</p>
+            <p>
+              Are you sure you want to withdraw your application for this
+              tuition?
+            </p>
             <p className="text-sm text-default-500 mt-2">
-              This action cannot be undone. You can reapply later if the post is still open.
+              This action cannot be undone. You can reapply later if the post is
+              still open.
             </p>
           </ModalBody>
           <ModalFooter>

@@ -23,7 +23,7 @@ const Footer = () => {
     },
     {
       icon: <ReceiptText size={22} />,
-      title: "Terms of Service",
+      title: "Terms & Conditions",
       link: "/terms",
     },
   ];

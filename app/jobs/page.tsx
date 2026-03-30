@@ -34,8 +34,8 @@ export default async function JobsPage({
     ? new Set(
         await getAppliedJobIdsForApplicant(
           applicantPermissions.applicantId,
-          jobs.map((job) => job.jobId),
-        ),
+          jobs.map((job) => job.jobId)
+        )
       )
     : new Set<string>();
 

@@ -10,6 +10,7 @@ import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
 import FloatingButton from "@/components/FloatingButton";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
+import BottomNav from "@/components/reactbits/bottomNav";
 
 export const metadata: Metadata = {
   title: {
@@ -61,7 +62,10 @@ export default function RootLayout({
             duration={500}
             extraScale={0.9}
           >
-            <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+            <Providers
+              themeProps={{ attribute: "class", defaultTheme: "light" }}
+            >
+              <BottomNav />
               <div className="relative flex flex-col">
                 <FloatingButton />
                 <Navbar />

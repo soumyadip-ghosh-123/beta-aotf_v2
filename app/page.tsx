@@ -7,11 +7,15 @@ import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
 import FeatureSection from "@/components/home/FeatureSection";
 import CTA from "@/components/home/CTA";
 import Footer from "@/components/Footer";
+import Dock from "@/components/reactbits/ui/Dock";
+import { BriefcaseBusiness, GraduationCap, HomeIcon, User } from "lucide-react";
+import BottomNav from "@/components/reactbits/bottomNav";
 
 export default function Home() {
   return (
     <>
       <section className="flex w-full flex-col items-center justify-center">
+        
         {/* <HeroSection /> */}
         {/* <ImagesSliderDemo /> */}
         <ImageSlider

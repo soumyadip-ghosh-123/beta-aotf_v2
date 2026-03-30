@@ -89,6 +89,9 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
   const applicantTypeLabel =
     candidate.applicantType === "teacher" ? "Teacher" : "Candidate";
   const router = useRouter();
+  console.log(
+    "Rendering CandidateCard details:", candidate
+  );
 
   return (
     <Card
@@ -109,7 +112,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
                   size="sm"
                 />
               )}
-              {/* onclick push the user to the user profile without reload using useRouter */}
+              {/* onClick push the user to the user profile without reload using useRouter */}
               <User
                 onClick={() => router.push(`/profile/${candidate.id}`)}
                 style={{ cursor: "pointer" }}

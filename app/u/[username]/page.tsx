@@ -25,6 +25,8 @@ import {
   GlobeLock,
   ReceiptText,
   CameraIcon,
+  CheckCircle,
+  Camera,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import ButtonGroup from "@/components/ButtonGroup";
@@ -35,6 +37,7 @@ import {
 } from "@/components/teacher/profile/IdCardView";
 import { RiRefund2Line } from "react-icons/ri";
 import Stack from "@/components/reactbits/ui/Stack";
+import { IoCameraOutline, IoNotificationsCircleOutline } from "react-icons/io5";
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -386,17 +389,46 @@ export default function ProfilePage() {
       {/* ── Profile Header ─────────────────────────────────────── */}
       <div className="md:flex justify-between items-center max-w-3xl mx-auto">
         <div className="flex flex-row align-items-start justify-start gap-4 py-4">
-          <Avatar
-            className="w-20 h-20 text-large"
-            src={avatarUrl}
-            name={accountHolderName}
-          />
+          <label className="cursor-pointer">
+            {isOwnProfile && (
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarInputChange}
+                disabled={isAvatarSaving}
+              />
+            )}
+            <Badge
+              isOneChar
+              color="success"
+              content={<Camera size={15} color="white" />}
+              placement="bottom-right"
+              shape="circle"
+              size="lg"
+              isInvisible={!isOwnProfile}
+            >
+              <Avatar
+                className="w-20 h-20 text-large"
+                src={avatarUrl}
+                name={accountHolderName}
+              />
+            </Badge>
+          </label>
           <div className="flex flex-col items-start gap-1">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <h1 className="text-xl font-semibold">{accountHolderName}</h1>
               {userData.onboardingCompleted && (
                 <ShieldCheck className="text-green-500" size={18} />
               )}
+              <Chip
+                size="sm"
+                variant="flat"
+                color={canonicalIdRole === "candidate" ? "success" : "primary"}
+                className="text-[10px] uppercase font-semibold"
+              >
+                {canonicalIdRole === "candidate" ? "Candidate" : "Teacher"}
+              </Chip>
             </div>
             <div className="flex gap-1">
               <p className="text-sm text-gray-500">
@@ -418,34 +450,6 @@ export default function ProfilePage() {
 
             {isOwnProfile && (
               <div className="pt-1">
-                <label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarInputChange}
-                    disabled={isAvatarSaving}
-                  />
-                  <div className="flex gap-3">
-                    <Button
-                      as="span"
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      isLoading={isAvatarSaving}
-                      className="cursor-pointer"
-                    >
-                      Change Avatar
-                    </Button>
-                    {/* If already upgraded, show a small status chip */}
-                    {isOwnProfile && isCandidate && (
-                      <Chip size="sm" color="success" variant="flat">
-                        Candidate plan active
-                      </Chip>
-                    )}
-                  </div>
-                </label>
-
                 {avatarMessage && (
                   <p className="mt-1 text-xs text-default-500">
                     {avatarMessage}
@@ -606,16 +610,6 @@ export default function ProfilePage() {
                       : `${accountHolderName}'s ID`}
                   </h3>
                 </div>
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={
-                    canonicalIdRole === "candidate" ? "success" : "primary"
-                  }
-                  className="text-[10px] uppercase font-semibold"
-                >
-                  {canonicalIdRole === "candidate" ? "Candidate" : "Teacher"} ID
-                </Chip>
               </div>
 
               <div className="mx-auto" style={{ width: 340 }}>
@@ -630,30 +624,6 @@ export default function ProfilePage() {
                     />
                   </div>
                 )}
-              </div>
-
-              <div className="rounded-xl border border-default-200 bg-default-50/60 px-3 py-2.5 text-xs">
-                <p className="text-default-500">Canonical verify URL</p>
-                <p className="mt-1 font-mono text-[11px] text-default-700 break-all">
-                  {canonicalVerifyUrl}
-                </p>
-                <div className="mt-2 flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    onPress={copyCanonicalVerifyUrl}
-                  >
-                    Copy URL
-                  </Button>
-                  <span className="text-[11px] text-default-500">
-                    {copyStatus === "copied"
-                      ? "Copied"
-                      : copyStatus === "failed"
-                        ? "Copy failed"
-                        : "Use this exact link for verification"}
-                  </span>
-                </div>
               </div>
             </div>
           </Tab>

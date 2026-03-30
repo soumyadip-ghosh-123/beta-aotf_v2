@@ -14,6 +14,7 @@ import {
   type JobShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
+import { User2 } from "lucide-react";
 
 interface JobPostProps {
   jobId: string;
@@ -37,6 +38,7 @@ interface JobPostProps {
   initialApplied?: boolean;
   isSignedIn?: boolean;
   canApply?: boolean;
+  applicants?: string[];
   createdByUserId?: { name?: string; avatar?: string | null };
 }
 
@@ -53,7 +55,9 @@ const formatStatus = (status: string) =>
     cancelled: "Cancelled",
   })[status] ?? status;
 
-const statusColor = (status: string): "success" | "default" | "warning" | "danger" =>
+const statusColor = (
+  status: string
+): "success" | "default" | "warning" | "danger" =>
   ({
     open: "success" as const,
     closed: "default" as const,
@@ -88,6 +92,7 @@ const JobPost = ({
   initialApplied = false,
   isSignedIn = false,
   canApply,
+  applicants = [],
   createdByUserId = {},
 }: JobPostProps) => {
   const router = useRouter();
@@ -109,7 +114,7 @@ const JobPost = ({
 
   const chips = [
     formatWorkType(workType),
-    experience,
+    experience ? ` ${experience} years` : null,
     formatLocationType(locationType),
   ].filter(Boolean);
 
@@ -119,15 +124,22 @@ const JobPost = ({
       <CardHeader className="justify-between z-0">
         <User
           avatarProps={{
-            src: createdByUserId.avatar || "",
-            alt: `${createdByUserId.name || "Admin"} avatar`,
+            src: `${createdByUserId.avatar || ""}`,
+            alt: "Creator Avatar",
           }}
           name={createdByUserId.name || "Admin"}
-          description="Posted by admin"
+          onClick={() => console.log(createdByUserId.name)}
         />
-        <Chip radius="sm" size="sm" color={statusColor(status)}>
-          {formatStatus(status)}
-        </Chip>
+        <div className="flex items-center gap-2">
+          <Chip radius="sm" size="sm" color={statusColor(status)}>
+            {formatStatus(status)}
+          </Chip>
+          <Chip radius="sm" size="sm" className="bg-default-200">
+            <div className="flex items-center">
+              {applicants.length} <User2 size={14} className="ml-1" />
+            </div>
+          </Chip>
+        </div>
       </CardHeader>
 
       {/* BODY */}
@@ -220,10 +232,10 @@ const JobPost = ({
           >
             View
             <FaEye />
-          </Button>          <Button size="sm" color="secondary" onClick={handleShare}>
+          </Button>{" "}
+          <Button size="sm" color="secondary" onClick={handleShare}>
             Share <FaShare />
           </Button>
-
           <ApplyActionButton
             target="job"
             targetId={jobId}

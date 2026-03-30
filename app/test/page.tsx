@@ -3,6 +3,8 @@ import JobPostForm from "@/components/admin/postforms/jobPostForm";
 import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
 import LottiePlayer from "@/components/LottiePlayer";
+import Dock from "@/components/reactbits/ui/Dock";
+import { BriefcaseBusiness, GraduationCap, HomeIcon, User } from "lucide-react";
 export default function PricingPage() {
   const jobPostData = {
     jobId: "JOB-081225001",
@@ -44,13 +46,10 @@ export default function PricingPage() {
     createdByUserId: { name: "Anita Sharma", avatar: "" },
     updatedAt: new Date(),
   } as const;
-
+  
   return (
-    <div className="w-full flex flex-col items-center justify-center gap-4">
-      {/* <TuitionPostForm /> */}
-
-      {/* <JobPostForm /> */}
-      {/* <LottiePlayer size={400} /> */}
+    <div className="w-full h-100 flex flex-col items-center justify-center gap-4">
+      
     </div>
   );
 }

@@ -503,25 +503,6 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
           </div>
         </CardBody>
       </Card>
-
-      {/* ── View profile link ── */}
-      <div className="text-center">
-        <Button
-          as={Link}
-          href={
-            person.profileUrl ??
-            (person.username
-              ? `/u/${encodeURIComponent(person.username)}`
-              : "/")
-          }
-          variant="flat"
-          color="primary"
-          size="sm"
-          endContent={<ExternalLink size={14} />}
-        >
-          View Full Profile
-        </Button>
-      </div>
     </div>
   );
 }

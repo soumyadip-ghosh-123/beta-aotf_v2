@@ -10,9 +10,12 @@ import {
   GraduationCap,
   Sparkles,
   ArrowRight,
+  ExternalLink,
+  Copy,
 } from "lucide-react";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import QRCode from "react-qr-code";
+import { addToast } from "@heroui/toast";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface IdCardData {
@@ -90,7 +93,7 @@ export function IdCard({ data }: { data: IdCardData }) {
 
       {/* ── Photo + Name overlay ── */}
       <div className="relative px-5 -mt-8 z-10 flex items-start gap-3">
-        <div className="shrink-0 rounded-xl overflow-hidden ring-3 ring-white dark:ring-zinc-900 shadow-lg">
+        <div className="shrink-0 rounded-xl overflow-hidden ring-3 ring-white dark:ring-zinc-900 shadow-lg backdrop-blur-md bg-white/30">
           <img
             src={data.photo}
             alt={data.name}
@@ -98,13 +101,39 @@ export function IdCard({ data }: { data: IdCardData }) {
           />
         </div>
         <div className="pb-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white truncate">
-              {data.name}
-            </h2>
-            {data.isVerified && (
-              <ShieldCheck size={14} className="text-green-500 shrink-0" />
-            )}
+          <div className="flex items-center gap-1.5 cursor-pointer">
+            <div
+              className="flex items-center gap-1.5 flex-1"
+              onClick={() =>
+                window.open(
+                  `${verifyBaseUrl}/verify/${encodeURIComponent(data.uniqId)}`,
+                  "_blank"
+                )
+              }
+            >
+              <h2 className="text-base font-bold text-white truncate">
+                {data.name}
+              </h2>
+              {data.isVerified && (
+                <ExternalLink size={14} className="text-white shrink-0 " />
+              )}
+            </div>
+            <div className="bg-white/20 hover:bg-white/30 rounded-md p-1.5 opacity-80 hover:opacity-100 transition-opacity">
+              <Copy
+                size={14}
+                color="white"
+                className="shrink-0 cursor-pointer"
+                onClick={() => {
+                  navigator.clipboard.writeText(data.uniqId);
+                  // show toast notification (you can replace this with your own toast implementation)
+                  addToast({
+                    title: "Unique ID Copied",
+                    description:
+                      "The unique identifier has been copied to your clipboard.",
+                  });
+                }}
+              />
+            </div>
           </div>
           <Chip
             size="sm"
@@ -198,21 +227,8 @@ export function IdCard({ data }: { data: IdCardData }) {
           <p className="font-mono text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 tracking-widest">
             {data.employeeId}
           </p>
-          {/* Barcode mock */}
-          <div className="flex gap-0.5 items-end h-5">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-zinc-800 dark:bg-zinc-300 rounded-sm"
-                style={{
-                  width: i % 3 === 0 ? 3 : 2,
-                  height: `${55 + Math.random() * 45}%`,
-                }}
-              />
-            ))}
-          </div>
           <p className="text-[9px] text-zinc-400">
-            Valid: {data.joinDate} — {data.expiryDate}
+            Account Created on: {data.joinDate}
           </p>
         </div>
       </div>
@@ -220,8 +236,8 @@ export function IdCard({ data }: { data: IdCardData }) {
       {/* ── Terms strip ── */}
       <div className="bg-zinc-100 dark:bg-zinc-800 px-5 py-2 text-[8px] text-zinc-400 dark:text-zinc-500 leading-tight space-y-0.5">
         <p>
-          This card is the property of Academy of Tutorials and Freelancers (AOTF). If found,
-          please return to the nearest AOTF office.
+          This card is the property of Academy of Tutorials and Freelancers
+          (AOTF). If found, please return to the nearest AOTF office.
         </p>
         <p>Unauthorized use is prohibited. Contact: support@aotf.in</p>
       </div>
@@ -231,7 +247,7 @@ export function IdCard({ data }: { data: IdCardData }) {
         className={`bg-linear-to-br ${roleGradient[data.role]} px-5 py-1.5 flex items-center justify-between`}
       >
         <p className="text-[9px] text-white/80">
-          www.aotf.in &nbsp;•&nbsp; +91 98765-43210
+          www.aotf.in &nbsp;•&nbsp; {siteConfig.contact.phone}
         </p>
         {/* <QrCode size={12} className="text-white/40" /> */}
       </div>
@@ -337,7 +353,7 @@ export function UpgradeCandidateCard({
       {/* ── Bottom bar ── */}
       <div className="bg-linear-to-br from-amber-500 via-orange-500 to-rose-500 px-5 py-1.5 flex items-center justify-between">
         <p className="text-[9px] text-white/80">
-          www.aotf.in &nbsp;•&nbsp; +91 98765-43210
+          www.aotf.in &nbsp;•&nbsp; {siteConfig.contact.phone}
         </p>
         <p className="text-[9px] text-white/60 font-medium">
           Candidate unlock in INR 50

@@ -74,7 +74,9 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
     candidate.applicantType === "teacher" ? "Teacher" : "Candidate";
 
   return (
-    <Card className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}>
+    <Card
+      className={`w-full hover:shadow-md transition-shadow ${isSelected ? "ring-2 ring-danger" : ""}`}
+    >
       <CardBody className="p-4">
         <div className="space-y-3">
           {/* Avatar */}
@@ -95,11 +97,8 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
                   src: candidate.avatar,
                 }}
                 name={candidate.name}
-                description={`Email: ${candidate.email}`}
+                description={`${candidate.email}`}
               />
-              <Chip size="sm" variant="bordered">
-                {applicantTypeLabel}
-              </Chip>
             </div>
             <Chip
               size="sm"

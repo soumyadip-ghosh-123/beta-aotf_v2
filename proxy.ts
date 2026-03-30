@@ -24,6 +24,7 @@ const isPublicRoute = createRouteMatcher([
   "/contact(.*)",
   "/enquiry(.*)",
   "/jobs(.*)",
+  "/tuitions(.*)",
   "/posts(.*)",
   "/privacy-policy(.*)",
   "/refund-policy(.*)",
@@ -31,6 +32,7 @@ const isPublicRoute = createRouteMatcher([
   "/services(.*)",
   "/sso-callback(.*)",
   "/verify(.*)",
+  "/test(.*)", // Temporary public route for testing/debugging purposes
   "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
 ]);
 
