@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { FaPhoneAlt } from "react-icons/fa";
@@ -14,17 +14,25 @@ export default function FloatingSupportCard() {
   const pathname = usePathname();
 
   const phoneNumber = siteConfig.contact.phone;
+  const [supportAdmins, setSupportAdmins] = useState<
+    { name: string; avatar?: string | null }[]
+  >([]);
 
   // Don't render on paths not in the allowed list
   if (!ALLOWED_PATHS.includes(pathname)) return null;
 
   return (
     <div className="fixed bottom-6 right-4 z-50 justify-items-end items-right gap-4">
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 bg-black/20 backdrop-blur-md transition-opacity"
+        /> 
+      )}
+
       {/* Support Card */}
       <div
-        className={`mb-4 p-2 w-80 rounded-xl bg-white dark:bg-[#151e2b]
-        shadow-xl border border-slate-100 dark:border-slate-800
-        transition-all duration-300 origin-bottom-right
+        className={`mb-4 p-2 w-80 rounded-xl bg-white dark:bg-[#151e2b] shadow-xl border border-slate-100 dark:border-slate-800 transition-all duration-300 origin-bottom-right
         ${
           open
             ? "opacity-100 scale-100 translate-y-0"
@@ -44,8 +52,14 @@ export default function FloatingSupportCard() {
             </div>
           </div>
           <AvatarGroup isBordered>
-            <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026024d" />
-            <Avatar src="https://i.pravatar.cc/150?u=a04258a2462d826712d" />
+            {supportAdmins.map((a) => (
+              <Avatar
+                key={a.name}
+                src={a.avatar ?? undefined}
+                name={a.name}
+                showFallback
+              />
+            ))}
           </AvatarGroup>
         </div>
 

@@ -336,11 +336,11 @@ const TuitionPost = ({
               Edited
             </Chip>
           ) : null}
-          <Chip radius="sm" size="sm" className="bg-default-200">
+          {/* <Chip radius="sm" size="sm" className="bg-default-200">
             <div className="flex items-center">
               {applicants.length} <User2 size={14} className="ml-1" />
             </div>
-          </Chip>
+          </Chip> */}
         </div>
       </CardHeader>
       <CardBody className="px-3 py-0 text-small text-default-400">

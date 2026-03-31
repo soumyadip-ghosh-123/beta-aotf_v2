@@ -5,6 +5,7 @@ import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
 import {
   getApplicantPermissionsByClerkId,
   getAppliedJobIdsForApplicant,
+  getApplicantCountsByJobIds,
 } from "@/lib/services/application.service";
 import { listJobs } from "@/lib/services/job.service";
 
@@ -38,6 +39,9 @@ export default async function JobsPage({
         )
       )
     : new Set<string>();
+
+  const jobIds = jobs.map((job) => job.jobId);
+  const applicantCountsMap = await getApplicantCountsByJobIds(jobIds);
 
   const canApplyToJobs = clerkId
     ? applicantPermissions?.canApplyToJobs
@@ -80,6 +84,7 @@ export default async function JobsPage({
                 initialApplied={appliedJobIds.has(job.jobId)}
                 isSignedIn={Boolean(clerkId)}
                 canApply={canApplyToJobs}
+                applicantCount={applicantCountsMap.get(job.jobId) ?? 0}
               />
             ))}
           </div>

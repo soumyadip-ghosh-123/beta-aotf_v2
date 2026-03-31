@@ -1,6 +1,7 @@
 "use client";
 import JobPostForm from "@/components/admin/postforms/jobPostForm";
 import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
+import BackButton from "@/components/BackButton";
 import EnquiryForm from "@/components/enquiry/EnquiryForm";
 import LottiePlayer from "@/components/LottiePlayer";
 import Dock from "@/components/reactbits/ui/Dock";
@@ -46,10 +47,14 @@ export default function PricingPage() {
     createdByUserId: { name: "Anita Sharma", avatar: "" },
     updatedAt: new Date(),
   } as const;
-  
+
   return (
     <div className="w-full h-100 flex flex-col items-center justify-center gap-4">
-      
+      <BackButton title="Test Page" />
+      <h1 className="text-2xl font-bold">This is a test page for components</h1>
+      <div className="w-full max-w-3xl">
+        <h2 className="text-xl font-semibold mb-2">Job Post Form</h2>
+      </div>
     </div>
   );
 }

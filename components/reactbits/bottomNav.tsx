@@ -7,22 +7,22 @@ const BottomNav = () => {
   const router = useRouter();
   const items = [
     {
-      icon: <HomeIcon size={18} />,
+      icon: <HomeIcon size={22} />,
       label: "Home",
       onClick: () => router.push("/"),
     },
     {
-      icon: <GraduationCap size={18} />,
+      icon: <GraduationCap size={22} />,
       label: "Tuitions",
       onClick: () => router.push("/posts"),
     },
     {
-      icon: <BriefcaseBusiness size={18} />,
+      icon: <BriefcaseBusiness size={22} />,
       label: "Jobs",
       onClick: () => router.push("/jobs"),
     },
     {
-      icon: <User size={18} />,
+      icon: <User size={22} />,
       label: "Profile",
       onClick: () => router.push("/profile"),
     },
@@ -30,9 +30,9 @@ const BottomNav = () => {
   return (
     <Dock
       items={items}
-      panelHeight={30}
+      panelHeight={40}
       baseItemSize={50}
-      magnification={50}
+      magnification={60}
       className="fixed bottom-4 z-100"
     />
   );

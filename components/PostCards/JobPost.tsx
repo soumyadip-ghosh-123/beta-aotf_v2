@@ -38,7 +38,7 @@ interface JobPostProps {
   initialApplied?: boolean;
   isSignedIn?: boolean;
   canApply?: boolean;
-  applicants?: string[];
+  applicantCount?: number;
   createdByUserId?: { name?: string; avatar?: string | null };
 }
 
@@ -92,7 +92,7 @@ const JobPost = ({
   initialApplied = false,
   isSignedIn = false,
   canApply,
-  applicants = [],
+  applicantCount = 0,
   createdByUserId = {},
 }: JobPostProps) => {
   const router = useRouter();
@@ -133,11 +133,6 @@ const JobPost = ({
         <div className="flex items-center gap-2">
           <Chip radius="sm" size="sm" color={statusColor(status)}>
             {formatStatus(status)}
-          </Chip>
-          <Chip radius="sm" size="sm" className="bg-default-200">
-            <div className="flex items-center">
-              {applicants.length} <User2 size={14} className="ml-1" />
-            </div>
           </Chip>
         </div>
       </CardHeader>

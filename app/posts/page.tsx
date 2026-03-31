@@ -36,8 +36,8 @@ export default async function DocsPage({
     ? new Set(
         await getAppliedPostIdsForApplicant(
           applicantPermissions.applicantId,
-          posts.map((post) => post.postId),
-        ),
+          posts.map((post) => post.postId)
+        )
       )
     : new Set<string>();
 

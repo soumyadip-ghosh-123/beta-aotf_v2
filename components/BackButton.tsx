@@ -4,6 +4,7 @@ import { Button } from "@heroui/button";
 import { FaChevronLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 interface BackButtonProps {
   title?: string;
@@ -20,24 +21,24 @@ const BackButton = ({ title }: BackButtonProps) => {
   }, []);
 
   return (
-    <div className="grid grid-cols-3 items-center mb-2 max-w-3xl w-full mx-auto px-2">
+    <div className="grid grid-cols-3 items-center mb-2 px-3 mx-auto">
       {canGoBack ? (
         <Button
-          isIconOnly
+          size="sm"
+          variant="flat"
+          startContent={<ArrowLeft size={18} />}
           aria-label="Back"
           color="default"
-          size="sm"
           onPress={() => router.back()}
+          className="justify-start w-fit"
         >
-          <FaChevronLeft size={20} />
+          Back
         </Button>
       ) : (
         <div /> // keeps layout aligned
       )}
 
-      <p className="text-center text-lg font-semibold">
-        {title || ""}
-      </p>
+      <p className="text-center text-lg font-semibold">{title || ""}</p>
 
       <div />
     </div>

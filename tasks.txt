@@ -223,3 +223,19 @@ calendar
 1. 31 days calendar ui
 2. ask for payment done or not to approve a candidate -> show a modal 
     if no => remind me for payment on current date + 1 month suggestions it can be changeable
+
+
+
+give copy or open icon - DONE
+show applicant number in /jobs - DONE
+
+show admin image in /jobs
+fetch admin name in /post & /jobs
+
+
+
+
+modal 
+    has guardian already paid or not
+        yes -> store current date and time in db as approve date and show in calendar
+        no -> show current date + 25 days as tentative  payment date and store the reminder date in db and show in calendar

@@ -228,6 +228,27 @@ export async function getAppliedJobIdsForApplicant(
   );
 }
 
+/**
+ * Get applicant counts for multiple jobs by their public jobId strings.
+ * Returns a Map of jobId -> count.
+ */
+export async function getApplicantCountsByJobIds(
+  jobIdsPublic: string[],
+): Promise<Map<string, number>> {
+  await dbConnect();
+
+  if (jobIdsPublic.length === 0) {
+    return new Map();
+  }
+
+  const counts = await Application.aggregate<{ _id: string; count: number }>([
+    { $match: { jobIdPublic: mongoose.trusted({ $in: jobIdsPublic }) } },
+    { $group: { _id: "$jobIdPublic", count: { $sum: 1 } } },
+  ]);
+
+  return new Map(counts.map((entry) => [entry._id, entry.count]));
+}
+
 export async function getAppliedPostsForApplicant(
   applicantId: mongoose.Types.ObjectId,
 ): Promise<AppliedPostResult[]> {
