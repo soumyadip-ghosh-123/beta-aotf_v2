@@ -353,24 +353,6 @@ export default function ProfilePage() {
     uniqId: canonicalId,
   };
 
-  const actionItems = [
-    {
-      icon: <GlobeLock size={22} />,
-      title: "Privacy Policy",
-      link: "/privacy-policy",
-    },
-    {
-      icon: <RiRefund2Line size={22} />,
-      title: "Refund Policy",
-      link: "/refund-policy",
-    },
-    {
-      icon: <ReceiptText size={22} />,
-      title: "Terms & Conditions",
-      link: "/terms",
-    },
-  ];
-
   const copyCanonicalVerifyUrl = async () => {
     try {
       await navigator.clipboard.writeText(canonicalVerifyUrl);
@@ -633,7 +615,7 @@ export default function ProfilePage() {
       {/* ── Action Buttons ─────────────────────────────────────── */}
       {isOwnProfile && (
         <div className="w-full mb-8">
-          <ButtonGroup items={actionItems} className="px-auto mx-auto" />
+          <ButtonGroup className="px-auto mx-auto" />
         </div>
       )}
     </div>

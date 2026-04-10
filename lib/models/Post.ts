@@ -13,6 +13,8 @@ export const POST_STATUSES = [
   "hold",
 ] as const;
 export type PostStatus = (typeof POST_STATUSES)[number];
+export const POST_PAYMENT_STATUSES = ["done", "pending"] as const;
+export type PostPaymentStatus = (typeof POST_PAYMENT_STATUSES)[number];
 
 // ─── Sub-document: Student ──────────────────────────────────────────────
 
@@ -49,6 +51,11 @@ export interface IPost extends Document {
   monthlyBudget: number;
   notes?: string;
   status: PostStatus;
+  paymentstatus?: PostPaymentStatus;
+  /** Admin-entered date when guardian payment is recorded (paymentstatus done). */
+  paymentDate?: Date;
+  /** Follow-up / tentative date when payment is still pending. */
+  tentativeDate?: Date;
   matchedTeacherClerkId?: string;
   createdByAdminClerkId?: string;
   updatedByAdminClerkId?: string;
@@ -87,6 +94,12 @@ const PostSchema = new Schema<IPost>(
       required: true,
       default: "open",
     },
+    paymentstatus: {
+      type: String,
+      enum: POST_PAYMENT_STATUSES,
+    },
+    paymentDate: { type: Date },
+    tentativeDate: { type: Date },
     matchedTeacherClerkId: { type: String },
     createdByAdminClerkId: { type: String },
     updatedByAdminClerkId: { type: String },

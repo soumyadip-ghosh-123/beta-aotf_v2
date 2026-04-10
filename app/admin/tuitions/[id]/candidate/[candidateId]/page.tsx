@@ -92,6 +92,30 @@ export default function CandidateDetailPage({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    isOpen: isPaymentModalOpen,
+    onOpen: onPaymentModalOpen,
+    onClose: onPaymentModalClose,
+  } = useDisclosure();
+  const [paymentDoneChoice, setPaymentDoneChoice] = useState<"" | "yes" | "no">(
+    "",
+  );
+  const [paymentModalDate, setPaymentModalDate] = useState("");
+
+  useEffect(() => {
+    if (!isPaymentModalOpen || !paymentDoneChoice) {
+      return;
+    }
+    const d = new Date();
+    if (paymentDoneChoice === "yes") {
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      setPaymentModalDate(d.toISOString().slice(0, 16));
+    } else {
+      d.setTime(d.getTime() + 25 * 24 * 60 * 60 * 1000);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      setPaymentModalDate(d.toISOString().slice(0, 16));
+    }
+  }, [isPaymentModalOpen, paymentDoneChoice]);
 
   // Fetch application data
   useEffect(() => {
@@ -172,7 +196,10 @@ export default function CandidateDetailPage({
   };
 
   // Update status
-  const handleUpdateStatus = async () => {
+  const performStatusUpdate = async (options?: {
+    paymentDone?: boolean;
+    postPaymentDateIso?: string;
+  }) => {
     if (!selectedStatus || selectedStatus === application?.status) {
       // Check if we're just updating dates for same status
       if (selectedStatus === "DC" && dcDate) {
@@ -219,6 +246,9 @@ export default function CandidateDetailPage({
       }
       if (selectedStatus === "decline") {
         body.reason = declineReason.trim();
+      }
+      if (selectedStatus === "approved") {
+        body.paymentDone = options?.paymentDone;
       }
 
       console.log("[Admin Update]", {
@@ -288,6 +318,41 @@ export default function CandidateDetailPage({
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (selectedStatus === "approved") {
+      setPaymentDoneChoice("");
+      setPaymentModalDate("");
+      onPaymentModalOpen();
+      return;
+    }
+
+    await performStatusUpdate();
+  };
+
+  const handleConfirmApprovalPayment = async () => {
+    if (!paymentDoneChoice) {
+      addToast({
+        description: "Please select whether payment is done",
+        color: "danger",
+      });
+      return;
+    }
+
+    if (!paymentModalDate.trim()) {
+      addToast({
+        description: "Please select the date and time to store on the post",
+        color: "danger",
+      });
+      return;
+    }
+
+    onPaymentModalClose();
+    await performStatusUpdate({
+      paymentDone: paymentDoneChoice === "yes",
+      postPaymentDateIso: new Date(paymentModalDate).toISOString(),
+    });
   };
 
   // Helper functions
@@ -741,6 +806,49 @@ export default function CandidateDetailPage({
               isLoading={isDeleting}
             >
               Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Payment Status Modal (on approval) */}
+      <Modal
+        isOpen={isPaymentModalOpen}
+        onClose={onPaymentModalClose}
+        isDismissable={!isUpdating}
+      >
+        <ModalContent>
+          <ModalHeader>Payment Confirmation</ModalHeader>
+          <ModalBody>
+            <p>Is the payment done by guardian?</p>
+            <RadioGroup
+              value={paymentDoneChoice}
+              onValueChange={(val) => setPaymentDoneChoice(val as "yes" | "no")}
+            >
+              <Radio value="yes">Yes</Radio>
+              <Radio value="no">No</Radio>
+            </RadioGroup>
+            {paymentDoneChoice === "no" && (
+              <p className="text-sm text-warning-700">
+                Tentative payment date will be set to{" "}
+                {new Date(
+                  Date.now() + 25 * 24 * 60 * 60 * 1000,
+                ).toLocaleDateString("en-IN")}
+                .
+              </p>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onPaymentModalClose}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleConfirmApprovalPayment}
+              isDisabled={!paymentDoneChoice || !paymentModalDate.trim()}
+              isLoading={isUpdating}
+            >
+              Confirm & Approve
             </Button>
           </ModalFooter>
         </ModalContent>

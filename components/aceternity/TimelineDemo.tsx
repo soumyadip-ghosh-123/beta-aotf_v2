@@ -6,7 +6,7 @@ export function TimelineDemo() {
       title: "One to One Guidance",
       content: (
         <div>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             Built and launched Aceternity UI and Aceternity UI Pro from scratch
           </p>
           <div className="grid grid-cols-2 gap-4">
@@ -32,11 +32,11 @@ export function TimelineDemo() {
       title: "Batch & Coaching center",
       content: (
         <div>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             I usually run out of copy, but when I see content this big, I try to
             integrate lorem ipsum.
           </p>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             Lorem ipsum is for people who are too lazy to write copy. But we are
             not. Here are some more example of beautiful designs I built.
           </p>
@@ -63,7 +63,7 @@ export function TimelineDemo() {
       title: "Doorstep service",
       content: (
         <div>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             Deployed 5 new components on Aceternity today
           </p>
           <div className="mb-8">
@@ -107,7 +107,7 @@ export function TimelineDemo() {
       title: "Ranging accross Every Class, Subjects & Boards",
       content: (
         <div>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             Deployed 5 new components on Aceternity today
           </p>
           <div className="mb-8">
@@ -150,7 +150,7 @@ export function TimelineDemo() {
       title: "Extra Curricular Activities",
       content: (
         <div>
-          <p className="mb-4 text-xs font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
+          <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
             Deployed 5 new components on Aceternity today
           </p>
           <div className="mb-8">

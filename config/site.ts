@@ -65,7 +65,7 @@ export const siteConfig = {
   subDescription: "Your Complete Platform for Learning, Earning & Skill-Based Opportunities",
   description: `From qualified tutors to skilled candidates, AOTF helps learners, guardians, and clients find trusted professionals with ease.`,
   url: "https://aotf.in",
-
+  lastUpdated: "April 1, 2026",
   //payment ids
   UPI: {
     name: "Soumyadip Ghosh",
@@ -206,5 +206,5 @@ export const getFormattedPhone = () => {
 // Helper function to get copyright text
 export const getCopyrightText = () => {
   const currentYear = new Date().getFullYear();
-  return `© 2021-${currentYear} ${siteConfig.name}. All rights reserved.`;
+  return `© 2021 - ${currentYear} ${siteConfig.name}.`;
 };

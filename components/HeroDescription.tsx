@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import TextType from "./reactbits/ui/TextType";
+import Redirect from "./Redirect";
 
 const HeroDescription = () => {
   return (
@@ -44,17 +45,19 @@ const HeroDescription = () => {
           <br />
           <span className="bg-[#2e8b57] text-white"> Across India</span>
         </h1>
-        <p className="md:text-left text-sm max-w-lg mt-2">
+        <p className="md:text-left text-md max-w-lg mt-2">
           Built on trust and transparency, AOTF makes it easy to find the right
           tutor or professional with confidence.
         </p>
         <div className="flex items-center justify-center gap-4 mt-4 text-sm">
-          <Button
-            radius="full"
-            className="text-white hover:-translate-y-0.5 transition bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 px-7"
-          >
-            Make an Enquiry <ArrowRight />
-          </Button>
+          <Redirect to="/enquiry">
+            <Button
+              radius="full"
+              className="text-white hover:-translate-y-0.5 transition bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 px-7"
+            >
+              Make an Enquiry <ArrowRight />
+            </Button>
+          </Redirect>
           {/* <Button className="flex items-center gap-2 border transition rounded-md px-6">
             <span>Watch demo</span>
           </Button> */}

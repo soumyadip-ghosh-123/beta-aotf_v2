@@ -7,7 +7,6 @@ import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { User } from "@heroui/user";
 import { Phone, Eye } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 export interface Candidate {
   id: string;

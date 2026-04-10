@@ -1,3 +1,4 @@
+import BackButton from "@/components/BackButton";
 import { SignIn } from "@clerk/nextjs";
 
 type SignInPageProps = {
@@ -11,13 +12,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
   return (
     <>
+      <BackButton title="Sign In" />
       {linkMode ? (
         <div className="rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
           This account already exists. Sign in to the same account, and we will
           guide you to add password login as an additional sign-in method.
         </div>
       ) : null}
-
       <SignIn
         forceRedirectUrl={linkMode ? "/verify/link-account" : undefined}
         fallbackRedirectUrl={linkMode ? "/verify/link-account" : undefined}

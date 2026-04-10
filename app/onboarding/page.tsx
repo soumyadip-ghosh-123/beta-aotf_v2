@@ -2,7 +2,6 @@
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { useState, useEffect, useRef } from "react";
 import { useUser, useSession } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 import {
   PhoneFields,
@@ -39,7 +38,6 @@ function loadRazorpayScript(): Promise<void> {
 
 export default function Onboarding() {
   const { user } = useUser();
-  const router = useRouter();
   const { session } = useSession();
   const [formData, setFormData] = useState<OnboardingFormData>({
     phone: "",

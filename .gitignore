@@ -45,3 +45,7 @@ aotf-21-c52aced2c4d7.json
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# postman configuration (can include secrets)
+/postman/
+.postman/

@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     const body = await request.json();
-    const { status, reason, dcDate, gcDate } =
+    const { status, reason, dcDate, gcDate, paymentDone, postPaymentDate } =
       updateApplicationStatusBodySchema.parse(body);
 
     // Verify application exists and belongs to this post
@@ -141,6 +141,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       reason,
       dcDate: dcDate ? new Date(dcDate) : undefined,
       gcDate: gcDate ? new Date(gcDate) : undefined,
+      paymentDone,
+      postPaymentDate,
     });
 
     const updatedApplication = await updateApplicationStatus({
@@ -150,6 +152,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       reason,
       dcDate: dcDate ? new Date(dcDate) : undefined,
       gcDate: gcDate ? new Date(gcDate) : undefined,
+      paymentDone,
+      postPaymentDate: postPaymentDate ? new Date(postPaymentDate) : undefined,
     });
 
     console.log("[API Route] After updateApplicationStatus call:", {

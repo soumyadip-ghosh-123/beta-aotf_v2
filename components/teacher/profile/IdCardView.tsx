@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Copy,
 } from "lucide-react";
+import { Link } from "@heroui/link";
 import { FaChalkboardTeacher } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { addToast } from "@heroui/toast";
@@ -102,7 +103,7 @@ export function IdCard({ data }: { data: IdCardData }) {
         </div>
         <div className="pb-1 min-w-0">
           <div className="flex items-center gap-1.5 cursor-pointer">
-            <div
+            {/* <div
               className="flex items-center gap-1.5 flex-1"
               onClick={() =>
                 window.open(
@@ -117,7 +118,16 @@ export function IdCard({ data }: { data: IdCardData }) {
               {data.isVerified && (
                 <ExternalLink size={14} className="text-white shrink-0 " />
               )}
-            </div>
+            </div> */}
+
+            <Link
+              isBlock
+              showAnchorIcon
+              className="text-white"
+              href={`${verifyBaseUrl}/verify/${encodeURIComponent(data.uniqId)}`}
+            >
+              {data.name}
+            </Link>
             <div className="bg-white/20 hover:bg-white/30 rounded-md p-1.5 opacity-80 hover:opacity-100 transition-opacity">
               <Copy
                 size={14}

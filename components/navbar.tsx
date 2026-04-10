@@ -22,7 +22,7 @@ import { RiDashboardHorizontalFill } from "react-icons/ri";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import Image from "next/image";
 import { MdFeedback } from "react-icons/md";
-import Link from "next/link";
+import Redirect from "./Redirect";
 
 export const Navbar = () => {
   const { user } = useUser();
@@ -43,24 +43,16 @@ export const Navbar = () => {
 
       <NavbarContent className="h-fit hidden md:flex" justify="center">
         <NavbarItem>
-          <Link color="foreground" href="/">
-            Home
-          </Link>
+          <Redirect to="/">Home</Redirect>
         </NavbarItem>
         <NavbarItem>
-          <Link color="foreground" href="/contact">
-            Contact
-          </Link>
+          <Redirect to="/posts">Tuitions</Redirect>
         </NavbarItem>
         <NavbarItem>
-          <Link aria-current="page" href="/about">
-            About
-          </Link>
+          <Redirect to="/jobs">Jobs</Redirect>
         </NavbarItem>
         <NavbarItem>
-          <Link color="foreground" href="/privacy-policy">
-            Privacy Policy
-          </Link>
+          <Redirect to="/feedback">Feedback</Redirect>
         </NavbarItem>
       </NavbarContent>
       <NavbarContent className="flex h-fit" justify="end">

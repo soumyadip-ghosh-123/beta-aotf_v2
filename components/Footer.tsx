@@ -6,27 +6,9 @@ import { FaFacebookSquare } from "react-icons/fa";
 import { GrInstagram } from "react-icons/gr";
 import { FaLinkedin } from "react-icons/fa6";
 import ButtonGroup from "./ButtonGroup";
-import { RiRefund2Fill } from "react-icons/ri";
-import { GlobeLock, ReceiptText } from "lucide-react";
+import WhatsAppButton from "./ui/WhatsApp";
 
 const Footer = () => {
-  const items = [
-    {
-      icon: <GlobeLock size={22} />,
-      title: "Privacy Policy",
-      link: "/privacy-policy",
-    },
-    {
-      icon: <RiRefund2Fill size={22} />,
-      title: "Refund Policy",
-      link: "/refund-policy",
-    },
-    {
-      icon: <ReceiptText size={22} />,
-      title: "Terms & Conditions",
-      link: "/terms",
-    },
-  ];
   return (
     <footer className="m-auto px-4 mb-20 sm:mb-0 container w-full my-10">
       <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-500 pb-10">
@@ -50,7 +32,7 @@ const Footer = () => {
           </div>
         </div> */}
 
-        <ButtonGroup items={items} className="px-0" />
+        <ButtonGroup className="px-0" />
 
         <div className="flex-1 flex md:flex-row items-start md:justify-end gap-5 md:gap-20">
           {/* <div>
@@ -120,6 +102,7 @@ const Footer = () => {
                 >
                   <FaLinkedin size={25} className="text-primary" />
                 </Button>
+                <WhatsAppButton />
               </div>
             </div>
           </div>
@@ -129,8 +112,9 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="pt-4 text-center text-sm pb-5 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div className="pt-4 text-center text-sm pb-5 flex flex-col md:flex-row gap-1 justify-between items-center">
         <p>{getCopyrightText()}</p>
+        <p>All rights reserved.</p>
       </div>
     </footer>
   );

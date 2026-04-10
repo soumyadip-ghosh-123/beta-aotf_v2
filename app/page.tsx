@@ -32,14 +32,14 @@ export default function Home() {
               title: "Second Slide",
               description: "This is the second image",
               buttonText: "Join Now",
-              link: "/join",
+              link: "/sign-up",
             },
             {
               src: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/gallery/slide3.png",
               title: "Third Slide",
               description: "This is the third image",
-              buttonText: "Get Started",
-              link: "/get-started",
+              buttonText: "View posts",
+              link: "/posts",
             },
           ]}
           autoPlay

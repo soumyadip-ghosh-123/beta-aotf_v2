@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@heroui/button";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Redirect from "./Redirect";
 type Slide = {
   src: string;
   title?: string;
@@ -23,12 +23,8 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
 }) => {
   const sliderRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
-  const router = useRouter();
-
   const [currentSlide, setCurrentSlide] = useState(0);
-
   const totalSlides = slides.length;
-
   const goToSlide = (index: number) => {
     if (!sliderRef.current) return;
     const slideWidth = sliderRef.current.children[0].clientWidth;
@@ -98,16 +94,15 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
                         </p>
                       )}
                     </div>
-                    <Button
-                      variant="shadow"
-                      color="primary"
-                      className="mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
-                      onPress={() => {
-                        router.push(slide.link || "/");
-                      }}
-                    >
-                      {slide.buttonText || "Learn More"}
-                    </Button>
+                    <Redirect to={slide.link || "/"}>
+                      <Button
+                        variant="shadow"
+                        color="primary"
+                        className="mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
+                      >
+                        {slide.buttonText || "Learn More"}
+                      </Button>
+                    </Redirect>
                   </div>
                 </div>
               )}

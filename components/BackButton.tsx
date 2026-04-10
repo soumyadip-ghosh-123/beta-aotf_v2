@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@heroui/button";
-import { FaChevronLeft } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -21,7 +20,7 @@ const BackButton = ({ title }: BackButtonProps) => {
   }, []);
 
   return (
-    <div className="grid grid-cols-3 items-center mb-2 px-3 mx-auto">
+    <div className="grid grid-cols-3 items-center mb-2 px-3 w-full">
       {canGoBack ? (
         <Button
           size="sm"

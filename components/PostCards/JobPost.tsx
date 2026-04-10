@@ -14,7 +14,6 @@ import {
   type JobShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
-import { User2 } from "lucide-react";
 
 interface JobPostProps {
   jobId: string;

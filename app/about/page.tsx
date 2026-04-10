@@ -1,3 +1,4 @@
+import BackButton from "@/components/BackButton";
 import Stats from "@/components/home/Stats";
 import { title } from "@/components/primitives";
 import { Card, CardHeader } from "@heroui/card";
@@ -7,7 +8,7 @@ import { FiTarget } from "react-icons/fi";
 export default function AboutPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">About Us</h1>
+      <BackButton title="About Us" />
       <Card className="max-w-3xl mx-auto p-3">
         <CardHeader>
           <Image

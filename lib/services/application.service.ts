@@ -588,6 +588,9 @@ export interface UpdateApplicationStatusParams {
   adminId?: mongoose.Types.ObjectId;
   dcDate?: Date;
   gcDate?: Date;
+  paymentDone?: boolean;
+  /** When approving: manual date for post.paymentDate (paid) or post.tentativeDate (pending). */
+  postPaymentDate?: Date;
   reason?: string;
 }
 
@@ -608,7 +611,16 @@ export async function updateApplicationStatus(
 ): Promise<IApplication> {
   await dbConnect();
 
-  const { applicationId, status, adminId, dcDate, gcDate, reason } = params;
+  const {
+    applicationId,
+    status,
+    adminId,
+    dcDate,
+    gcDate,
+    paymentDone,
+    postPaymentDate,
+    reason,
+  } = params;
 
   console.log("[updateApplicationStatus] Received params:", {
     applicationId,
@@ -616,6 +628,8 @@ export async function updateApplicationStatus(
     adminId: adminId?.toString(),
     dcDate,
     gcDate,
+    paymentDone,
+    postPaymentDate,
     reason,
   });
 
@@ -685,6 +699,12 @@ export async function updateApplicationStatus(
         "A reason is required when declining an application",
       );
     }
+  }
+
+  if (status === "approved" && typeof paymentDone !== "boolean") {
+    throw new ConflictError(
+      "Payment status is required when approving an application",
+    );
   }
 
   // ─── Build update object ──────────────────────────────────────────────
@@ -777,6 +797,29 @@ export async function updateApplicationStatus(
     throw new NotFoundError("Application");
   }
 
+  if (status === "approved" && application.postId) {
+    const defaultTentative = new Date(
+      now.getTime() + 25 * 24 * 60 * 60 * 1000,
+    );
+    const paymentDate = paymentDone
+      ? (postPaymentDate ?? now)
+      : null;
+    const tentativeDate = paymentDone
+      ? null
+      : (postPaymentDate ?? defaultTentative);
+    await Post.updateOne(
+      { postId: application.postId },
+      {
+        $set: {
+          paymentstatus: paymentDone ? "done" : "pending",
+          paymentDate,
+          tentativeDate,
+        },
+      },
+      { runValidators: true },
+    );
+  }
+
   // ─── Auto-decline others when approved ────────────────────────────────
 
   if (status === "approved") {
@@ -813,6 +856,19 @@ export async function updateApplicationStatus(
     status !== "decline" &&
     status !== "withdrawn"
   ) {
+    if (application.postId) {
+      await Post.updateOne(
+        { postId: application.postId },
+        {
+          $set: {
+            paymentstatus: null,
+            paymentDate: null,
+            tentativeDate: null,
+          },
+        },
+      );
+    }
+
     // Revert auto-declined applications back to applied
     const filter: Record<string, unknown> = {
       status: "auto_declined",

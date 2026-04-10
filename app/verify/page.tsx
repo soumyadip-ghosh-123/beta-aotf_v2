@@ -13,7 +13,6 @@ import {
   Camera,
   CameraOff,
   Search,
-  ScanLine,
   ShieldCheck,
   FlipHorizontal2,
   Keyboard,
