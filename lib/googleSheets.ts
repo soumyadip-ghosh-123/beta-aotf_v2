@@ -32,7 +32,7 @@ export async function getGoogleSheetsClient(): Promise<sheets_v4.Sheets> {
       });
 
       const authClient = await auth.getClient();
-      return google.sheets({ version: "v4", auth: authClient });
+      return google.sheets({ version: "v4", auth });
     })();
   }
 

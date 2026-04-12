@@ -200,6 +200,12 @@ export async function syncPostLedgerRowToSheet(ledger: IPostLedger): Promise<voi
       });
 
       const updatedRange = appendResponse.data.updates?.updatedRange;
+
+      if (!updatedRange) {
+        console.error("Missing updatedRange");
+        return;
+      }
+
       const newRowIndex = parseRowNumberFromA1Range(updatedRange);
 
       if (!newRowIndex) {

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint --fix",
-    "seed": "tsx scripts/seed-superadmin.ts"
+    "seed": "tsx scripts/seed-superadmin.ts",
+    "test:sheets": "tsx scripts/test-sheets.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.0",
