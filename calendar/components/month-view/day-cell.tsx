@@ -32,7 +32,7 @@ export function DayCell({ cell, events, eventPositions }: IProps) {
 
   const handleClick = () => {
     setSelectedDate(date);
-    push("/day-view");
+    push("/admin/day-view");
   };
 
   return (
