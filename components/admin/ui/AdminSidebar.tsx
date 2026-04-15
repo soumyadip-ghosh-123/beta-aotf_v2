@@ -25,6 +25,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/admin",              label: "Dashboard",        icon: LayoutDashboard },
+  { href: "/admin/agenda-view",  label: "Calendar",         icon: CalendarDays    },
   { href: "/admin/tuitions",     label: "Tuitions",         icon: BookOpen        },
   { href: "/admin/jobs",         label: "Jobs",             icon: Briefcase       },
   { href: "/admin/enquiries",    label: "Enquiries",        icon: MessageSquare   },
@@ -34,7 +35,6 @@ const NAV_ITEMS = [
   { href: "/admin/teachers",     label: "Renowned Teachers",icon: GraduationCap   },
   { href: "/admin/ads",          label: "Ads",              icon: Megaphone       },
   { href: "/admin/invoices",     label: "Invoices",         icon: FileText        },
-  { href: "/admin/calendar",     label: "Calendar",         icon: CalendarDays    },
   { href: "/admin/settings",     label: "Settings",         icon: Settings        },
 ];
 
