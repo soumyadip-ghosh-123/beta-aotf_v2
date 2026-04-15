@@ -1,20 +1,21 @@
 import { CalendarProvider } from "@/calendar/contexts/calendar-context";
-import AdminFab from "@/components/admin/ui/AdminFab";
-import AdminSidebar from "@/components/admin/ui/AdminSidebar";
 import { getEvents, getUsers } from "@/calendar/requests";
+import BackButton from "@/components/BackButton";
 
-export default async function AdminLayout({
+export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [events, users] = await Promise.all([getEvents(), getUsers()]);
+
   return (
     <>
+      <BackButton title="Calendar" />
       <CalendarProvider users={users} events={events}>
-        <AdminSidebar />
-        {children}
-        <AdminFab />
+        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 py-4">
+          {children}
+        </div>
       </CalendarProvider>
     </>
   );

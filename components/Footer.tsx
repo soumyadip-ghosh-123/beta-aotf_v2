@@ -6,7 +6,7 @@ import { FaFacebookSquare } from "react-icons/fa";
 import { GrInstagram } from "react-icons/gr";
 import { FaLinkedin } from "react-icons/fa6";
 import ButtonGroup from "./ButtonGroup";
-import WhatsAppButton from "./ui/WhatsApp";
+import WhatsAppButton from "./ui/icons/WhatsApp";
 
 const Footer = () => {
   return (
