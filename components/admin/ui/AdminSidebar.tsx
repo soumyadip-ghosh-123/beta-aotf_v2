@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { href: "/admin/teachers",     label: "Renowned Teachers",icon: GraduationCap   },
   { href: "/admin/ads",          label: "Ads",              icon: Megaphone       },
   { href: "/admin/invoices",     label: "Invoices",         icon: FileText        },
-  { href: "/admin/settings",     label: "Settings",         icon: Settings        },
+  { href: "/admin/settings",     label: "Accounts",         icon: Settings        },
 ];
 
 // ─── Component ─────────────────────────────────────────────────────────────

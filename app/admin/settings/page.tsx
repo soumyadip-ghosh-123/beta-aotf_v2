@@ -166,59 +166,9 @@ export default function SettingsPage() {
       {/* Header */}
       <h1 className="text-2xl font-bold text-default-900 flex items-center gap-2">
         <Settings size={24} className="text-default-500" />
-        Admin Settings
+        Accounts
       </h1>
-
-      {/* Tab Navigation */}
-      <div className="w-full flex justify-center">
-        <Tabs
-          selectedKey={activeTab}
-          onSelectionChange={(key) => setActiveTab(key as SettingsTab)}
-          aria-label="Settings sections"
-          color="primary"
-          variant="underlined"
-          classNames={{
-            tabList:
-              "gap-1 w-full relative rounded-none p-0 border-b border-divider",
-            cursor: "w-full bg-primary",
-            tab: "max-w-fit px-2 h-12",
-            tabContent: "group-data-[selected=true]:text-primary",
-          }}
-        >
-          <Tab
-            key="accounts"
-            title={
-              <div className="flex items-center gap-2">
-                <Shield size={16} />
-                <span>Admin Accounts</span>
-              </div>
-            }
-          />
-          <Tab
-            key="notifications"
-            title={
-              <div className="flex items-center gap-2">
-                <Bell size={16} />
-                <span>Notifications</span>
-              </div>
-            }
-          />
-        </Tabs>
-      </div>
-
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {activeTab === "accounts" && <AdminAccountsSection />}
-          {activeTab === "notifications" && <NotificationSettingsSection />}
-        </motion.div>
-      </AnimatePresence>
+      <AdminAccountsSection />
     </div>
   );
 }
