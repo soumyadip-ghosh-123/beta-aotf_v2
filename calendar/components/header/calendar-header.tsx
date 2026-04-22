@@ -67,7 +67,7 @@ export function CalendarHeader({ view, events }: IProps) {
               </Link>
             </Button>
 
-            <Button
+            {/* <Button
               aria-label="View by year"
               isIconOnly
               variant={view === "year" ? "solid" : "flat"}
@@ -76,7 +76,7 @@ export function CalendarHeader({ view, events }: IProps) {
               <Link href="/admin/year-view">
                 <Grid3x3 strokeWidth={1.8} />
               </Link>
-            </Button>
+            </Button> */}
 
             <Button
               aria-label="View by agenda"
@@ -95,7 +95,6 @@ export function CalendarHeader({ view, events }: IProps) {
 
         <AddEventDialog>
           <Button className="w-full sm:w-auto">
-            <Plus />
             Add Event
           </Button>
         </AddEventDialog>

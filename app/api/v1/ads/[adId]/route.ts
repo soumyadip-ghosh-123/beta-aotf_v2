@@ -1,31 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   handleApiError,
-  checkCsrfOrigin,
   checkRateLimit,
   getClientIp,
   checkJsonContentType,
 } from "@/lib/api-utils";
-import { updateAdSchema } from "@/lib/validations/ad";
 import {
-  getAdByAdId,
-  updateAd,
-  deleteAd,
+  getPublicAdByAdId,
   recordImpression,
   recordClick,
 } from "@/lib/services/ad.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { adIdParamSchema } from "@/lib/validations/api-route";
 
-/** 60 reads per IP per minute */
-const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
+/** 120 reads per IP per minute */
+const readLimiter = createRateLimiter({ windowMs: 60_000, max: 120 });
 
-/** 20 mutations per IP per minute */
-const mutateLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
+/** 60 tracking events per IP per minute */
+const mutateLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 
 /**
  * GET /api/v1/ads/[adId]
- * Get a single ad by its adId.
+ * Public: get a single active ad by its adId.
  */
 export async function GET(
   request: NextRequest,
@@ -37,7 +33,7 @@ export async function GET(
     if (rateLimitBlock) return rateLimitBlock;
 
     const { adId } = adIdParamSchema.parse(await params);
-    const ad = await getAdByAdId(adId);
+    const ad = await getPublicAdByAdId(adId);
 
     return NextResponse.json(
       { ad },
@@ -54,21 +50,17 @@ export async function GET(
 
 /**
  * PATCH /api/v1/ads/[adId]
- * Admin-facing: update an ad.
+ * Public: record analytics events only.
  *
- * Special body keys:
+ * Body:
  *   { _action: "impression" } — increment impressions counter
  *   { _action: "click" }      — increment clicks counter
- *   Otherwise                  — standard field update
  */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ adId: string }> },
 ) {
   try {
-    const csrfBlock = checkCsrfOrigin(request);
-    if (csrfBlock) return csrfBlock;
-
     const ctBlock = checkJsonContentType(request);
     if (ctBlock) return ctBlock;
 
@@ -79,7 +71,6 @@ export async function PATCH(
     const { adId } = adIdParamSchema.parse(await params);
     const body = await request.json();
 
-    // Handle analytics actions
     if (body._action === "impression") {
       await recordImpression(adId);
       return NextResponse.json({ message: "Impression recorded" });
@@ -89,40 +80,11 @@ export async function PATCH(
       return NextResponse.json({ message: "Click recorded" });
     }
 
-    // Standard update
-    const input = updateAdSchema.parse(body);
-    const ad = await updateAd(adId, input);
-
-    return NextResponse.json({
-      message: "Ad updated successfully",
-      ad,
-    });
+    return NextResponse.json(
+      { error: "Unsupported action" },
+      { status: 400 },
+    );
   } catch (error) {
     return handleApiError(error, `PATCH /api/v1/ads/${(await params).adId}`);
-  }
-}
-
-/**
- * DELETE /api/v1/ads/[adId]
- * Admin-facing: delete an ad.
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ adId: string }> },
-) {
-  try {
-    const csrfBlock = checkCsrfOrigin(request);
-    if (csrfBlock) return csrfBlock;
-
-    const ip = getClientIp(request);
-    const rateLimitBlock = checkRateLimit(mutateLimiter, ip);
-    if (rateLimitBlock) return rateLimitBlock;
-
-    const { adId } = adIdParamSchema.parse(await params);
-    await deleteAd(adId);
-
-    return NextResponse.json({ message: "Ad deleted successfully" });
-  } catch (error) {
-    return handleApiError(error, `DELETE /api/v1/ads/${(await params).adId}`);
   }
 }

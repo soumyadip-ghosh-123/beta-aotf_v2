@@ -13,7 +13,7 @@ export default async function Layout({
     <>
       <BackButton title="Calendar" />
       <CalendarProvider users={users} events={events}>
-        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 py-4">
+        <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 py-4 pb-20">
           {children}
         </div>
       </CalendarProvider>

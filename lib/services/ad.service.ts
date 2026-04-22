@@ -31,6 +31,11 @@ export interface AdAnalytics {
   overallCtr: number;
 }
 
+export interface ListPublicAdsInput {
+  placement?: string;
+  limit?: number;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -156,6 +161,72 @@ export async function listAds(input: ListAdsInput): Promise<PaginatedAds> {
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+/**
+ * Public: list active ads for frontend display.
+ * Filters to active ads within optional schedule windows.
+ */
+export async function listPublicAds(
+  input: ListPublicAdsInput,
+): Promise<IAd[]> {
+  await dbConnect();
+
+  const now = new Date();
+  const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
+
+  const filter: Record<string, unknown> = mongoose.trusted({
+    status: "active",
+    $and: [
+      {
+        $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }],
+      },
+      {
+        $or: [{ endDate: { $exists: false } }, { endDate: { $gte: now } }],
+      },
+    ],
+  });
+
+  if (input.placement && input.placement !== "all") {
+    filter.placement = input.placement;
+  }
+
+  return Ad.find(filter)
+    .sort({ priority: -1, createdAt: -1 })
+    .setOptions({ sanitizeFilter: false })
+    .limit(limit)
+    .lean<IAd[]>();
+}
+
+/**
+ * Public: get a single active ad by adId.
+ */
+export async function getPublicAdByAdId(adId: string): Promise<IAd> {
+  await dbConnect();
+
+  const now = new Date();
+  const ad = await Ad.findOne(
+    mongoose.trusted({
+    adId,
+    status: "active",
+    $and: [
+      {
+        $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }],
+      },
+      {
+        $or: [{ endDate: { $exists: false } }, { endDate: { $gte: now } }],
+      },
+    ],
+    }),
+  )
+    .setOptions({ sanitizeFilter: false })
+    .lean<IAd>();
+
+  if (!ad) {
+    throw new NotFoundError("Ad");
+  }
+
+  return ad;
 }
 
 /**
@@ -297,17 +368,17 @@ export async function syncAdStatuses(): Promise<number> {
   let modified = 0;
 
   // Expire ads whose endDate has passed
-  const expireResult = await Ad.updateMany(
+  const expireResult = await Ad.collection.updateMany(
     {
       status: { $in: ["active", "scheduled"] },
       endDate: { $lte: now },
     },
     { $set: { status: "expired" } },
   );
-  modified += expireResult.modifiedCount;
+  modified += expireResult.modifiedCount ?? 0;
 
   // Activate scheduled ads whose startDate has passed (and not yet expired)
-  const activateResult = await Ad.updateMany(
+  const activateResult = await Ad.collection.updateMany(
     {
       status: "scheduled",
       startDate: { $lte: now },
@@ -315,7 +386,7 @@ export async function syncAdStatuses(): Promise<number> {
     },
     { $set: { status: "active" } },
   );
-  modified += activateResult.modifiedCount;
+  modified += activateResult.modifiedCount ?? 0;
 
   return modified;
 }

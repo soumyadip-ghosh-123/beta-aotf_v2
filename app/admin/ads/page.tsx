@@ -140,122 +140,6 @@ function computeCtr(impressions: number, clicks: number): string {
   return ((clicks / impressions) * 100).toFixed(2) + "%";
 }
 
-// ─── Sample data (shown when API is unavailable / DB not connected) ───────────
-
-const SAMPLE_ADS: Ad[] = [
-  {
-    id: "AD-01032600",
-    title: "Summer Tuition Offer — 50% Off",
-    adType: "image",
-    placement: "home_banner",
-    imageUrl: "https://placehold.co/728x90/4f46e5/ffffff?text=Summer+Tuition+50%25+Off",
-    targetUrl: "https://aotf.in/posts",
-    advertiser: "Academy of Tutorials and Freelancers",
-    status: "active",
-    startDate: "2026-03-01T00:00:00.000Z",
-    endDate: "2026-04-30T23:59:59.000Z",
-    priority: 90,
-    impressions: 12480,
-    clicks: 387,
-    notes: "Internal promo for summer batch",
-    createdAt: "2026-02-25T10:30:00.000Z",
-  },
-  {
-    id: "AD-01032601",
-    title: "Byju's Partnership Banner",
-    adType: "image",
-    placement: "sidebar",
-    imageUrl: "https://placehold.co/300x250/10b981/ffffff?text=Byju%27s+Learn",
-    targetUrl: "https://byjus.com",
-    advertiser: "Byju's",
-    status: "active",
-    startDate: "2026-02-01T00:00:00.000Z",
-    endDate: "2026-06-30T23:59:59.000Z",
-    priority: 80,
-    impressions: 8920,
-    clicks: 214,
-    createdAt: "2026-01-28T14:15:00.000Z",
-  },
-  {
-    id: "AD-28022600",
-    title: "Unacademy JEE Prep — Enroll Now",
-    adType: "text",
-    placement: "feed_inline",
-    content: "Crack JEE 2026 with India's top educators. Start your free trial today!",
-    targetUrl: "https://unacademy.com/jee",
-    advertiser: "Unacademy",
-    status: "scheduled",
-    startDate: "2026-03-15T00:00:00.000Z",
-    endDate: "2026-05-15T23:59:59.000Z",
-    priority: 70,
-    impressions: 0,
-    clicks: 0,
-    notes: "Scheduled for mid-March launch",
-    createdAt: "2026-02-28T09:00:00.000Z",
-  },
-  {
-    id: "AD-25022600",
-    title: "Physics Wallah — NEET Batch",
-    adType: "image",
-    placement: "popup",
-    imageUrl: "https://placehold.co/600x400/f59e0b/ffffff?text=PW+NEET+Batch",
-    targetUrl: "https://physicswallah.live",
-    advertiser: "Physics Wallah",
-    status: "inactive",
-    priority: 50,
-    impressions: 3200,
-    clicks: 98,
-    createdAt: "2026-02-25T11:45:00.000Z",
-  },
-  {
-    id: "AD-20022600",
-    title: "Khan Academy — Free Resources",
-    adType: "html",
-    placement: "footer",
-    content: "<div style='text-align:center;padding:8px'><strong>Khan Academy</strong> — Free world-class education for anyone, anywhere.</div>",
-    targetUrl: "https://khanacademy.org",
-    advertiser: "Khan Academy",
-    status: "expired",
-    startDate: "2026-01-01T00:00:00.000Z",
-    endDate: "2026-02-28T23:59:59.000Z",
-    priority: 40,
-    impressions: 15600,
-    clicks: 520,
-    createdAt: "2025-12-20T08:00:00.000Z",
-  },
-  {
-    id: "AD-15022600",
-    title: "Vedantu Live Classes — Board Exams",
-    adType: "image",
-    placement: "home_banner",
-    imageUrl: "https://placehold.co/728x90/ec4899/ffffff?text=Vedantu+Board+Exam+Prep",
-    targetUrl: "https://vedantu.com",
-    advertiser: "Vedantu",
-    status: "active",
-    startDate: "2026-02-15T00:00:00.000Z",
-    endDate: "2026-03-31T23:59:59.000Z",
-    priority: 85,
-    impressions: 6750,
-    clicks: 189,
-    createdAt: "2026-02-14T16:30:00.000Z",
-  },
-];
-
-const SAMPLE_ANALYTICS: Analytics = {
-  totalAds: SAMPLE_ADS.length,
-  activeAds: SAMPLE_ADS.filter((a) => a.status === "active").length,
-  scheduledAds: SAMPLE_ADS.filter((a) => a.status === "scheduled").length,
-  expiredAds: SAMPLE_ADS.filter((a) => a.status === "expired").length,
-  totalImpressions: SAMPLE_ADS.reduce((s, a) => s + a.impressions, 0),
-  totalClicks: SAMPLE_ADS.reduce((s, a) => s + a.clicks, 0),
-  overallCtr: parseFloat(
-    (
-      (SAMPLE_ADS.reduce((s, a) => s + a.clicks, 0) /
-        Math.max(SAMPLE_ADS.reduce((s, a) => s + a.impressions, 0), 1)) *
-      100
-    ).toFixed(2),
-  ),
-};
 
 // ─── Default form state ───────────────────────────────────────────────────────
 
@@ -313,14 +197,10 @@ export default function AdsPage() {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-  // ─── Whether we're showing sample data (API unavailable) ────────────
-  const [usingSampleData, setUsingSampleData] = useState(false);
-
   // ─── Fetch ads ──────────────────────────────────────────────────────────
   const fetchAds = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
-    setUsingSampleData(false);
     try {
       const params = new URLSearchParams();
       params.set("limit", "100");
@@ -330,20 +210,23 @@ export default function AdsPage() {
       if (filterPlacement) params.set("placement", filterPlacement);
       if (debouncedSearch) params.set("search", debouncedSearch);
 
-      const res = await fetch(`/api/v1/ads?${params.toString()}`);
+      const res = await fetch(`/api/v1/admin/ads?${params.toString()}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Failed to fetch ads (${res.status})`);
+        const message = data.error || `Failed to fetch ads (${res.status})`;
+        if (res.status === 401 || res.status === 403) {
+          setFetchError(message);
+          return;
+        }
+        throw new Error(message);
       }
       const data = await res.json();
       setAds((data.ads ?? []).map(mapApiAd));
       if (data.analytics) setAnalytics(data.analytics);
-    } catch {
-      // API unavailable (DB not connected, etc.) — show sample data
-      console.warn("[Ads] API unavailable, loading sample data");
-      setAds(SAMPLE_ADS);
-      setAnalytics(SAMPLE_ANALYTICS);
-      setUsingSampleData(true);
+    } catch (err) {
+      setFetchError(
+        err instanceof Error ? err.message : "Failed to fetch ads",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -466,50 +349,19 @@ export default function AdsPage() {
       advertiser: form.advertiser.trim(),
       status: form.status,
       priority: parseInt(form.priority, 10) || 0,
-    };    if (form.imageUrl.trim()) payload.imageUrl = form.imageUrl.trim();
+    };
+    if (form.imageUrl.trim()) payload.imageUrl = form.imageUrl.trim();
     if (form.content.trim()) payload.content = form.content.trim();
     if (form.targetUrl.trim()) payload.targetUrl = form.targetUrl.trim();
     if (form.notes.trim()) payload.notes = form.notes.trim();
     if (form.startDate) payload.startDate = new Date(form.startDate).toISOString();
     if (form.endDate) payload.endDate = new Date(form.endDate).toISOString();
 
-    // Sample-data mode: simulate locally
-    if (usingSampleData) {
-      const isEditing = !!editingAd;
-      if (isEditing) {
-        setAds((prev) => prev.map((a) => (a.id === editingAd!.id ? { ...a, ...payload as Partial<Ad> } : a)));
-      } else {
-        const newAd: Ad = {
-          id: `AD-${String(Date.now()).slice(-8)}`,
-          title: payload.title as string,
-          adType: payload.adType as Ad["adType"],
-          placement: payload.placement as string,
-          advertiser: payload.advertiser as string,
-          status: payload.status as Ad["status"],
-          priority: payload.priority as number,
-          imageUrl: payload.imageUrl as string | undefined,
-          content: payload.content as string | undefined,
-          targetUrl: payload.targetUrl as string | undefined,
-          notes: payload.notes as string | undefined,
-          startDate: payload.startDate as string | undefined,
-          endDate: payload.endDate as string | undefined,
-          impressions: 0,
-          clicks: 0,
-          createdAt: new Date().toISOString(),
-        };
-        setAds((prev) => [newAd, ...prev]);
-      }
-      addToast({ description: `Ad ${isEditing ? "updated" : "created"} (sample mode — not persisted)`, color: "warning" });
-      setIsFormOpen(false);
-      setEditingAd(null);
-      setForm({ ...emptyForm });
-      setIsSaving(false);
-      return;
-    }
-
     try {
       const isEditing = !!editingAd;
-      const url = isEditing ? `/api/v1/ads/${editingAd!.id}` : `/api/v1/ads`;
+      const url = isEditing
+        ? `/api/v1/admin/ads/${editingAd!.id}`
+        : `/api/v1/admin/ads`;
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -550,18 +402,8 @@ export default function AdsPage() {
     if (!deleteTarget) return;
     setIsDeleting(true);
 
-    // Sample-data mode: remove locally
-    if (usingSampleData) {
-      setAds((prev) => prev.filter((a) => a.id !== deleteTarget.id));
-      addToast({ description: "Ad deleted (sample mode — not persisted)", color: "warning" });
-      closeDelete();
-      setDeleteTarget(null);
-      setIsDeleting(false);
-      return;
-    }
-
     try {
-      const res = await fetch(`/api/v1/ads/${deleteTarget.id}`, {
+      const res = await fetch(`/api/v1/admin/ads/${deleteTarget.id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -585,20 +427,8 @@ export default function AdsPage() {
   const toggleStatus = async (ad: Ad) => {
     const newStatus = ad.status === "active" ? "inactive" : "active";
 
-    // Sample-data mode: toggle locally
-    if (usingSampleData) {
-      setAds((prev) =>
-        prev.map((a) => (a.id === ad.id ? { ...a, status: newStatus } : a)),
-      );
-      addToast({
-        description: `Ad ${newStatus === "active" ? "activated" : "deactivated"} (sample mode)`,
-        color: "warning",
-      });
-      return;
-    }
-
     try {
-      const res = await fetch(`/api/v1/ads/${ad.id}`, {
+      const res = await fetch(`/api/v1/admin/ads/${ad.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -628,16 +458,6 @@ export default function AdsPage() {
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="container mx-auto px-4 max-w-7xl space-y-4">
-      {/* Sample data banner */}
-      {usingSampleData && (
-        <div className="flex items-center gap-2 rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 px-4 py-2.5">
-          <AlertTriangle size={16} className="text-warning-600 shrink-0" />
-          <p className="text-sm text-warning-700 dark:text-warning-400">
-            <span className="font-semibold">Sample data</span> — API is unavailable (database not connected). Showing demo ads. Create/edit/delete actions won&apos;t persist.
-          </p>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -853,15 +673,6 @@ export default function AdsPage() {
                     <CardBody className="py-14 text-center space-y-3">
                       <Megaphone size={48} className="mx-auto text-default-300" />
                       <p className="text-default-500">No ads found. Create your first ad!</p>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        variant="flat"
-                        startContent={<Plus size={16} />}
-                        onPress={openCreateForm}
-                      >
-                        Create Ad
-                      </Button>
                     </CardBody>
                   </Card>
                 ) : (
