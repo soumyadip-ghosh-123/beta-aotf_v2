@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Clock,
   Edit,
+  FileText,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
 import {
@@ -69,6 +70,7 @@ interface TuitionPostCardProps {
   onCancel?: (post: TuitionPost) => void;
   onView?: (post: TuitionPost) => void;
   onEdit?: (post: TuitionPost) => void;
+  onInvoice?: (post: TuitionPost) => void;
 }
 
 export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
@@ -77,6 +79,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
   onCancel,
   onView,
   onEdit,
+  onInvoice,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,6 +138,19 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
     };
     shareOnWhatsApp(formatTuitionShare(shareData));
     onShare?.(post);
+  };
+
+  const handleInvoiceShare = () => {
+    const invoiceUrl = `${window.location.origin}/invoice/${post.id}`;
+    const message = [
+      `Invoice for tuition post ${post.id}`,
+      `Open here: ${invoiceUrl}`,
+      `Guardian: ${post.guardian}`,
+      `Location: ${post.location}`,
+    ].join("\n");
+
+    shareOnWhatsApp(message);
+    onInvoice?.(post);
   };
 
   return (
@@ -366,6 +382,16 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
         >
           {post.status === "cancelled" ? "Restore" : "Cancel"}
         </Button>
+        <Button
+          isIconOnly
+          size="sm"
+          color="success"
+          variant="solid"
+          startContent={<FileText size={16} />}
+          aria-label="Share invoice"
+          onPress={handleInvoiceShare}
+          className="flex-1"
+        ></Button>
         <Button
           size="sm"
           color="success"
