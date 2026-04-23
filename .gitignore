@@ -49,3 +49,5 @@ aotf-21-c52aced2c4d7.json
 # postman configuration (can include secrets)
 /postman/
 .postman/
+
+package/aotf_v2.zip

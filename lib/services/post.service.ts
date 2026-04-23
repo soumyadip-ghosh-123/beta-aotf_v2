@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Post, { type PostStatus, type IPost } from "@/lib/models/Post";
 import Enquiry from "@/lib/models/Enquiry";
+import Invoice from "@/lib/models/Invoice";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
 import {
@@ -37,6 +38,7 @@ export interface PaginatedPosts {
 export type PostWithEnquiryReference = IPost & {
   enquiryReferenceId?: string | null;
   author?: AdminAuthorSummary | null;
+  invoiceId?: string | null;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -137,6 +139,29 @@ async function attachPostAuthors<
   }));
 }
 
+async function attachInvoiceIds<
+  T extends { postId: string },
+>(posts: T[]): Promise<Array<T & { invoiceId: string | null }>> {
+  const postIds = posts.map((post) => post.postId);
+  if (postIds.length === 0) {
+    return posts.map((post) => ({ ...post, invoiceId: null }));
+  }
+
+  const invoices = await Invoice.find(
+    { postId: mongoose.trusted({ $in: postIds }), isLatest: true },
+    { postId: 1, invoiceId: 1 }
+  ).lean();
+
+  const invoiceMap = new Map(
+    invoices.map((inv) => [inv.postId, inv.invoiceId])
+  );
+
+  return posts.map((post) => ({
+    ...post,
+    invoiceId: invoiceMap.get(post.postId) || null,
+  }));
+}
+
 // ─── Service Functions ──────────────────────────────────────────────────
 
 /**
@@ -187,7 +212,8 @@ export async function getPostByPostId(
 
   const [postWithEnquiryReference] = await attachEnquiryReferences([post]);
   const [enrichedPost] = await attachPostAuthors([postWithEnquiryReference]);
-  return enrichedPost;
+  const [withInvoice] = await attachInvoiceIds([enrichedPost]);
+  return withInvoice;
 }
 
 /**
@@ -205,7 +231,8 @@ export async function getPostById(
 
   const [postWithEnquiryReference] = await attachEnquiryReferences([post]);
   const [enrichedPost] = await attachPostAuthors([postWithEnquiryReference]);
-  return enrichedPost;
+  const [withInvoice] = await attachInvoiceIds([enrichedPost]);
+  return withInvoice;
 }
 
 /**
@@ -250,9 +277,10 @@ export async function listPosts(
 
   const postsWithEnquiryReferences = await attachEnquiryReferences(posts);
   const enrichedPosts = await attachPostAuthors(postsWithEnquiryReferences);
+  const finalPosts = await attachInvoiceIds(enrichedPosts);
 
   return {
-    posts: enrichedPosts,
+    posts: finalPosts.map(p => ({ ...p, invoiceGenerated: p.invoiceGenerated || !!p.invoiceId })),
     pagination: {
       page,
       limit,

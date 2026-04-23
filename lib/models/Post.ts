@@ -59,6 +59,7 @@ export interface IPost extends Document {
   matchedTeacherClerkId?: string;
   createdByAdminClerkId?: string;
   updatedByAdminClerkId?: string;
+  invoiceGenerated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,6 +104,7 @@ const PostSchema = new Schema<IPost>(
     matchedTeacherClerkId: { type: String },
     createdByAdminClerkId: { type: String },
     updatedByAdminClerkId: { type: String },
+    invoiceGenerated: { type: Boolean, default: false },
   },
   {
     timestamps: true,

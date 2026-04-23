@@ -19,7 +19,7 @@ import {
   CheckCircle,
   Clock,
   Edit,
-  FileText,
+  Receipt,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
 import {
@@ -50,6 +50,8 @@ export interface TuitionPost {
   notes: string;
   status: "open" | "matched" | "closed" | "cancelled" | "hold";
   type: "post";
+  invoiceId?: string | null;
+  invoiceGenerated?: boolean;
   applicantCount: number;
   applicationStats: {
     pending: number;
@@ -70,7 +72,7 @@ interface TuitionPostCardProps {
   onCancel?: (post: TuitionPost) => void;
   onView?: (post: TuitionPost) => void;
   onEdit?: (post: TuitionPost) => void;
-  onInvoice?: (post: TuitionPost) => void;
+  onGenerateInvoice?: (post: TuitionPost) => void;
 }
 
 export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
@@ -79,7 +81,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
   onCancel,
   onView,
   onEdit,
-  onInvoice,
+  onGenerateInvoice,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,19 +140,6 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
     };
     shareOnWhatsApp(formatTuitionShare(shareData));
     onShare?.(post);
-  };
-
-  const handleInvoiceShare = () => {
-    const invoiceUrl = `${window.location.origin}/invoice/${post.id}`;
-    const message = [
-      `Invoice for tuition post ${post.id}`,
-      `Open here: ${invoiceUrl}`,
-      `Guardian: ${post.guardian}`,
-      `Location: ${post.location}`,
-    ].join("\n");
-
-    shareOnWhatsApp(message);
-    onInvoice?.(post);
   };
 
   return (
@@ -360,8 +349,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3">
-        {" "}
+      <CardFooter className="gap-2 py-3 flex-wrap">
         <Button
           size="sm"
           color="primary"
@@ -383,16 +371,6 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
           {post.status === "cancelled" ? "Restore" : "Cancel"}
         </Button>
         <Button
-          isIconOnly
-          size="sm"
-          color="success"
-          variant="solid"
-          startContent={<FileText size={16} />}
-          aria-label="Share invoice"
-          onPress={handleInvoiceShare}
-          className="flex-1"
-        ></Button>
-        <Button
           size="sm"
           color="success"
           variant="solid"
@@ -402,6 +380,40 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
         >
           View
         </Button>
+        {post.invoiceId ? (
+          <Button
+            size="sm"
+            color="success"
+            variant="flat"
+            startContent={<Receipt size={16} />}
+            onPress={() => window.open(`/invoices/${post.invoiceId}`, "_blank")}
+            className="flex-1"
+          >
+            View Invoice
+          </Button>
+        ) : post.invoiceGenerated ? (
+          <Button
+            size="sm"
+            color="default"
+            variant="flat"
+            startContent={<Receipt size={16} />}
+            isDisabled
+            className="flex-1"
+          >
+            Invoice Created
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            color="secondary"
+            variant="flat"
+            startContent={<Receipt size={16} />}
+            onPress={() => onGenerateInvoice?.(post)}
+            className="flex-1"
+          >
+            Invoice
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

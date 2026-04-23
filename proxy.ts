@@ -38,7 +38,10 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isAdminApiRoute = createRouteMatcher(["/api/v1/admin(.*)"]);
+const isAdminApiRoute = createRouteMatcher([
+  "/api/v1/admin(.*)",
+  "/api/admin(.*)",
+]);
 const isEnquiryApiRoute = createRouteMatcher(["/api/v1/enquiry(.*)"]);
 
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
