@@ -57,6 +57,10 @@ export const updateApplicationStatusBodySchema = z
       .string()
       .datetime({ message: "gcDate must be a valid ISO date string" })
       .optional(),
+    approvedAt: z
+      .string()
+      .datetime({ message: "approvedAt must be a valid ISO date string" })
+      .optional(),
     paymentDone: z.boolean().optional(),
     /** ISO datetime: stored on post as paymentDate (if paid) or tentativeDate (if pending). */
     postPaymentDate: z

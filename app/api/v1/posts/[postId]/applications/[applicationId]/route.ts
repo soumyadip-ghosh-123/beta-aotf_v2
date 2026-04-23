@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     const body = await request.json();
-    const { status, reason, dcDate, gcDate, paymentDone, postPaymentDate } =
+    const { status, reason, dcDate, gcDate, approvedAt, paymentDone, postPaymentDate } =
       updateApplicationStatusBodySchema.parse(body);
 
     // Verify application exists and belongs to this post
@@ -152,6 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       reason,
       dcDate: dcDate ? new Date(dcDate) : undefined,
       gcDate: gcDate ? new Date(gcDate) : undefined,
+      approvedAt: approvedAt ? new Date(approvedAt) : undefined,
       paymentDone,
       postPaymentDate: postPaymentDate ? new Date(postPaymentDate) : undefined,
     });

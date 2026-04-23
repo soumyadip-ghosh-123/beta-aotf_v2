@@ -87,6 +87,7 @@ export default function CandidateDetailPage({
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [dcDate, setDcDate] = useState<string>("");
   const [gcDate, setGcDate] = useState<string>("");
+  const [approvedDate, setApprovedDate] = useState<string>("");
   const [declineReason, setDeclineReason] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -145,6 +146,10 @@ export default function CandidateDetailPage({
         if (app.gcMeta?.scheduledDate) {
           const gcDateTime = new Date(app.gcMeta.scheduledDate);
           setGcDate(gcDateTime.toISOString().slice(0, 16));
+        }
+        if (app.approvalMeta?.approvedAt) {
+          const approvedDateTime = new Date(app.approvalMeta.approvedAt);
+          setApprovedDate(approvedDateTime.toISOString().slice(0, 16));
         }
         if (app.declineMeta?.reason) {
           setDeclineReason(app.declineMeta.reason);
@@ -235,6 +240,14 @@ export default function CandidateDetailPage({
       return;
     }
 
+    if (selectedStatus === "approved" && !approvedDate) {
+      addToast({
+        description: "Please select an approval date",
+        color: "danger",
+      });
+      return;
+    }
+
     setIsUpdating(true);
     try {
       const body: Record<string, unknown> = { status: selectedStatus };
@@ -249,6 +262,8 @@ export default function CandidateDetailPage({
       }
       if (selectedStatus === "approved") {
         body.paymentDone = options?.paymentDone;
+        body.postPaymentDate = options?.postPaymentDateIso;
+        body.approvedAt = new Date(approvedDate).toISOString();
       }
 
       console.log("[Admin Update]", {
@@ -702,6 +717,7 @@ export default function CandidateDetailPage({
                 // Clear date fields when changing status
                 if (val !== "DC") setDcDate("");
                 if (val !== "GC") setGcDate("");
+                if (val !== "approved") setApprovedDate("");
                 if (val !== "decline") setDeclineReason("");
               }}
             >
@@ -740,6 +756,19 @@ export default function CandidateDetailPage({
               />
             )}
 
+            {/* Approved Date Input */}
+            {selectedStatus === "approved" && (
+              <Input
+                type="datetime-local"
+                label="Approval Date"
+                placeholder="Select approval date"
+                value={approvedDate}
+                onChange={(e) => setApprovedDate(e.target.value)}
+                isRequired
+                description="Select the date the application was approved"
+              />
+            )}
+
             {/* Decline Reason */}
             {selectedStatus === "decline" && (
               <Textarea
@@ -760,9 +789,11 @@ export default function CandidateDetailPage({
               isDisabled={
                 (selectedStatus === application.status &&
                   selectedStatus !== "DC" &&
-                  selectedStatus !== "GC") ||
+                  selectedStatus !== "GC" &&
+                  selectedStatus !== "approved") ||
                 (selectedStatus === "DC" && !dcDate) ||
                 (selectedStatus === "GC" && !gcDate) ||
+                (selectedStatus === "approved" && !approvedDate) ||
                 (selectedStatus === "decline" && !declineReason.trim())
               }
             >
@@ -828,13 +859,18 @@ export default function CandidateDetailPage({
               <Radio value="yes">Yes</Radio>
               <Radio value="no">No</Radio>
             </RadioGroup>
+            {paymentDoneChoice && (
+              <Input
+                type="datetime-local"
+                label={paymentDoneChoice === "yes" ? "Payment Date & Time" : "Tentative Payment Date & Time"}
+                value={paymentModalDate}
+                onChange={(e) => setPaymentModalDate(e.target.value)}
+                isRequired
+              />
+            )}
             {paymentDoneChoice === "no" && (
               <p className="text-sm text-warning-700">
-                Tentative payment date will be set to{" "}
-                {new Date(
-                  Date.now() + 25 * 24 * 60 * 60 * 1000,
-                ).toLocaleDateString("en-IN")}
-                .
+                Tentative payment date defaults to 25 days from now.
               </p>
             )}
           </ModalBody>

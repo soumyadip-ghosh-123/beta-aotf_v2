@@ -588,6 +588,7 @@ export interface UpdateApplicationStatusParams {
   adminId?: mongoose.Types.ObjectId;
   dcDate?: Date;
   gcDate?: Date;
+  approvedAt?: Date;
   paymentDone?: boolean;
   /** When approving: manual date for post.paymentDate (paid) or post.tentativeDate (pending). */
   postPaymentDate?: Date;
@@ -617,6 +618,7 @@ export async function updateApplicationStatus(
     adminId,
     dcDate,
     gcDate,
+    approvedAt,
     paymentDone,
     postPaymentDate,
     reason,
@@ -749,7 +751,7 @@ export async function updateApplicationStatus(
   if (status === "approved" && adminId) {
     updateData.approvalMeta = {
       approvedByAdminId: adminId,
-      approvedAt: now,
+      approvedAt: approvedAt ?? now,
     };
   }
 
