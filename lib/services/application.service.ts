@@ -703,12 +703,6 @@ export async function updateApplicationStatus(
     }
   }
 
-  if (status === "approved" && typeof paymentDone !== "boolean") {
-    throw new ConflictError(
-      "Payment status is required when approving an application",
-    );
-  }
-
   // ─── Build update object ──────────────────────────────────────────────
 
   const updateData: Record<string, unknown> = { status };
@@ -799,7 +793,11 @@ export async function updateApplicationStatus(
     throw new NotFoundError("Application");
   }
 
-  if (status === "approved" && application.postId) {
+  if (
+    status === "approved" &&
+    application.postId &&
+    typeof paymentDone === "boolean"
+  ) {
     const defaultTentative = new Date(
       now.getTime() + 25 * 24 * 60 * 60 * 1000,
     );

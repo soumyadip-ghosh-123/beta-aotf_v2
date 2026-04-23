@@ -239,3 +239,12 @@ modal
     has guardian already paid or not
         yes -> store current date and time in db as approve date and show in calendar
         no -> show current date + 25 days as tentative  payment date and store the reminder date in db and show in calendar
+
+
+
+
+1. from start checking --> everything including static page etc.
+2. admin planning
+4. admin accounts --> add employee code, track activity etc
+5. implement things for jobs
+6. store admin name for invoices

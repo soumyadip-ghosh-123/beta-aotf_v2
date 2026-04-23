@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { EBill } from "@/components/Ebill";
 import dbConnect from "@/lib/db";
 import Invoice from "@/lib/models/Invoice";
+import { tuitionFormDefaults } from "@/lib/validations/forms";
 
 interface Props {
   params: Promise<{
@@ -48,6 +49,7 @@ export default async function InvoicePage({ params }: Props) {
     invoiceId: invoiceDoc.invoiceId,
     tutorId: "N/A", // Not currently stored directly on the invoice
     tutorName: invoiceDoc.assignedTeacher?.name || "N/A",
+    tutorPhone: invoiceDoc.assignedTeacher?.phone || "N/A",
   };
 
   return (

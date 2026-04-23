@@ -93,30 +93,6 @@ export default function CandidateDetailPage({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = useState(false);
-  const {
-    isOpen: isPaymentModalOpen,
-    onOpen: onPaymentModalOpen,
-    onClose: onPaymentModalClose,
-  } = useDisclosure();
-  const [paymentDoneChoice, setPaymentDoneChoice] = useState<"" | "yes" | "no">(
-    "",
-  );
-  const [paymentModalDate, setPaymentModalDate] = useState("");
-
-  useEffect(() => {
-    if (!isPaymentModalOpen || !paymentDoneChoice) {
-      return;
-    }
-    const d = new Date();
-    if (paymentDoneChoice === "yes") {
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      setPaymentModalDate(d.toISOString().slice(0, 16));
-    } else {
-      d.setTime(d.getTime() + 25 * 24 * 60 * 60 * 1000);
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      setPaymentModalDate(d.toISOString().slice(0, 16));
-    }
-  }, [isPaymentModalOpen, paymentDoneChoice]);
 
   // Fetch application data
   useEffect(() => {
@@ -201,10 +177,7 @@ export default function CandidateDetailPage({
   };
 
   // Update status
-  const performStatusUpdate = async (options?: {
-    paymentDone?: boolean;
-    postPaymentDateIso?: string;
-  }) => {
+  const performStatusUpdate = async () => {
     if (!selectedStatus || selectedStatus === application?.status) {
       // Check if we're just updating dates for same status
       if (selectedStatus === "DC" && dcDate) {
@@ -261,8 +234,6 @@ export default function CandidateDetailPage({
         body.reason = declineReason.trim();
       }
       if (selectedStatus === "approved") {
-        body.paymentDone = options?.paymentDone;
-        body.postPaymentDate = options?.postPaymentDateIso;
         body.approvedAt = new Date(approvedDate).toISOString();
       }
 
@@ -336,38 +307,7 @@ export default function CandidateDetailPage({
   };
 
   const handleUpdateStatus = async () => {
-    if (selectedStatus === "approved") {
-      setPaymentDoneChoice("");
-      setPaymentModalDate("");
-      onPaymentModalOpen();
-      return;
-    }
-
     await performStatusUpdate();
-  };
-
-  const handleConfirmApprovalPayment = async () => {
-    if (!paymentDoneChoice) {
-      addToast({
-        description: "Please select whether payment is done",
-        color: "danger",
-      });
-      return;
-    }
-
-    if (!paymentModalDate.trim()) {
-      addToast({
-        description: "Please select the date and time to store on the post",
-        color: "danger",
-      });
-      return;
-    }
-
-    onPaymentModalClose();
-    await performStatusUpdate({
-      paymentDone: paymentDoneChoice === "yes",
-      postPaymentDateIso: new Date(paymentModalDate).toISOString(),
-    });
   };
 
   // Helper functions
@@ -452,6 +392,10 @@ export default function CandidateDetailPage({
     const statusOrder = ["applied", "DC", "GC", "approved"];
     const currentIndex = statusOrder.indexOf(application.status);
     const checkpointIndex = statusOrder.indexOf(checkpointStatus);
+
+    if (application.status === "approved" && checkpointStatus === "approved") {
+      return "completed";
+    }
 
     // Handle terminal states
     if (
@@ -842,53 +786,6 @@ export default function CandidateDetailPage({
         </ModalContent>
       </Modal>
 
-      {/* Payment Status Modal (on approval) */}
-      <Modal
-        isOpen={isPaymentModalOpen}
-        onClose={onPaymentModalClose}
-        isDismissable={!isUpdating}
-      >
-        <ModalContent>
-          <ModalHeader>Payment Confirmation</ModalHeader>
-          <ModalBody>
-            <p>Is the payment done by guardian?</p>
-            <RadioGroup
-              value={paymentDoneChoice}
-              onValueChange={(val) => setPaymentDoneChoice(val as "yes" | "no")}
-            >
-              <Radio value="yes">Yes</Radio>
-              <Radio value="no">No</Radio>
-            </RadioGroup>
-            {paymentDoneChoice && (
-              <Input
-                type="datetime-local"
-                label={paymentDoneChoice === "yes" ? "Payment Date & Time" : "Tentative Payment Date & Time"}
-                value={paymentModalDate}
-                onChange={(e) => setPaymentModalDate(e.target.value)}
-                isRequired
-              />
-            )}
-            {paymentDoneChoice === "no" && (
-              <p className="text-sm text-warning-700">
-                Tentative payment date defaults to 25 days from now.
-              </p>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onPaymentModalClose}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleConfirmApprovalPayment}
-              isDisabled={!paymentDoneChoice || !paymentModalDate.trim()}
-              isLoading={isUpdating}
-            >
-              Confirm & Approve
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

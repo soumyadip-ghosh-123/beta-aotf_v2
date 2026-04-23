@@ -349,37 +349,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
 
       <Divider />
 
-      <CardFooter className="gap-2 py-3 flex-wrap">
-        <Button
-          size="sm"
-          color="primary"
-          variant="solid"
-          startContent={<Share2 size={16} />}
-          onPress={handleShare}
-          className="flex-1"
-        >
-          Share
-        </Button>
-        <Button
-          size="sm"
-          color={post.status === "cancelled" ? "success" : "danger"}
-          variant="solid"
-          startContent={<XCircle size={16} />}
-          onPress={() => onCancel?.(post)}
-          className="flex-1"
-        >
-          {post.status === "cancelled" ? "Restore" : "Cancel"}
-        </Button>
-        <Button
-          size="sm"
-          color="success"
-          variant="solid"
-          startContent={<Eye size={16} />}
-          onPress={() => onView?.(post)}
-          className="flex-1"
-        >
-          View
-        </Button>
+      <CardFooter className="grid grid-cols-2 gap-2 py-3 flex-wrap">
         {post.invoiceId ? (
           <Button
             size="sm"
@@ -414,6 +384,36 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             Invoice
           </Button>
         )}
+        <Button
+          size="sm"
+          color="success"
+          variant="solid"
+          startContent={<Eye size={16} />}
+          onPress={() => onView?.(post)}
+          className="flex-1"
+        >
+          View
+        </Button>
+        <Button
+          size="sm"
+          color={post.status === "cancelled" ? "success" : "danger"}
+          variant="solid"
+          startContent={<XCircle size={16} />}
+          onPress={() => onCancel?.(post)}
+          className="flex-1"
+        >
+          {post.status === "cancelled" ? "Restore" : "Cancel"}
+        </Button>
+        <Button
+          size="sm"
+          color="primary"
+          variant="solid"
+          startContent={<Share2 size={16} />}
+          onPress={handleShare}
+          className="flex-1"
+        >
+          Share
+        </Button>
       </CardFooter>
     </Card>
   );

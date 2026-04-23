@@ -24,13 +24,12 @@ interface Props {
   cgst: number;
   roundOff: number;
   total: number;
-
-  // ✅ NEW FIELDS
   postId: string;
   enquiryId?: string;
   invoiceId: string;
   tutorId: string;
   tutorName: string;
+  tutorPhone: string;
 }
 
 export function EBill({
@@ -47,17 +46,14 @@ export function EBill({
   cgst,
   roundOff,
   total,
-
-  // ✅ NEW
   postId,
   enquiryId,
   invoiceId,
-  tutorId,
   tutorName,
+  tutorPhone,
 }: Props) {
   return (
-    <main className="max-w-112.5 mx-auto shadow-lg p-6 flex flex-col gap-6 rounded-2xl bg-white border-dashed border-2 border-slate-200">
-      
+    <main className="max-w-112.5 mx-auto shadow-lg p-3 flex flex-col gap-3 rounded-2xl bg-white border-dashed border-2 border-slate-200">
       {/* HEADER */}
       <header className="text-center space-y-1">
         <img src="/AOTF.svg" alt="AOTF Logo" className="mx-auto w-16 mb-5" />
@@ -81,7 +77,8 @@ export function EBill({
         <Info label="Post ID" value={postId} />
         <Info label="Enquiry ID" value={enquiryId || "-"} />
         <Info label="Invoice ID" value={invoiceId} />
-        <Info label="Tutor" value={`${tutorName} (${tutorId})`} />
+        <Info label="Tutor" value={`${tutorName}`} />
+        <Info label="Tutor Phone" value={tutorPhone} />
       </section>
 
       {/* CUSTOMER */}
@@ -95,7 +92,6 @@ export function EBill({
 
       {/* BILL CARD */}
       <div className="rounded-xl shadow-lg overflow-hidden">
-        
         {/* HEADER */}
         <div className="bg-linear-to-br from-blue-800 to-blue-500 text-white py-2 text-center">
           <h2 className="text-2xl font-bold tracking-widest">E-BILL</h2>
@@ -105,7 +101,6 @@ export function EBill({
         </div>
 
         <div className="p-5">
-          
           {/* ITEMS */}
           <table className="w-full text-xs mb-4">
             <thead>
@@ -126,7 +121,7 @@ export function EBill({
           </table>
 
           {/* SUMMARY */}
-          <div className="space-y-2 border-t pt-4 text-xs">
+          <div className="space-y-2 ">
             <div className="bg-blue-50 p-3 rounded-lg flex justify-between mt-3">
               <span className="font-bold text-blue-900">Total Payable</span>
               <span className="text-xl font-extrabold text-blue-700">
@@ -134,15 +129,12 @@ export function EBill({
               </span>
             </div>
           </div>
-
         </div>
       </div>
 
       {/* FOOTER */}
       <footer className="text-center space-y-3 mt-auto">
-        <p className="text-sm text-slate-500">
-          Thank you for choosing AOTF!
-        </p>
+        <p className="text-sm text-slate-500">Thank you for choosing AOTF!</p>
         <a
           href="https://aotf.in"
           className="px-4 py-1.5 bg-blue-50 text-blue-600 text-xs rounded-full"
