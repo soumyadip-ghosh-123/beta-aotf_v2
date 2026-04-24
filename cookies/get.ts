@@ -2,8 +2,7 @@ import { cookies } from "next/headers";
 
 import { THEMES_VALUES } from "@/constants/theme.const";
 import { DEFAULT_VALUES, THEME_COOKIE_NAME } from "@/constants/cookies.const";
-
-export type TTheme = (typeof THEMES_VALUES)[number];
+import type { TTheme } from "@/types";
 
 export async function getTheme(): Promise<TTheme> {
   const cookieStore = await cookies(); // ✅ FIX
