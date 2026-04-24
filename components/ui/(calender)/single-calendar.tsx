@@ -2,19 +2,24 @@
 
 import * as React from "react";
 import { DayPicker } from "react-day-picker";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { DayPickerProps } from "react-day-picker";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/(calender)/button";
 
 import { cn } from "@/lib/utils";
 
-import type { DayPickerSingleProps } from "react-day-picker";
+type SingleCalendarProps = Omit<DayPickerProps, "mode" | "selected" | "onSelect"> & {
+  selected?: Date;
+  onSelect?: (date: Date | undefined) => void;
+};
 
-function SingleCalendar({ className, classNames, showOutsideDays = true, selected, ...props }: DayPickerSingleProps) {
+function SingleCalendar({ className, classNames, showOutsideDays = true, selected, ...props }: SingleCalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState<Date | undefined>(selected instanceof Date ? selected : undefined);
 
   return (
     <DayPicker
+      mode="single"
       selected={selected}
       showOutsideDays={showOutsideDays}
       month={currentMonth}
@@ -49,8 +54,13 @@ function SingleCalendar({ className, classNames, showOutsideDays = true, selecte
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => <ChevronLeft className={cn("h-4 w-4", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRight className={cn("h-4 w-4", className)} {...props} />,
+        Chevron: ({ className, orientation }) => {
+          const chevronClassName = cn("h-4 w-4", className);
+          if (orientation === "left") return <ChevronLeft className={chevronClassName} />;
+          if (orientation === "right") return <ChevronRight className={chevronClassName} />;
+          if (orientation === "up") return <ChevronUp className={chevronClassName} />;
+          return <ChevronDown className={chevronClassName} />;
+        },
       }}
       {...props}
     />

@@ -39,6 +39,7 @@ export function EditEventDialog({ children, event }: IProps) {
   const { isOpen, onClose, onToggle } = useDisclosure();
   const { users } = useCalendar();
   const { updateEvent } = useUpdateEvent();
+  type DatePickerValue = React.ComponentProps<typeof DatePicker>["value"];
 
   const form = useForm<TEventFormData>({
     resolver: zodResolver(eventSchema),
@@ -155,16 +156,15 @@ export function EditEventDialog({ children, event }: IProps) {
                             form.watch("startDate").getFullYear(),
                             form.watch("startDate").getMonth() + 1,
                             form.watch("startDate").getDate(),
-                          ) as unknown as React.ComponentProps<
-                            typeof DatePicker
-                          >["value"])
+                          ) as unknown as DatePickerValue)
                         : null
                     }
                     onChange={(val) => {
                       if (!val) return;
+                      const date = val as CalendarDate;
                       form.setValue(
                         "startDate",
-                        new Date(val.year, val.month - 1, val.day),
+                        new Date(date.year, date.month - 1, date.day),
                       );
                     }}
                   />
@@ -195,16 +195,15 @@ export function EditEventDialog({ children, event }: IProps) {
                             form.watch("endDate").getFullYear(),
                             form.watch("endDate").getMonth() + 1,
                             form.watch("endDate").getDate(),
-                          ) as unknown as React.ComponentProps<
-                            typeof DatePicker
-                          >["value"])
+                          ) as unknown as DatePickerValue)
                         : null
                     }
                     onChange={(val) => {
                       if (!val) return;
+                      const date = val as CalendarDate;
                       form.setValue(
                         "endDate",
-                        new Date(val.year, val.month - 1, val.day),
+                        new Date(date.year, date.month - 1, date.day),
                       );
                     }}
                   />

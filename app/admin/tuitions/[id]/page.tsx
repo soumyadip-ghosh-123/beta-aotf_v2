@@ -37,7 +37,6 @@ import {
   Phone,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import whatsapp from "../../../../public/whatsapp.svg";
 import Image from "next/image";
 interface TuitionPostData {
   _id: string;
@@ -473,8 +472,9 @@ export default function ViewPostPage({
                     color="secondary"
                     startContent={
                       <Image
-                        src={whatsapp}
+                        src="/whatsapp.svg"
                         alt="WhatsApp"
+                        width={16}
                         height={16}
                         className="text-green-500"
                       />
