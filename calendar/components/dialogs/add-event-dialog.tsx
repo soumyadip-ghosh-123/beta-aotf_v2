@@ -14,7 +14,6 @@ import { Textarea } from "@heroui/input";
 import { DatePicker } from "@heroui/date-picker";
 import { Select, SelectItem } from "@heroui/select";
 
-import type { DateValue } from "@internationalized/date";
 import { CalendarDate, Time } from "@internationalized/date";
 
 import {
@@ -38,6 +37,7 @@ interface IProps {
 
 export function AddEventDialog({ children, startDate, startTime }: IProps) {
   const { users } = useCalendar();
+  type DatePickerValue = React.ComponentProps<typeof DatePicker>["value"];
 
   const form = useForm<TEventFormData>({
     resolver: zodResolver(eventSchema),
@@ -134,14 +134,15 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                             form.watch("startDate").getFullYear(),
                             form.watch("startDate").getMonth() + 1,
                             form.watch("startDate").getDate(),
-                          )
+                          ) as unknown as DatePickerValue
                         : null
                     }
-                    onChange={(val: DateValue | null) => {
+                    onChange={(val) => {
                       if (!val) return;
+                      const date = val as CalendarDate;
                       form.setValue(
                         "startDate",
-                        new Date(val.year, val.month - 1, val.day),
+                        new Date(date.year, date.month - 1, date.day),
                       );
                     }}
                     isInvalid={!!form.formState.errors.startDate}
@@ -178,14 +179,15 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                             form.watch("endDate").getFullYear(),
                             form.watch("endDate").getMonth() + 1,
                             form.watch("endDate").getDate(),
-                          )
+                          ) as unknown as DatePickerValue
                         : null
                     }
-                    onChange={(val: DateValue | null) => {
+                    onChange={(val) => {
                       if (!val) return;
+                      const date = val as CalendarDate;
                       form.setValue(
                         "endDate",
-                        new Date(val.year, val.month - 1, val.day),
+                        new Date(date.year, date.month - 1, date.day),
                       );
                     }}
                     isInvalid={!!form.formState.errors.endDate}
