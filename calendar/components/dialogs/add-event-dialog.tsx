@@ -14,6 +14,7 @@ import { Textarea } from "@heroui/input";
 import { DatePicker } from "@heroui/date-picker";
 import { Select, SelectItem } from "@heroui/select";
 
+import type { DateValue } from "@internationalized/date";
 import { CalendarDate, Time } from "@internationalized/date";
 
 import {
@@ -129,16 +130,14 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                     label="Start date"
                     value={
                       form.watch("startDate")
-                        ? (new CalendarDate(
+                        ? new CalendarDate(
                             form.watch("startDate").getFullYear(),
                             form.watch("startDate").getMonth() + 1,
                             form.watch("startDate").getDate(),
-                          ) as unknown as React.ComponentProps<
-                            typeof DatePicker
-                          >["value"])
+                          )
                         : null
                     }
-                    onChange={(val) => {
+                    onChange={(val: DateValue | null) => {
                       if (!val) return;
                       form.setValue(
                         "startDate",
@@ -175,16 +174,14 @@ export function AddEventDialog({ children, startDate, startTime }: IProps) {
                     label="End date"
                     value={
                       form.watch("endDate")
-                        ? (new CalendarDate(
+                        ? new CalendarDate(
                             form.watch("endDate").getFullYear(),
                             form.watch("endDate").getMonth() + 1,
                             form.watch("endDate").getDate(),
-                          ) as unknown as React.ComponentProps<
-                            typeof DatePicker
-                          >["value"])
+                          )
                         : null
                     }
-                    onChange={(val) => {
+                    onChange={(val: DateValue | null) => {
                       if (!val) return;
                       form.setValue(
                         "endDate",
