@@ -1,4 +1,36 @@
 /** @type {import('next').NextConfig} */
+const DEFAULT_CLERK_ORIGINS = [
+  "https://*.clerk.accounts.dev",
+  "https://*.clerk.dev",
+  "https://clerk.aotf.sayantanbal.in",
+];
+
+function toHttpsOrigin(value) {
+  if (!value) return null;
+
+  try {
+    const hasScheme = /^https?:\/\//i.test(value);
+    const url = new URL(hasScheme ? value : `https://${value}`);
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+function getClerkOrigins() {
+  const envDerivedOrigins = [
+    process.env.NEXT_PUBLIC_CLERK_FRONTEND_API,
+    process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL,
+    process.env.CLERK_FAPI,
+    process.env.CLERK_PROXY_URL,
+    process.env.NEXT_PUBLIC_CLERK_PROXY_URL,
+  ]
+    .map(toHttpsOrigin)
+    .filter(Boolean);
+
+  return Array.from(new Set([...DEFAULT_CLERK_ORIGINS, ...envDerivedOrigins]));
+}
+
 const nextConfig = {
   allowedDevOrigins: ["unproductive-superuniversally-lizbeth.ngrok-free.dev"],
 
@@ -24,6 +56,8 @@ const nextConfig = {
   // Security headers
   async headers() {
     const isProd = process.env.NODE_ENV === "production";
+    const clerkOrigins = getClerkOrigins();
+    const clerkOriginsStr = clerkOrigins.join(" ");
     return [
       {
         source: "/(.*)",
@@ -53,13 +87,14 @@ const nextConfig = {
               // Clerk serves its runtime from subdomains like *.clerk.accounts.dev.
               // Keep dev unsafe-eval for Next HMR while allowing Clerk script origins.
               isProd
-                ? "script-src 'self' 'unsafe-inline' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com"
-                : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com",
+                ? `script-src 'self' 'unsafe-inline' ${clerkOriginsStr} https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com`
+                : `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${clerkOriginsStr} https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://checkout.razorpay.com`,
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'", // HeroUI uses inline styles
               "img-src 'self' data: https: blob:", // allow remote images
               "font-src 'self' data:",
-              "connect-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://api.clerk.com https://clerk-telemetry.com https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://lumberjack.razorpay.com https://api.razorpay.com https:",
-              "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://api.razorpay.com https://checkout.razorpay.com",
+              `connect-src 'self' ${clerkOriginsStr} https://api.clerk.com https://clerk-telemetry.com https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://lumberjack.razorpay.com https://api.razorpay.com https:`,
+              `frame-src 'self' ${clerkOriginsStr} https://hcaptcha.com https://*.hcaptcha.com https://challenges.cloudflare.com https://api.razorpay.com https://checkout.razorpay.com`,
               "frame-ancestors 'none'", // equivalent to X-Frame-Options DENY
               "base-uri 'self'",
               "form-action 'self'",
@@ -72,7 +107,6 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
 
 // Injected content via Sentry wizard below
 
