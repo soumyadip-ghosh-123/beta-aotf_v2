@@ -5,7 +5,7 @@ export default function SignUpPage() {
   return (
     <>
       <BackButton title="Sign Up" />
-      <SignUp signInUrl="/sign-in?mode=link-account" />
+      <SignUp signInUrl="/sign-in" />
     </>
   );
 }

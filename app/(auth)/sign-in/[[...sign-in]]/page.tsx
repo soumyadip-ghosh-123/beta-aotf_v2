@@ -19,10 +19,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           guide you to add password login as an additional sign-in method.
         </div>
       ) : null}
-      <SignIn
-        forceRedirectUrl={linkMode ? "/verify/link-account" : undefined}
-        fallbackRedirectUrl={linkMode ? "/verify/link-account" : undefined}
-      />
+      <SignIn />
     </>
   );
 }
