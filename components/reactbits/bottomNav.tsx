@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, GraduationCap, BriefcaseBusiness, User } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
+import {
+  Home,
+  GraduationCap,
+  BriefcaseBusiness,
+  User,
+  MailQuestionMark,
+} from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { user, isSignedIn } = useUser();
+  const username = user?.username?.trim();
+  const profilePath = username ? `/u/${username}` : "/dashboard";
 
   // ❌ Hide navbar on /admin
   if (pathname.startsWith("/admin")) return null;
@@ -14,17 +24,17 @@ export default function BottomNav() {
     { icon: Home, label: "Home", path: "/" },
     { icon: GraduationCap, label: "Tuitions", path: "/posts" },
     { icon: BriefcaseBusiness, label: "Jobs", path: "/jobs" },
-    { icon: User, label: "Profile", path: "/profile" },
+    isSignedIn
+      ? { icon: User, label: "Profile", path: profilePath }
+      : { icon: MailQuestionMark, label: "Enquiry", path: "/enquiry" },
   ];
 
-  const activeIndex =
-    items.findIndex((item) => pathname === item.path) || 0;
+  const activeIndex = items.findIndex((item) => pathname === item.path) || 0;
 
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[70%] max-w-sm z-50">
       <div className="bg-white/80 backdrop-blur-lg border border-gray-200 shadow-xl rounded-2xl overflow-hidden">
         <ul className="flex relative">
-
           <span
             className="absolute top-0 h-full w-[25%] transition-all duration-300"
             style={{
@@ -44,9 +54,7 @@ export default function BottomNav() {
                 <Link
                   href={item.path}
                   className={`flex flex-col items-center justify-center py-2 transition-all ${
-                    isActive
-                      ? "text-pink-500 scale-95"
-                      : "text-gray-400"
+                    isActive ? "text-pink-500 scale-95" : "text-gray-400"
                   }`}
                 >
                   <Icon size={22} />

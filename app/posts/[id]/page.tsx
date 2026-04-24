@@ -51,13 +51,25 @@ const getStatusBadge = (status: string) => {
 const getClassTypeIcon = (type: string) => {
   switch (type) {
     case "offline":
-      return { icon: <FaHome size={30} className="text-primary" />, label: "Offline At Home" };
+      return {
+        icon: <FaHome size={30} className="text-primary" />,
+        label: "Offline At Home",
+      };
     case "online":
-      return { icon: <MdOutlineOnlinePrediction size={30} className="text-primary" />, label: "Online" };
+      return {
+        icon: <MdOutlineOnlinePrediction size={30} className="text-primary" />,
+        label: "Online",
+      };
     case "both":
-      return { icon: <FaHome size={30} className="text-primary" />, label: "Both Online & Offline" };
+      return {
+        icon: <FaHome size={30} className="text-primary" />,
+        label: "Both Online & Offline",
+      };
     default:
-      return { icon: <FaHome size={30} className="text-primary" />, label: type };
+      return {
+        icon: <FaHome size={30} className="text-primary" />,
+        label: type,
+      };
   }
 };
 
@@ -142,10 +154,12 @@ export default async function PostDetailPage({
         </p>
         <div className="flex items-baseline gap-2 mb-4">
           <h2 className="text-primary text-[26px] font-bold tracking-tight">
-            ₹{post.monthlyBudget.toLocaleString()}
+            {post.monthlyBudget > 0
+              ? "₹" + post.monthlyBudget.toLocaleString()
+              : "Fees to be discussed"}
           </h2>
           <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-            /month
+            {post.monthlyBudget > 0 ? "/month" : ""}
           </span>
         </div>
       </div>

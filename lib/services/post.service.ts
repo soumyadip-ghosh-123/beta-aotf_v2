@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { type Document } from "mongoose";
 import dbConnect from "@/lib/db";
 import Post, { type PostStatus, type IPost } from "@/lib/models/Post";
 import Enquiry from "@/lib/models/Enquiry";
@@ -35,7 +35,9 @@ export interface PaginatedPosts {
   };
 }
 
-export type PostWithEnquiryReference = IPost & {
+type PostLean = Omit<IPost, keyof Document>;
+
+export type PostWithEnquiryReference = PostLean & {
   enquiryReferenceId?: string | null;
   author?: AdminAuthorSummary | null;
   invoiceId?: string | null;
@@ -205,7 +207,7 @@ export async function getPostByPostId(
 ): Promise<PostWithEnquiryReference> {
   await dbConnect();
 
-  const post = await Post.findOne({ postId }).lean<IPost>();
+  const post = await Post.findOne({ postId }).lean<PostLean>();
   if (!post) {
     throw new NotFoundError("Post");
   }
@@ -224,7 +226,7 @@ export async function getPostById(
 ): Promise<PostWithEnquiryReference> {
   await dbConnect();
 
-  const post = await Post.findById(id).lean<IPost>();
+  const post = await Post.findById(id).lean<PostLean>();
   if (!post) {
     throw new NotFoundError("Post");
   }
@@ -243,7 +245,7 @@ export async function listPosts(
 ): Promise<PaginatedPosts> {
   await dbConnect();
 
-  const { status, page, limit, search } = input;
+  const { status, page, limit, search, subjects, boards, classType, minBudget, maxBudget } = input;
 
   // Build filter
   const filter: Record<string, unknown> = {};
@@ -255,7 +257,7 @@ export async function listPosts(
       $regex: escapeRegex(search),
       $options: "i",
     });
-    filter.$or = mongoose.trusted([
+    const orFilters: Array<Record<string, unknown>> = [
       { postId: searchRegex },
       { guardianName: searchRegex },
       { guardianPhone: searchRegex },
@@ -263,7 +265,58 @@ export async function listPosts(
       { "students.className": searchRegex },
       { "students.board": searchRegex },
       { "students.subjectsNormalized": searchRegex },
-    ]);
+    ];
+
+    const numericSearch = Number(search);
+    const match = search.match(/\d+/);
+    const numericFromText = match ? Number(match[0]) : Number.NaN;
+    const effectiveNumeric = !Number.isNaN(numericSearch)
+      ? numericSearch
+      : numericFromText;
+    if (!Number.isNaN(effectiveNumeric)) {
+      orFilters.push({ monthlyBudget: effectiveNumeric });
+      orFilters.push({ frequencyPerWeek: effectiveNumeric });
+    }
+
+    filter.$or = mongoose.trusted(orFilters);
+  }
+
+  const subjectList = subjects
+    ? subjects
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  if (subjectList.length > 0) {
+    filter["students.subjectsNormalized"] = mongoose.trusted({
+      $in: subjectList,
+    });
+  }
+
+  const boardList = boards
+    ? boards
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean)
+    : [];
+  if (boardList.length > 0) {
+    const boardRegexes = boardList.map(
+      (board) => new RegExp(`^${escapeRegex(board)}$`, "i"),
+    );
+    filter["students.board"] = mongoose.trusted({
+      $in: boardRegexes,
+    });
+  }
+
+  if (classType && classType !== "all") {
+    filter.classType = classType;
+  }
+
+  if (minBudget !== undefined || maxBudget !== undefined) {
+    filter.monthlyBudget = mongoose.trusted({
+      ...(minBudget !== undefined ? { $gte: minBudget } : {}),
+      ...(maxBudget !== undefined ? { $lte: maxBudget } : {}),
+    });
   }
 
   const [posts, total] = await Promise.all([
@@ -271,7 +324,7 @@ export async function listPosts(
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .lean<IPost[]>(),
+      .lean<PostLean[]>(),
     Post.countDocuments(filter),
   ]);
 

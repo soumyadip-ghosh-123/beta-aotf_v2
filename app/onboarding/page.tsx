@@ -2,7 +2,7 @@
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { useState, useEffect, useRef } from "react";
 import { useUser, useSession } from "@clerk/nextjs";
-
+import * as Sentry from "@sentry/nextjs";
 import {
   PhoneFields,
   AddressField,
@@ -18,6 +18,7 @@ import type {
   OnboardingFormData,
   PlanValue,
 } from "@/components/reactbits/onboarding/index";
+import { Sen } from "next/font/google";
 
 function loadRazorpayScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -441,6 +442,11 @@ export default function Onboarding() {
             : "Payment failed. Please try again."
         );
       }
+      Sentry.captureException(err, {
+        tags: { feature: "onboarding", step: "payment" },
+        extra: { formData },
+      });
+    } finally {
       setIsPaymentLoading(false);
     }
   };

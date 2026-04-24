@@ -13,7 +13,9 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/admin/login(.*)",
+  "/admin/join(.*)",
   "/admin/change-password",
+  "/api/admin/join(.*)",
   "/api/v1/webhooks(.*)",
   "/api/v1/posts(.*)",
   "/api/v1/jobs(.*)",
@@ -33,6 +35,7 @@ const isPublicRoute = createRouteMatcher([
   "/services(.*)",
   "/sso-callback(.*)",
   "/verify(.*)",
+  "/sentry-example-page(.*)", // Temporary page to test Sentry error tracking in production,
   "/test(.*)", // Temporary public route for testing/debugging purposes
   "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
 ]);
@@ -208,6 +211,9 @@ const middleware = clerkMiddleware(async (auth, req) => {
 
   // 2. Auth guard for all protected routes
   if (!isPublicRoute(req) && !userId) {
+    if (isEnquiryApiRoute(req) && method === "POST") {
+      return NextResponse.next();
+    }
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

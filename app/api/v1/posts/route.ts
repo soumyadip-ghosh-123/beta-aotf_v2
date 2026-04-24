@@ -102,6 +102,11 @@ export async function GET(request: NextRequest) {
       page: searchParams.get("page") ?? undefined,
       limit: searchParams.get("limit") ?? 20,
       search: searchParams.get("search") ?? undefined,
+      subjects: searchParams.get("subjects") ?? undefined,
+      boards: searchParams.get("boards") ?? undefined,
+      classType: searchParams.get("classType") ?? undefined,
+      minBudget: searchParams.get("minBudget") ?? undefined,
+      maxBudget: searchParams.get("maxBudget") ?? undefined,
     });
 
     const result = await listPosts(input);

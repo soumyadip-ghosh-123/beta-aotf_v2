@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@heroui/button";
 import { Skeleton } from "@/components/ui/(calender)/skeleton";
 
-import { setTheme } from "@/cookies/set";
-
 export function ToggleTheme() {
   const [currentTheme, setCurrentTheme] = useState<"light" | "dark">();
 
@@ -18,7 +16,6 @@ export function ToggleTheme() {
 
   const toggleTheme = () => {
     const newTheme = currentTheme === "light" ? "dark" : "light";
-    setTheme(newTheme);
     setCurrentTheme(newTheme);
   };
 

@@ -31,7 +31,6 @@ import {
   type TuitionShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
-import { User2 } from "lucide-react";
 
 export type ApplicationStatus =
   | "applied"

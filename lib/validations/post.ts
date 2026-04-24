@@ -96,6 +96,11 @@ export const listPostsSchema = z.object({
     .string()
     .max(200, "Search term must be at most 200 characters")
     .optional(),
+  subjects: z.string().optional(),
+  boards: z.string().optional(),
+  classType: z.enum([...CLASS_TYPES, "all"] as const).optional(),
+  minBudget: z.coerce.number().int().min(0).optional(),
+  maxBudget: z.coerce.number().int().min(0).optional(),
 });
 
 export type ListPostsInput = z.infer<typeof listPostsSchema>;

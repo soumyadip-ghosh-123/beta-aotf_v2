@@ -359,3 +359,56 @@ export async function sendAccountUnlockedEmail(params: {
     };
   }
 }
+
+export async function sendAdminInviteEmail(params: {
+  email: string;
+  inviteeName: string;
+  inviterName: string;
+  assignedRoleDisplayName: string;
+  joinLink: string;
+  expiresAt: Date;
+}) {
+  const {
+    email,
+    inviteeName,
+    inviterName,
+    assignedRoleDisplayName,
+    joinLink,
+    expiresAt,
+  } = params;
+
+  const expiryText = new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata",
+  }).format(expiresAt);
+
+  try {
+    const result = await getResend().emails.send({
+      from: "AOTF <contact@aotf.in>",
+      to: email,
+      subject: "Invitation to join AOTF Admin Panel",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6; max-width: 640px; margin: 0 auto; padding: 24px;">
+          <h2 style="margin-top: 0;">AOTF Admin Invitation</h2>
+          <p>Hi ${inviteeName},</p>
+          <p>${inviterName} has invited you to join the AOTF admin panel as <strong>${assignedRoleDisplayName}</strong>.</p>
+          <p>
+            <a href="${joinLink}" style="display: inline-block; background: #111827; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 6px;">
+              Accept Invite
+            </a>
+          </p>
+          <p>This invitation expires on <strong>${expiryText}</strong> (IST).</p>
+          <p>If you were not expecting this invite, you can ignore this email.</p>
+          <hr style="margin-top: 24px; border: none; border-top: 1px solid #e5e7eb;" />
+          <p style="font-size: 12px; color: #6b7280;">AOTF Admin System</p>
+        </div>
+      `,
+    });
+
+    return { success: true, messageId: result.data?.id };
+  } catch (error) {
+    console.error("[email-service] Error sending admin invite email:", error);
+    return { success: false, error: "Failed to send admin invite email" };
+  }
+}

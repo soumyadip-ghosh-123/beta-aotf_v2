@@ -52,7 +52,7 @@ export const Navbar = () => {
           <Redirect to="/jobs">Jobs</Redirect>
         </NavbarItem>
         <NavbarItem>
-          <Redirect to="/feedback">Feedback</Redirect>
+          <Redirect to="/enquiry">Enquiry</Redirect>
         </NavbarItem>
       </NavbarContent>
       <NavbarContent className="flex h-fit" justify="end">
@@ -131,7 +131,6 @@ export const Navbar = () => {
           <Button
             variant="shadow"
             color="primary"
-            className="bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
             onPress={() => router.push("/sign-in")}
           >
             Log In

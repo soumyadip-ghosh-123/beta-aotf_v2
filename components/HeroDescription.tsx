@@ -1,9 +1,8 @@
 import { Button } from "@heroui/button";
-import { ArrowRight } from "lucide-react";
-import Image from "next/image";
-import React from "react";
+import { ArrowRight, MailQuestionMark } from "lucide-react";
 import TextType from "./reactbits/ui/TextType";
 import Redirect from "./Redirect";
+import { EnquiryIcon } from "./icons";
 
 const HeroDescription = () => {
   return (
@@ -53,9 +52,33 @@ const HeroDescription = () => {
           <Redirect to="/enquiry">
             <Button
               radius="full"
-              className="text-white hover:-translate-y-0.5 transition bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 px-7"
+              className="relative overflow-hidden flex items-center gap-2 px-7 py-2.5
+    text-white font-semibold tracking-wide
+
+    bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500
+    shadow-lg shadow-purple-500/30
+
+    hover:shadow-pink-500/40 hover:-translate-y-1
+    active:scale-95 transition-all duration-300
+
+    before:absolute before:inset-0 before:rounded-full
+    before:bg-gradient-to-r before:from-white/20 before:to-transparent
+    before:opacity-0 hover:before:opacity-100 before:transition
+
+    group"
             >
-              Make an Enquiry <ArrowRight />
+              {/* Shine effect */}
+              <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500">
+                <span
+                  className="absolute -left-full top-0 h-full w-1/2 
+      bg-gradient-to-r from-transparent via-white/40 to-transparent 
+      skew-x-12 animate-[shine_1.2s_ease]"
+                />
+              </span>
+
+              <MailQuestionMark className="w-5 h-5 group-hover:rotate-6 transition" />
+
+              <span>Make an Enquiry</span>
             </Button>
           </Redirect>
           {/* <Button className="flex items-center gap-2 border transition rounded-md px-6">

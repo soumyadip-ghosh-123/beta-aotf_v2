@@ -51,3 +51,6 @@ aotf-21-c52aced2c4d7.json
 .postman/
 
 package/aotf_v2.zip
+
+# Sentry Config File
+.env.sentry-build-plugin

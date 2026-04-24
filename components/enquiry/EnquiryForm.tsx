@@ -67,7 +67,7 @@ export default function EnquiryForm() {
       }
 
       showToast(
-        `Enquiry submitted successfully! Your ID: ${data.enquiryId}`,
+        `Enquiry submitted successfully.`,
         "success"
       );
       setForm({ name: "", phone: "", query: "" });
@@ -138,7 +138,7 @@ export default function EnquiryForm() {
               variant="bordered"
               onClick={() => setForm({ name: "", phone: "", query: "" })}
             >
-              Reset
+              Clear
             </Button>
             <Button
               type="submit"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
-import { Avatar, AvatarGroup } from "@heroui/avatar";
+import { Avatar } from "@heroui/avatar";
 import { Select, SelectItem } from "@heroui/select";
 
 export function UserSelect() {

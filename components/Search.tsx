@@ -14,88 +14,102 @@ import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
 import { Filter } from "lucide-react";
 import { useFilterSidebar } from "./filter-sidebar-context";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
+const suggestions = ["Subject", "Board", "Class Type", "Budget","Location","Frequency"];
+const TYPE_SPEED_MS = 90;
+const ERASE_SPEED_MS = 45;
+const HOLD_MS = 900;
 
 const Search = () => {
   // show or hide scrollable chips based on screen size
   const isShowChip = false; // You can replace this with actual logic based on screen size
   const { open } = useFilterSidebar();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = useMemo(
+    () => searchParams.get("search") ?? "",
+    [searchParams]
+  );
+  const [query, setQuery] = useState(initialSearch);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [isErasing, setIsErasing] = useState(false);
+
+  useEffect(() => {
+    setQuery(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    const current = suggestions[suggestionIndex] ?? "";
+
+    if (!isErasing && typed.length < current.length) {
+      const id = window.setTimeout(() => {
+        setTyped(current.slice(0, typed.length + 1));
+      }, TYPE_SPEED_MS);
+      return () => window.clearTimeout(id);
+    }
+
+    if (!isErasing && typed.length === current.length) {
+      const id = window.setTimeout(() => setIsErasing(true), HOLD_MS);
+      return () => window.clearTimeout(id);
+    }
+
+    if (isErasing && typed.length > 0) {
+      const id = window.setTimeout(() => {
+        setTyped(current.slice(0, typed.length - 1));
+      }, ERASE_SPEED_MS);
+      return () => window.clearTimeout(id);
+    }
+
+    if (isErasing && typed.length === 0) {
+      setIsErasing(false);
+      setSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+    }
+  }, [typed, isErasing, suggestionIndex]);
+
+  const applySearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const trimmed = value.trim();
+
+    if (trimmed) {
+      params.set("search", trimmed);
+      params.set("page", "1");
+    } else {
+      params.delete("search");
+      params.delete("page");
+    }
+
+    const next = params.toString();
+    router.push(next ? `/posts?${next}` : "/posts");
+  };
   return (
     <div className="max-w-md w-full flex flex-col justify-center sticky top-17 z-10 mx-auto p-1 r backdrop-blur-xs">
-      <div className="flex w-full max-w-2xl items-center gap-2">
-        <Button isIconOnly aria-label="Like"  onPress={open} variant="bordered" >
+      <form
+        className="flex w-full max-w-2xl items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          applySearch(query);
+        }}
+      >
+        {/* <Button isIconOnly aria-label="Like"  onPress={open} variant="bordered" >
           <Filter size={20}/>
-        </Button>
+        </Button> */}
         <Input
           type="text"
-          placeholder="Search..."
+          placeholder={`Search ${typed || suggestions[suggestionIndex]}...`}
           startContent={
             <IoMdSearch className="text-xl text-default-400 pointer-events-none" />
           }
           className="flex-1"
+          value={query}
+          onValueChange={setQuery}
         />
-        <Button isIconOnly aria-label="Like" color="primary">
+        <Button isIconOnly aria-label="Like" color="primary" type="submit">
           <IoMdSearch className="text-xl" />
         </Button>
-      </div>
-
-      {/* <div className="grid grid-cols-4 w-full max-w-2xl items-center gap-2 mt-2">
-        <Dropdown>
-          <DropdownTrigger>
-            <Button size="sm" variant="bordered">
-              Class <FaAngleDown className="inline" />
-            </Button>
-          </DropdownTrigger>
-
-          <DropdownMenu aria-label="Search Filters">
-            <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="files">Files</DropdownItem>
-            <DropdownItem key="links">Links</DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-        <Dropdown>
-          <DropdownTrigger>
-            <Button size="sm" variant="bordered">
-              Board <FaAngleDown className="inline" />
-            </Button>
-          </DropdownTrigger>
-
-          <DropdownMenu aria-label="Search Filters">
-            <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="files">Files</DropdownItem>
-            <DropdownItem key="links">Links</DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-        <Dropdown>
-          <DropdownTrigger>
-            <Button size="sm" variant="bordered">
-              Subject <FaAngleDown className="inline" />
-            </Button>
-          </DropdownTrigger>
-
-          <DropdownMenu aria-label="Search Filters">
-            <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="files">Bengali</DropdownItem>
-            <DropdownItem key="links">English</DropdownItem>
-            <DropdownItem key="links">Math</DropdownItem>
-            <DropdownItem key="links">Science</DropdownItem>
-            <DropdownItem key="links">History</DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-        <Dropdown>
-          <DropdownTrigger>
-            <Button size="sm" variant="bordered">
-              Type <FaAngleDown className="inline" />
-            </Button>
-          </DropdownTrigger>
-
-          <DropdownMenu aria-label="Search Filters">
-            <DropdownItem key="all">All</DropdownItem>
-            <DropdownItem key="files">Files</DropdownItem>
-            <DropdownItem key="links">Links</DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-      </div> */}
-
+      </form>
       {/* show or hide scrollable chips based on screen size with props */}
 
       {isShowChip && (

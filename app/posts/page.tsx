@@ -13,12 +13,26 @@ const EDITED_THRESHOLD_MS = 1000;
 export default async function DocsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string; status?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    status?: string;
+    subjects?: string;
+    boards?: string;
+    classType?: string;
+    minBudget?: number;
+    maxBudget?: number;
+  }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
   const search = params.search || undefined;
   const status = (params.status as any) || "all";
+  const subjects = params.subjects || undefined;
+  const boards = params.boards || undefined;
+  const classType = (params.classType as any) || undefined;
+  const minBudget = params.minBudget || undefined;
+  const maxBudget = params.maxBudget || undefined;
   const { userId: clerkId } = await auth();
 
   const { posts, pagination } = await listPosts({
@@ -26,6 +40,11 @@ export default async function DocsPage({
     limit: 20,
     search,
     status,
+    subjects,
+    boards,
+    classType,
+    minBudget,
+    maxBudget,
   });
 
   const applicantPermissions = clerkId
