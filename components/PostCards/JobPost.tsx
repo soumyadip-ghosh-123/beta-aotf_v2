@@ -89,7 +89,7 @@ const JobPost = ({
   duration,
   status,
   initialApplied = false,
-  isSignedIn = false,
+  isSignedIn,
   canApply,
   applicantCount = 0,
   createdByUserId = {},

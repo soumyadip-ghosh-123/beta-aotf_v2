@@ -1,10 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import Search from "@/components/Search";
 import JobPost from "@/components/PostCards/JobPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
 import {
-  getApplicantPermissionsByClerkId,
-  getAppliedJobIdsForApplicant,
   getApplicantCountsByJobIds,
 } from "@/lib/services/application.service";
 import { listJobs } from "@/lib/services/job.service";
@@ -18,7 +15,6 @@ export default async function JobsPage({
   const page = parseInt(params.page || "1", 10);
   const search = params.search || undefined;
   const status = (params.status as any) || "all";
-  const { userId: clerkId } = await auth();
 
   const { jobs, pagination } = await listJobs({
     page,
@@ -27,25 +23,8 @@ export default async function JobsPage({
     status,
   });
 
-  const applicantPermissions = clerkId
-    ? await getApplicantPermissionsByClerkId(clerkId)
-    : null;
-
-  const appliedJobIds = applicantPermissions?.canApplyToJobs
-    ? new Set(
-        await getAppliedJobIdsForApplicant(
-          applicantPermissions.applicantId,
-          jobs.map((job) => job.jobId)
-        )
-      )
-    : new Set<string>();
-
   const jobIds = jobs.map((job) => job.jobId);
   const applicantCountsMap = await getApplicantCountsByJobIds(jobIds);
-
-  const canApplyToJobs = clerkId
-    ? applicantPermissions?.canApplyToJobs
-    : undefined;
 
   return (
     <FilterSidebarProvider>
@@ -81,9 +60,7 @@ export default async function JobsPage({
                   name: job.author?.name,
                   avatar: job.author?.avatarUrl,
                 }}
-                initialApplied={appliedJobIds.has(job.jobId)}
-                isSignedIn={Boolean(clerkId)}
-                canApply={canApplyToJobs}
+                initialApplied={false}
                 applicantCount={applicantCountsMap.get(job.jobId) ?? 0}
               />
             ))}

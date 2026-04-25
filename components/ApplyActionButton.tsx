@@ -2,8 +2,9 @@
 
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
+import { useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaArrowRight } from "react-icons/fa";
 import { MdDoneAll } from "react-icons/md";
 
@@ -31,7 +32,7 @@ export default function ApplyActionButton({
   target,
   targetId,
   initialApplied = false,
-  isSignedIn = false,
+  isSignedIn,
   isEligible,
   ineligibleLabel = "Not eligible",
   className,
@@ -40,18 +41,51 @@ export default function ApplyActionButton({
 }: ApplyActionButtonProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { isSignedIn: clerkSignedIn } = useUser();
+  const effectiveIsSignedIn = isSignedIn ?? clerkSignedIn ?? false;
   const [isApplied, setIsApplied] = useState(initialApplied);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!effectiveIsSignedIn || initialApplied) {
+      setIsApplied(initialApplied);
+      return;
+    }
+
+    const controller = new AbortController();
+    const endpoint = `${getEndpoint(target, targetId)}?mine=1`;
+
+    void fetch(endpoint, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = (await response.json().catch(() => ({}))) as {
+          applied?: boolean;
+        };
+        if (typeof data.applied === "boolean") {
+          setIsApplied(data.applied);
+        }
+      })
+      .catch(() => {
+        // Ignore fetch failures to keep the button usable.
+      });
+
+    return () => controller.abort();
+  }, [effectiveIsSignedIn, initialApplied, target, targetId]);
+
   const resourceLabel = target === "post" ? "tuition post" : "job";
-  const isDisabled = isApplied || isSubmitting || (isSignedIn && isEligible === false);
+  const isDisabled =
+    isApplied || isSubmitting || (effectiveIsSignedIn && isEligible === false);
 
   const handleApply = async () => {
     if (isApplied || isSubmitting) {
       return;
     }
 
-    if (!isSignedIn) {
+    if (!effectiveIsSignedIn) {
       const redirectTo = pathname || (target === "post" ? `/posts/${targetId}` : `/jobs/${targetId}`);
       router.push(`/sign-in?redirect_url=${encodeURIComponent(redirectTo)}`);
       return;
@@ -119,7 +153,7 @@ export default function ApplyActionButton({
     }
   };
 
-  const label = !isSignedIn
+  const label = !effectiveIsSignedIn
     ? "Sign In to Apply"
     : isApplied
       ? "Applied"

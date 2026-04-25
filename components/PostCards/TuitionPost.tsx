@@ -125,7 +125,7 @@ const TuitionPost = ({
   applicants = [],
   createdByUserId = {},
   initialApplied = false,
-  isSignedIn = false,
+  isSignedIn,
   canApply,
   applicationStatus,
   applicationId,

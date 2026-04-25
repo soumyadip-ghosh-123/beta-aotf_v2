@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
 import { LuNotebookText } from "react-icons/lu";
@@ -14,10 +13,6 @@ import { FaClock } from "react-icons/fa6";
 import { MdOutlineWifiTethering, MdOutlineStorefront } from "react-icons/md";
 import ApplyActionButton from "@/components/ApplyActionButton";
 import BackButton from "@/components/BackButton";
-import {
-  getApplicantPermissionsByClerkId,
-  hasAppliedToJob,
-} from "@/lib/services/application.service";
 import { getJobByJobId } from "@/lib/services/job.service";
 import { notFound } from "next/navigation";
 
@@ -92,7 +87,6 @@ export default async function JobDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { userId: clerkId } = await auth();
 
   let job;
   try {
@@ -100,18 +94,6 @@ export default async function JobDetailPage({
   } catch {
     notFound();
   }
-
-  const applicantPermissions = clerkId
-    ? await getApplicantPermissionsByClerkId(clerkId)
-    : null;
-
-  const initialApplied = applicantPermissions?.canApplyToJobs
-    ? await hasAppliedToJob(applicantPermissions.applicantId, id)
-    : false;
-
-  const canApplyToJobs = clerkId
-    ? applicantPermissions?.canApplyToJobs
-    : undefined;
 
   const isProject = job.workType === "project";
   const statusBadge = getStatusBadge(job.status);
@@ -276,9 +258,7 @@ export default async function JobDetailPage({
         <ApplyActionButton
           target="job"
           targetId={id}
-          initialApplied={initialApplied}
-          isSignedIn={Boolean(clerkId)}
-          isEligible={canApplyToJobs}
+          initialApplied={false}
           ineligibleLabel="Candidates Only"
           className="w-full"
           size="lg"

@@ -13,6 +13,7 @@ import {
   deleteAllApplicationsByPostId,
   deleteApplicationsByIds,
   getApplicantPermissionsByClerkId,
+  hasAppliedToPost,
 } from "@/lib/services/application.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { ValidationError } from "@/lib/errors";
@@ -41,6 +42,25 @@ export async function GET(
     if (rateLimitBlock) return rateLimitBlock;
 
     const { postId } = postIdParamSchema.parse(await params);
+
+    if (request.nextUrl.searchParams.get("mine") === "1") {
+      const { userId: clerkId } = await auth();
+      if (!clerkId) {
+        return NextResponse.json({ applied: false });
+      }
+
+      const permissions = await getApplicantPermissionsByClerkId(clerkId, {
+        ensureUser: true,
+      });
+
+      if (!permissions?.canApplyToPosts) {
+        return NextResponse.json({ applied: false });
+      }
+
+      const applied = await hasAppliedToPost(permissions.applicantId, postId);
+      return NextResponse.json({ applied });
+    }
+
     const result = await getApplicationsByPostId(postId);
 
     return NextResponse.json(

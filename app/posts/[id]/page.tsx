@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
 import { FaHome } from "react-icons/fa";
@@ -8,10 +7,6 @@ import { PiClockCountdownFill } from "react-icons/pi";
 import { MdOutlineOnlinePrediction } from "react-icons/md";
 import ApplyActionButton from "@/components/ApplyActionButton";
 import BackButton from "@/components/BackButton";
-import {
-  getApplicantPermissionsByClerkId,
-  hasAppliedToPost,
-} from "@/lib/services/application.service";
 import { getPostByPostId } from "@/lib/services/post.service";
 import { notFound } from "next/navigation";
 
@@ -79,7 +74,6 @@ export default async function PostDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: postId } = await params;
-  const { userId: clerkId } = await auth();
 
   let post;
   try {
@@ -87,18 +81,6 @@ export default async function PostDetailPage({
   } catch {
     notFound();
   }
-
-  const applicantPermissions = clerkId
-    ? await getApplicantPermissionsByClerkId(clerkId)
-    : null;
-
-  const initialApplied = applicantPermissions?.canApplyToPosts
-    ? await hasAppliedToPost(applicantPermissions.applicantId, postId)
-    : false;
-
-  const canApplyToPosts = clerkId
-    ? applicantPermissions?.canApplyToPosts
-    : undefined;
 
   const safeStudents = post.students ?? [];
   const allSubjects = safeStudents.flatMap((s) => s.subjects);
@@ -264,9 +246,7 @@ export default async function PostDetailPage({
         <ApplyActionButton
           target="post"
           targetId={postId}
-          initialApplied={initialApplied}
-          isSignedIn={Boolean(clerkId)}
-          isEligible={canApplyToPosts}
+          initialApplied={false}
           ineligibleLabel="Not Eligible"
           className="w-full"
           size="lg"

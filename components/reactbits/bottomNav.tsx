@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import {
   Home,
@@ -13,6 +12,7 @@ import {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isSignedIn } = useUser();
   const username = user?.username?.trim();
   const profilePath = username ? `/u/${username}` : "/dashboard";
@@ -51,15 +51,17 @@ export default function BottomNav() {
 
             return (
               <li key={index} className="flex-1 relative z-10">
-                <Link
-                  href={item.path}
-                  className={`flex flex-col items-center justify-center py-2 transition-all ${
+                <button
+                  type="button"
+                  onClick={() => router.push(item.path)}
+                  className={`flex w-full flex-col items-center justify-center py-2 transition-all ${
                     isActive ? "text-pink-500 scale-95" : "text-gray-400"
                   }`}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <Icon size={22} />
                   <span className="text-xs mt-1">{item.label}</span>
-                </Link>
+                </button>
               </li>
             );
           })}

@@ -1,11 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import Search from "@/components/Search";
 import TuitionPost from "@/components/PostCards/TuitionPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
-import {
-  getApplicantPermissionsByClerkId,
-  getAppliedPostIdsForApplicant,
-} from "@/lib/services/application.service";
 import { listPosts } from "@/lib/services/post.service";
 
 const EDITED_THRESHOLD_MS = 1000;
@@ -33,7 +28,6 @@ export default async function DocsPage({
   const classType = (params.classType as any) || undefined;
   const minBudget = params.minBudget || undefined;
   const maxBudget = params.maxBudget || undefined;
-  const { userId: clerkId } = await auth();
 
   const { posts, pagination } = await listPosts({
     page,
@@ -46,23 +40,6 @@ export default async function DocsPage({
     minBudget,
     maxBudget,
   });
-
-  const applicantPermissions = clerkId
-    ? await getApplicantPermissionsByClerkId(clerkId)
-    : null;
-
-  const appliedPostIds = applicantPermissions?.canApplyToPosts
-    ? new Set(
-        await getAppliedPostIdsForApplicant(
-          applicantPermissions.applicantId,
-          posts.map((post) => post.postId)
-        )
-      )
-    : new Set<string>();
-
-  const canApplyToPosts = clerkId
-    ? applicantPermissions?.canApplyToPosts
-    : undefined;
 
   return (
     <FilterSidebarProvider>
@@ -95,9 +72,7 @@ export default async function DocsPage({
                   name: post.author?.name,
                   avatar: post.author?.avatarUrl,
                 }}
-                initialApplied={appliedPostIds.has(post.postId)}
-                isSignedIn={Boolean(clerkId)}
-                canApply={canApplyToPosts}
+                initialApplied={false}
                 isEdited={
                   Boolean(post.updatedByAdminClerkId) ||
                   new Date(post.updatedAt).getTime() -
