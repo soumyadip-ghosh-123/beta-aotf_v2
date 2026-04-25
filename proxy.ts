@@ -48,7 +48,6 @@ const isAdminApiRoute = createRouteMatcher([
 const isEnquiryApiRoute = createRouteMatcher(["/api/v1/enquiry(.*)"]);
 
 const isOnboardingRoute = createRouteMatcher(["/onboarding"]);
-const isUserProfileRoute = createRouteMatcher(["/u(.*)"]);
 // API routes called during onboarding — must be reachable before onboarding is complete
 const isOnboardingApiRoute = createRouteMatcher([
   "/api/v1/profile(.*)",
@@ -74,6 +73,13 @@ const middleware = clerkMiddleware(async (auth, req) => {
     !(pathname === "/api/v1/enquiry" && method === "POST");
   const isProtectedAdminRequest =
     isAdminRoute(req) || isAdminApiRoute(req) || isProtectedEnquiryApiRequest;
+  const onboardingRequiredResponse = () =>
+    isApiRequest
+      ? NextResponse.json(
+          { error: "Onboarding required", redirectTo: "/onboarding" },
+          { status: 403 },
+        )
+      : NextResponse.redirect(new URL("/onboarding", req.url));
 
   // Debug logging for API routes
   if (pathname === "/api/v1/posts") {
@@ -234,8 +240,7 @@ const middleware = clerkMiddleware(async (auth, req) => {
     !isAdminRoute(req) &&
     !isAdminApiRoute(req) &&
     !isOnboardingRoute(req) &&
-    !isOnboardingApiRoute(req) &&
-    !isUserProfileRoute(req)
+    !isOnboardingApiRoute(req)
   ) {
     // Fast path: JWT already carries the flag (normal case after first login
     // post-payment, or after Clerk propagates the metadata update).
@@ -253,7 +258,7 @@ const middleware = clerkMiddleware(async (auth, req) => {
         ).lean();
 
         if (!userDoc?.onboardingCompleted) {
-          return NextResponse.redirect(new URL("/onboarding", req.url));
+          return onboardingRequiredResponse();
         }
         // DB says completed — let the user through. Clerk metadata will catch
         // up on the next token refresh and the slow path won't be needed again.
@@ -261,7 +266,7 @@ const middleware = clerkMiddleware(async (auth, req) => {
         // If the DB is unreachable, fall back to the JWT claim to avoid
         // blocking the user with a redirect loop.
         if (meta?.onboardingCompleted !== true) {
-          return NextResponse.redirect(new URL("/onboarding", req.url));
+          return onboardingRequiredResponse();
         }
       }
     }

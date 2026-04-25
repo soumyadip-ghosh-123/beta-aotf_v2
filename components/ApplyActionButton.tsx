@@ -73,6 +73,21 @@ export default function ApplyActionButton({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status === 403 && data.redirectTo === "/onboarding") {
+          router.push("/onboarding");
+          return;
+        }
+
+        if (
+          response.status === 400 &&
+          typeof data.error === "string" &&
+          (data.error.includes("phone number") ||
+            data.error.includes("Complete your profile"))
+        ) {
+          router.push("/onboarding");
+          return;
+        }
+
         if (response.status === 409) {
           setIsApplied(true);
           addToast({

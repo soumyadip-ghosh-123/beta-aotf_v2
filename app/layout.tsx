@@ -1,3 +1,4 @@
+// @ts-expect-error -- Next.js handles global CSS side-effect imports at build time
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
