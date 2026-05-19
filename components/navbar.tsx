@@ -30,6 +30,7 @@ export const Navbar = () => {
   const router = useRouter();
 
   const username = user?.username ?? "";
+  const isAdmin = (user as any)?.publicMetadata?.isAdmin === true;
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky" className="z-50 h-fit top-0">
@@ -79,36 +80,73 @@ export const Navbar = () => {
                 </p>
               </DropdownItem>
 
-              <DropdownItem
-                key="profile"
-                textValue="Profile"
-                onPress={() => router.push(`/u/${username}`)}
-              >
-                <div className="flex items-center gap-2">
-                  <FaUserAlt className="text-default-500" />
-                  <p className="font-semibold">Profile</p>
-                </div>
-              </DropdownItem>
-              <DropdownItem
-                key="dashboard"
-                textValue="Dashboard"
-                onPress={() => router.push(`/u/${username}/dashboard`)}
-              >
-                <div className="flex items-center gap-2">
-                  <RiDashboardHorizontalFill className="text-default-500" />
-                  <p className="font-semibold">Dashboard</p>
-                </div>
-              </DropdownItem>
-              <DropdownItem
-                key="feedback"
-                textValue="Feedback"
-                onPress={() => router.push(`/u/${username}/feedback`)}
-              >
-                <div className="flex items-center gap-2">
-                  <MdFeedback className="text-default-500" />
-                  <p className="font-semibold">Feedback</p>
-                </div>
-              </DropdownItem>
+              {isAdmin ? (
+                <>
+                  <DropdownItem
+                    key="admin-dashboard"
+                    textValue="Admin Dashboard"
+                    onPress={() => router.push(`/admin/dashboard`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <RiDashboardHorizontalFill className="text-default-500" />
+                      <p className="font-semibold">Admin Dashboard</p>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem
+                    key="admin-users"
+                    textValue="Admin Users"
+                    onPress={() => router.push(`/admin/users`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FaUserAlt className="text-default-500" />
+                      <p className="font-semibold">Admin Users</p>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem
+                    key="admin-settings"
+                    textValue="Admin Settings"
+                    onPress={() => router.push(`/admin/settings`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <MdFeedback className="text-default-500" />
+                      <p className="font-semibold">Admin Settings</p>
+                    </div>
+                  </DropdownItem>
+                </>
+              ) : (
+                <>
+                  <DropdownItem
+                    key="profile"
+                    textValue="Profile"
+                    onPress={() => router.push(`/u/${username}`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FaUserAlt className="text-default-500" />
+                      <p className="font-semibold">Profile</p>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem
+                    key="dashboard"
+                    textValue="Dashboard"
+                    onPress={() => router.push(`/u/${username}/dashboard`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <RiDashboardHorizontalFill className="text-default-500" />
+                      <p className="font-semibold">Dashboard</p>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem
+                    key="feedback"
+                    textValue="Feedback"
+                    onPress={() => router.push(`/u/${username}/feedback`)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <MdFeedback className="text-default-500" />
+                      <p className="font-semibold">Feedback</p>
+                    </div>
+                  </DropdownItem>
+                </>
+              )}
               <DropdownItem
                 key="logout"
                 color="danger"

@@ -129,7 +129,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const validBoards = ["CBSE", "ICSE", "WB"];
+    const validBoards = ["CBSE", "ICSE", "ISC", "IB", "WB-Bengali", "WB-English"];
     if (board !== undefined && !validBoards.includes(board)) {
       return NextResponse.json(
         { error: "Invalid board value" },

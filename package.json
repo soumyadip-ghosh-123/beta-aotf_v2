@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint --fix",
     "seed": "tsx scripts/seed-superadmin.ts",
+    "create:admin": "tsx scripts/create-admin.ts",
     "seed:admin-system": "tsx scripts/seedAdminSystem.ts",
     "test:sheets": "tsx scripts/test-sheets.ts",
     "ship:zip": "mkdir -p package && rm -f package/aotf_v2.zip && zip -r package/aotf_v2.zip . -x 'node_modules/*' '.git/*' '.next/*' 'package/*' '*.zip'"

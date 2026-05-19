@@ -43,8 +43,8 @@ export const boards = [
   { key: "ICSE", label: "ICSE" },
   { key: "ISC", label: "ISC" },
   { key: "IB", label: "IB" },
-  { key: "WB-Bengali", label: "WB - Bengali Medium" },
-  { key: "WB-English", label: "WB - English Medium" },
+  { key: "WB-Bengali", label: "WB-Bengali Medium" },
+  { key: "WB-English", label: "WB-English Medium" },
 ] as const;
 
 export const classes = [
