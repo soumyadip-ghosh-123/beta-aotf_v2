@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
     }
 
-    // Only admin clerk roles (exclude moderators).
-    if (currentAdmin.role === "moderator") {
+    // Only admin clerk roles (exclude support admins).
+    if (currentAdmin.role === "support_admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

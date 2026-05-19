@@ -43,7 +43,7 @@ export async function GET(
     }
 
     // Sub-superadmins can only view support admins
-    if (currentAdmin.role === "admin" && result.admin.role !== "moderator") {
+    if (currentAdmin.role === "admin" && result.admin.role !== "support_admin") {
       return NextResponse.json(
         { error: "You can only view support admins" },
         { status: 403 },
@@ -113,7 +113,7 @@ export async function PATCH(
     }
 
     // Sub-superadmins can only edit support admins
-    if (currentAdmin.role === "admin" && targetAdmin.role !== "moderator") {
+    if (currentAdmin.role === "admin" && targetAdmin.role !== "support_admin") {
       return NextResponse.json(
         { error: "You can only edit support admins" },
         { status: 403 },

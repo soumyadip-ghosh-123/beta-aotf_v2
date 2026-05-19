@@ -5,9 +5,85 @@ import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 
+function splitName(name: string) {
+  const [firstName, ...rest] = name.trim().split(/\s+/);
+  const lastName = rest.join(" ") || firstName || "Admin";
+  return {
+    firstName: firstName || "Admin",
+    lastName,
+  };
+}
+
+function mapAotfRole(role: "super_admin" | "admin" | "support_admin") {
+  if (role === "super_admin") return "SUPER_ADMIN";
+  if (role === "support_admin") return "SUPPORT_ADMIN";
+  return "ADMIN";
+}
+
+function getClerkErrorCode(error: unknown) {
+  if (!error || typeof error !== "object") return "";
+  const clerkError = error as {
+    errors?: Array<{ code?: string }>;
+    code?: string;
+    status?: number;
+  };
+
+  return (
+    clerkError.errors?.[0]?.code ??
+    clerkError.code ??
+    (typeof clerkError.status === "number" ? String(clerkError.status) : "")
+  );
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === 11000
+  );
+}
+
+function isClerkDuplicateError(error: unknown) {
+  const code = getClerkErrorCode(error);
+  return code === "form_identifier_exists" || code === "422";
+}
+
+async function findClerkUser(
+  client: Awaited<ReturnType<typeof clerkClient>>,
+  params: { email: string; username: string },
+) {
+  const clerk = client as any;
+  const [byEmail, byUsername] = await Promise.all([
+    clerk.users.getUserList({ emailAddress: [params.email] }),
+    clerk.users.getUserList({ username: [params.username] }),
+  ]);
+
+  return byEmail.data[0] ?? byUsername.data[0] ?? null;
+}
+
 export async function POST(req: Request) {
+  let clerkId = "";
+  let username = "";
+  let email = "";
+  let name = "";
+  let password: string | undefined;
+  let role: "admin" | "support_admin" | "" = "";
+  let permissions:
+    | {
+        canManageUsers?: boolean;
+        canManagePosts?: boolean;
+        canManageJobs?: boolean;
+        canProcessRefunds?: boolean;
+        canViewAnalytics?: boolean;
+        canHandleEnquiries?: boolean;
+        canManageAdmins?: boolean;
+      }
+    | undefined;
+
   try {
-    const { userId: clerkId, sessionClaims } = await auth();
+    const { userId, sessionClaims } = await auth();
+    clerkId = userId ?? "";
     if (!clerkId) {
       return NextResponse.json(
         { error: "Authentication required" },
@@ -15,9 +91,23 @@ export async function POST(req: Request) {
       );
     }
 
-    const meta = sessionClaims?.publicMetadata as
+    let meta = sessionClaims?.publicMetadata as
       | Record<string, unknown>
       | undefined;
+
+    // If session claims don't include isAdmin (e.g., metadata was updated),
+    // fall back to fetching the user's metadata from Clerk to avoid a 403
+    // when the user just had their metadata updated.
+    if (meta?.isAdmin !== true) {
+      try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(clerkId);
+        meta = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+      } catch (err) {
+        console.warn("Failed to fetch Clerk user metadata fallback:", err);
+      }
+    }
+
     if (meta?.isAdmin !== true) {
       return NextResponse.json(
         { error: "Admin access required" },
@@ -27,86 +117,290 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
-    // Verify the requesting admin has canManageAdmins permission
+    // Verify the requesting admin exists and has rights to provision admins
     const requestingAdmin = await Admin.findOne({ clerkId, isActive: true });
-    if (!requestingAdmin || !requestingAdmin.permissions.canManageAdmins) {
+    if (!requestingAdmin) {
+      return NextResponse.json({ error: "Admin not found" }, { status: 404 });
+    }
+
+    // Only super_admin can provision admins through the dashboard.
+    if (requestingAdmin.role !== "super_admin") {
       return NextResponse.json(
-        { error: "Insufficient permissions: canManageAdmins required" },
+        { error: "Only super_admin can create admins" },
         { status: 403 },
       );
     }
 
-    const body = await req.json();
-    const { email, name, role, permissions } = body as {
+    const body = (await req.json()) as {
+      username: string;
       email: string;
       name: string;
-      role: "super_admin" | "admin" | "moderator";
-      permissions: {
+      password?: string;
+      role: "admin" | "support_admin";
+      permissions?: {
         canManageUsers?: boolean;
         canManagePosts?: boolean;
         canManageJobs?: boolean;
         canProcessRefunds?: boolean;
         canViewAnalytics?: boolean;
+        canHandleEnquiries?: boolean;
         canManageAdmins?: boolean;
       };
     };
 
-    if (!email || !name || !role) {
+    username = body.username;
+    email = body.email;
+    name = body.name;
+    password = body.password;
+    role = body.role;
+    permissions = body.permissions;
+
+    if (!username || !email || !name || !role) {
       return NextResponse.json(
-        { error: "email, name, and role are required" },
+        { error: "username, email, name, and role are required" },
         { status: 400 },
       );
     }
 
-    if (!["super_admin", "admin", "moderator"].includes(role)) {
+    if (!["admin", "support_admin"].includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    // Generate a secure temporary password
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = username.trim().toLowerCase();
+
+    // Disallow creating support accounts unless requester is super_admin
+    if (role === "support_admin" && requestingAdmin.role !== "super_admin") {
+      return NextResponse.json(
+        { error: "Only super_admin may create support admins" },
+        { status: 403 },
+      );
+    }
+
+    // Generate a secure temporary password (used only if we create a Clerk user)
     const tempPassword = crypto.randomBytes(12).toString("base64url") + "!A1";
+    const selectedPassword = password && password.length >= 8 ? password : tempPassword;
+    const { firstName, lastName } = splitName(name);
 
-    // Create Clerk user
+    // Create or reuse Clerk user
     const client = await clerkClient();
-    const newClerkUser = await client.users.createUser({
-      emailAddress: [email],
-      password: tempPassword,
+
+    let newClerkUser;
+    let createdNewUser = false;
+    const defaultPermissions = Admin.getDefaultPermissions(role);
+    const resolvedPermissions = {
+      ...defaultPermissions,
+      ...(permissions ?? {}),
+    };
+    const aotfRole = mapAotfRole(role);
+
+    const existing = await findClerkUser(client, {
+      email: normalizedEmail,
+      username: normalizedUsername,
     });
 
-    // Create admin doc in MongoDB
-    const admin = await Admin.create({
-      clerkId: newClerkUser.id,
-      name,
-      role,
-      permissions: permissions ?? {},
-      isActive: true,
-      createdBy: requestingAdmin._id,
-    });
+    if (existing) {
+      newClerkUser = existing;
+      await client.users.updateUser(newClerkUser.id, {
+        firstName,
+        lastName,
+      });
+      // Update metadata to mark as admin and set role/permissions
+      await client.users.updateUserMetadata(newClerkUser.id, {
+        publicMetadata: {
+          isAdmin: true,
+          role,
+          aotfRole,
+          requirePasswordChange: false,
+          permissions: resolvedPermissions,
+        },
+      });
+    } else {
+      // No existing user, create one with a temporary password
+      try {
+        newClerkUser = await client.users.createUser({
+          username: normalizedUsername,
+          emailAddress: [normalizedEmail],
+          password: selectedPassword,
+          firstName,
+          lastName,
+        });
+      } catch (createError: unknown) {
+        if (!isClerkDuplicateError(createError)) {
+          throw createError;
+        }
 
-    // Set admin metadata in Clerk
-    await client.users.updateUserMetadata(newClerkUser.id, {
-      publicMetadata: {
-        isAdmin: true,
-        role,
-        permissions: admin.permissions,
+        const fallbackUser = await findClerkUser(client, {
+          email: normalizedEmail,
+          username: normalizedUsername,
+        });
+
+        if (fallbackUser) {
+          newClerkUser = fallbackUser;
+          await client.users.updateUser(newClerkUser.id, {
+            firstName,
+            lastName,
+          });
+        } else {
+          throw createError;
+        }
+      }
+
+      createdNewUser = Boolean(newClerkUser?.id);
+
+      await client.users.updateUserMetadata(newClerkUser.id, {
+        publicMetadata: {
+          isAdmin: true,
+          role,
+          aotfRole,
+          requirePasswordChange: false,
+          permissions: resolvedPermissions,
+        },
+      });
+    }
+
+    const clerkUsername = (newClerkUser.username ?? normalizedUsername).toLowerCase();
+    const clerkEmail =
+      newClerkUser.emailAddresses[0]?.emailAddress?.toLowerCase() ??
+      normalizedEmail;
+
+    // Create or update admin doc in MongoDB (upsert)
+    const admin = await Admin.findOneAndUpdate(
+      {
+        $or: [
+          { clerkId: newClerkUser.id },
+          { email: clerkEmail },
+          { username: clerkUsername },
+        ],
       },
-    });
+      {
+        $set: {
+          clerkId: newClerkUser.id,
+          username: clerkUsername,
+          email: clerkEmail,
+          name,
+          role,
+          permissions: resolvedPermissions,
+          isActive: true,
+          isLocked: false,
+          requirePasswordChange: false,
+          createdBy: requestingAdmin._id,
+        },
+      },
+      { upsert: true, returnDocument: "after" },
+    );
 
     console.log(
       `[admin-provision] Admin ${name} (${email}) provisioned by ${clerkId}`,
     );
 
-    return NextResponse.json({
+    const responseBody: Record<string, unknown> = {
       success: true,
       adminId: admin._id,
-      tempPassword,
-    });
+      admin: {
+        id: admin._id,
+        username: admin.username,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+      },
+    };
+    if (createdNewUser) responseBody.tempPassword = selectedPassword;
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     console.error("[admin-provision] Error:", error);
 
-    // Handle Clerk API errors (e.g., email already exists)
-    if (typeof error === "object" && error !== null && "clerkError" in error) {
+    // If Clerk or Mongo reports a duplicate, try to reuse the existing record instead of failing.
+    if (clerkId && username && email && name && role) {
+      try {
+        const client = await clerkClient();
+        const existing = await findClerkUser(client, {
+          email: email.trim().toLowerCase(),
+          username: username.trim().toLowerCase(),
+        });
+
+        if (existing) {
+          const normalizedRole = role;
+          const aotfRole = mapAotfRole(normalizedRole);
+          const defaultPermissions = Admin.getDefaultPermissions(normalizedRole);
+          const resolvedPermissions = {
+            ...defaultPermissions,
+            ...(permissions ?? {}),
+          };
+          const { firstName, lastName } = splitName(name);
+          const clerkUsername = (existing.username ?? username.trim().toLowerCase()).toLowerCase();
+          const clerkEmail =
+            existing.emailAddresses[0]?.emailAddress?.toLowerCase() ??
+            email.trim().toLowerCase();
+
+          await client.users.updateUser(existing.id, {
+            firstName,
+            lastName,
+          });
+          await client.users.updateUserMetadata(existing.id, {
+            publicMetadata: {
+              isAdmin: true,
+              role: normalizedRole,
+              aotfRole,
+              requirePasswordChange: false,
+              permissions: resolvedPermissions,
+            },
+          });
+
+          const admin = await Admin.findOneAndUpdate(
+            {
+              $or: [
+                { clerkId: existing.id },
+                { email: clerkEmail },
+                { username: clerkUsername },
+              ],
+            },
+            {
+              $set: {
+                clerkId: existing.id,
+                username: clerkUsername,
+                email: clerkEmail,
+                name,
+                role: normalizedRole,
+                permissions: resolvedPermissions,
+                isActive: true,
+                isLocked: false,
+                requirePasswordChange: false,
+                createdBy: null,
+              },
+            },
+            { upsert: true, returnDocument: "after" },
+          );
+
+          return NextResponse.json({
+            success: true,
+            adminId: admin?._id,
+            admin: admin
+              ? {
+                  id: admin._id,
+                  username: admin.username,
+                  email: admin.email,
+                  name: admin.name,
+                  role: admin.role,
+                  isActive: admin.isActive,
+                  createdAt: admin.createdAt,
+                }
+              : undefined,
+          });
+        }
+      } catch (fallbackError) {
+        console.warn("[admin-provision] Duplicate fallback failed:", fallbackError);
+      }
+    }
+
+    if (isDuplicateKeyError(error) && clerkId && username && email && name && role) {
       return NextResponse.json(
-        { error: "Failed to create Clerk user. Email may already be in use." },
+        {
+          error: "Admin already exists with one of those identifiers",
+        },
         { status: 409 },
       );
     }

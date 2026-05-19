@@ -11,12 +11,12 @@ export interface CreateAdminUserParams {
   firstName: string;
   lastName?: string;
   password: string;
-  role: "super_admin" | "admin" | "moderator";
+  role: "super_admin" | "admin" | "support_admin";
 }
 
 export interface UpdateAdminMetadataParams {
   clerkId: string;
-  role: "super_admin" | "admin" | "moderator";
+  role: "super_admin" | "admin" | "support_admin";
   isAdmin: boolean;
   requirePasswordChange?: boolean;
   isLocked?: boolean;

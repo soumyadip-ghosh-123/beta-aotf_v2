@@ -54,7 +54,7 @@ export async function POST(
     }
 
     // Sub-superadmins can only deactivate support admins
-    if (currentAdmin.role === "admin" && targetAdmin.role !== "moderator") {
+    if (currentAdmin.role === "admin" && targetAdmin.role !== "support_admin") {
       return NextResponse.json(
         { error: "You can only deactivate support admins" },
         { status: 403 },

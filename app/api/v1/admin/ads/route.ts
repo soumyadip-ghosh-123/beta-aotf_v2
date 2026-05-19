@@ -46,7 +46,7 @@ async function requireAdmin() {
     return { error: NextResponse.json({ error: "Admin account is restricted" }, { status: 403 }) };
   }
 
-  if (admin.role === "moderator") {
+  if (admin.role === "support_admin") {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 

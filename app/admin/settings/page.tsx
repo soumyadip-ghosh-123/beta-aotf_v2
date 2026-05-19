@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -33,7 +34,6 @@ import {
   Eye,
   EyeOff,
   Mail,
-  Phone,
   Save,
   RotateCcw,
   Users,
@@ -56,7 +56,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { siteConfig } from "@/config/site";
 
 // Inline admin roles to avoid importing Mongoose (server-only) into a client component
-const ADMIN_ROLES = ["super_admin", "support_admin"] as const;
+const ADMIN_ROLES = ["super_admin", "admin", "support_admin"] as const;
+const CREATABLE_ADMIN_ROLES = ["admin", "support_admin"] as const;
 type AdminRole = (typeof ADMIN_ROLES)[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,8 +65,8 @@ type AdminRole = (typeof ADMIN_ROLES)[number];
 interface AdminAccount {
   id: string;
   name: string;
+  username: string;
   email: string;
-  phone: string;
   role: AdminRole;
   status: "active" | "inactive";
   createdAt: string;
@@ -73,41 +74,6 @@ interface AdminAccount {
 }
 
 type SettingsTab = "accounts" | "notifications" | "terms";
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const mockAdmins: AdminAccount[] = [
-  {
-    id: "adm-001",
-    name: "Soumyadip Ghosh",
-    email: "soumyadip@aotf.in",
-    phone: "6290338214",
-    role: "super_admin",
-    status: "active",
-    createdAt: "2024-01-01T00:00:00Z",
-    lastLogin: "2026-03-01T14:30:00Z",
-  },
-  {
-    id: "adm-002",
-    name: "Pritam Mahata",
-    email: "pritam@aotf.in",
-    phone: "9876543210",
-    role: "super_admin",
-    status: "active",
-    createdAt: "2024-06-15T00:00:00Z",
-    lastLogin: "2026-03-02T09:15:00Z",
-  },
-  {
-    id: "adm-003",
-    name: "Anita Roy",
-    email: "anita@aotf.in",
-    phone: "9876543211",
-    role: "support_admin",
-    status: "active",
-    createdAt: "2025-02-10T00:00:00Z",
-    lastLogin: "2026-02-28T18:45:00Z",
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -119,6 +85,11 @@ const roleConfig: Record<
     label: "Super Admin",
     color: "danger",
     icon: <Crown size={14} />,
+  },
+  admin: {
+    label: "Admin",
+    color: "primary",
+    icon: <Building2 size={14} />,
   },
   support_admin: {
     label: "Support Admin",
@@ -156,6 +127,16 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function normalizeAdminRole(role: unknown): AdminRole {
+  if (role === "super_admin" || role === "admin" || role === "support_admin") {
+    return role;
+  }
+  if (role === "moderator") {
+    return "support_admin";
+  }
+  return "admin";
+}
+
 // ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -178,8 +159,68 @@ export default function SettingsPage() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function AdminAccountsSection() {
-  const [admins, setAdmins] = useState<AdminAccount[]>(mockAdmins);
+  const { user } = useUser();
+  const meta = (user as any)?.publicMetadata as Record<string, unknown> | undefined;
+  const isSuperAdmin = meta?.role === "super_admin" || meta?.aotfRole === "SUPER_ADMIN";
+  const [myAdmin, setMyAdmin] = useState<{
+    role: string;
+    permissions: Record<string, boolean>;
+  } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const adminId = (meta as any)?.adminId;
+        if (!adminId) return;
+        const res = await fetch(`/api/v1/admin/admins/${adminId}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!mounted) return;
+        setMyAdmin(json.admin ?? null);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [meta]);
+  const [admins, setAdmins] = useState<AdminAccount[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/admin/admins");
+        if (!res.ok) return;
+        const json = await res.json();
+        const rows = (json?.admins ?? []) as Array<Record<string, unknown>>;
+        if (!mounted) return;
+        setAdmins(
+          rows.map((row) => ({
+            id: String(row._id ?? ""),
+            name: String(row.name ?? ""),
+            username: String(row.username ?? ""),
+            email: String(row.email ?? ""),
+            role: normalizeAdminRole(row.role),
+            status: row.isActive === false ? "inactive" : "active",
+            createdAt: String(row.createdAt ?? new Date().toISOString()),
+            lastLogin: undefined,
+          })),
+        );
+      } catch (e) {
+        console.error("Failed to fetch admins:", e);
+      } finally {
+        if (mounted) setIsLoadingAdmins(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Add Admin modal
   const {
@@ -189,9 +230,9 @@ function AdminAccountsSection() {
   } = useDisclosure();
   const [newAdmin, setNewAdmin] = useState({
     name: "",
+    username: "",
     email: "",
-    phone: "",
-    role: "support_admin" as AdminRole,
+    role: "admin" as AdminRole,
     password: "",
     confirmPassword: "",
   });
@@ -232,8 +273,8 @@ function AdminAccountsSection() {
     return admins.filter(
       (a) =>
         a.name.toLowerCase().includes(q) ||
+        a.username.toLowerCase().includes(q) ||
         a.email.toLowerCase().includes(q) ||
-        a.phone.includes(q) ||
         a.id.includes(q)
     );
   }, [admins, searchTerm]);
@@ -243,6 +284,10 @@ function AdminAccountsSection() {
     (a) => a.role === "support_admin"
   ).length;
 
+  const availableRoles = isSuperAdmin
+    ? CREATABLE_ADMIN_ROLES
+    : [];
+
   // ── Add Admin ──────────────────────────────────────────────────────────
 
   const validateAddForm = (): boolean => {
@@ -250,6 +295,16 @@ function AdminAccountsSection() {
     if (!newAdmin.name.trim()) errors.name = "Name is required";
     else if (!/^[a-zA-Z\s]+$/.test(newAdmin.name.trim()))
       errors.name = "Name can only contain letters and spaces";
+    if (!newAdmin.username.trim()) errors.username = "Username is required";
+    else if (!/^[a-z0-9._-]{3,32}$/i.test(newAdmin.username.trim()))
+      errors.username =
+        "Username must be 3-32 chars and only letters, numbers, dot, underscore, or hyphen";
+    else if (
+      admins.some(
+        (a) => a.username.toLowerCase() === newAdmin.username.trim().toLowerCase()
+      )
+    )
+      errors.username = "An admin with this username already exists";
     if (!newAdmin.email.trim()) errors.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAdmin.email.trim()))
       errors.email = "Enter a valid email";
@@ -259,9 +314,6 @@ function AdminAccountsSection() {
       )
     )
       errors.email = "An admin with this email already exists";
-    if (!newAdmin.phone.trim()) errors.phone = "Phone number is required";
-    else if (!/^[6-9]\d{9}$/.test(newAdmin.phone.trim()))
-      errors.phone = "Enter a valid 10-digit phone number";
     if (!newAdmin.password) errors.password = "Password is required";
     else if (newAdmin.password.length < 8)
       errors.password = "Password must be at least 8 characters";
@@ -275,33 +327,83 @@ function AdminAccountsSection() {
     if (!validateAddForm()) return;
     setIsAdding(true);
     try {
-      // TODO: wire to real API
-      await new Promise((r) => setTimeout(r, 800));
-      const admin: AdminAccount = {
-        id: `adm-${String(admins.length + 1).padStart(3, "0")}`,
-        name: newAdmin.name.trim(),
+      // Build permissions defaults based on selected role
+      const defaultPermissions: Record<string, boolean> = {};
+      if (newAdmin.role === "super_admin") {
+        defaultPermissions.canManageAdmins = true;
+        defaultPermissions.canManagePosts = true;
+        defaultPermissions.canManageJobs = true;
+        defaultPermissions.canViewAnalytics = true;
+        defaultPermissions.canHandleEnquiries = true;
+      } else if (newAdmin.role === "admin") {
+        defaultPermissions.canManageAdmins = true;
+        defaultPermissions.canManagePosts = true;
+        defaultPermissions.canManageJobs = true;
+        defaultPermissions.canViewAnalytics = false;
+        defaultPermissions.canHandleEnquiries = true;
+      } else {
+        // support_admin
+        defaultPermissions.canManageAdmins = false;
+        defaultPermissions.canManagePosts = false;
+        defaultPermissions.canManageJobs = false;
+        defaultPermissions.canViewAnalytics = false;
+        defaultPermissions.canHandleEnquiries = true;
+      }
+
+      const payload = {
+        username: newAdmin.username.trim().toLowerCase(),
         email: newAdmin.email.trim().toLowerCase(),
-        phone: newAdmin.phone.trim(),
+        name: newAdmin.name.trim(),
+        password: newAdmin.password,
         role: newAdmin.role,
-        status: "active",
-        createdAt: new Date().toISOString(),
+        permissions: defaultPermissions,
       };
-      setAdmins((prev) => [...prev, admin]);
+
+      const res = await fetch("/api/v1/admin/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        addToast({
+          description: json?.error || "Failed to create admin",
+          color: "danger",
+        });
+        return;
+      }
+
+      const createdAdmin: AdminAccount = {
+        id: String(json?.admin?.id ?? json.adminId ?? `adm-${String(admins.length + 1).padStart(3, "0")}`),
+        name: String(json?.admin?.name ?? newAdmin.name.trim()),
+        username: String(json?.admin?.username ?? newAdmin.username.trim().toLowerCase()),
+        email: String(json?.admin?.email ?? newAdmin.email.trim().toLowerCase()),
+        role: normalizeAdminRole(json?.admin?.role ?? newAdmin.role),
+        status: json?.admin?.isActive === false ? "inactive" : "active",
+        createdAt: String(json?.admin?.createdAt ?? new Date().toISOString()),
+      };
+
+      setAdmins((prev) => [createdAdmin, ...prev]);
+
       addToast({
-        description: `Admin "${admin.name}" created successfully`,
+        description: `Admin "${createdAdmin.name}" created successfully`,
         color: "success",
       });
+
       setNewAdmin({
         name: "",
+        username: "",
         email: "",
-        phone: "",
-        role: "support_admin",
+        role: "admin",
         password: "",
         confirmPassword: "",
       });
       setAddErrors({});
       closeAdd();
-    } catch {
+    } catch (err) {
+      console.error("Add admin error:", err);
       addToast({ description: "Failed to create admin", color: "danger" });
     } finally {
       setIsAdding(false);
@@ -408,24 +510,32 @@ function AdminAccountsSection() {
 
   return (
     <div className="space-y-4">
-      {/* Floating Add Admin Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Tooltip content="Add Admin" placement="left" color="primary">
-          <Button
-            color="primary"
-            onPress={openAdd}
-            isIconOnly
-            radius="full"
-            size="lg"
-            className="shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all"
-          >
-            <UserPlus size={20} />
-          </Button>
-        </Tooltip>
-      </div>
+      {/* Floating Add Admin Button (visible to super admins only) */}
+      {(isSuperAdmin && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Tooltip content="Add Admin" placement="left" color="primary">
+            <Button
+              color="primary"
+              onPress={openAdd}
+              isIconOnly
+              radius="full"
+              size="lg"
+              className="shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all"
+            >
+              <UserPlus size={20} />
+            </Button>
+          </Tooltip>
+        </div>
+      ))}
+
+      {isLoadingAdmins ? (
+        <div className="py-10 flex justify-center">
+          <Spinner size="lg" color="primary" />
+        </div>
+      ) : null}
       {/* Search */}
       <Input
-        placeholder="Search by name, email, phone or ID…"
+        placeholder="Search by name, username, email or ID…"
         value={searchTerm}
         onValueChange={setSearchTerm}
         variant="bordered"
@@ -508,6 +618,24 @@ function AdminAccountsSection() {
                 errorMessage={addErrors.name}
                 startContent={<Users size={16} className="text-default-400" />}
               />
+              <Input
+                label="Username"
+                placeholder="e.g. admin.user"
+                value={newAdmin.username}
+                onValueChange={(v) => {
+                  setNewAdmin((p) => ({ ...p, username: v }));
+                  setAddErrors((e) => {
+                    const n = { ...e };
+                    delete n.username;
+                    return n;
+                  });
+                }}
+                isRequired
+                variant="bordered"
+                isInvalid={!!addErrors.username}
+                errorMessage={addErrors.username}
+                startContent={<Users size={16} className="text-default-400" />}
+              />
               <Select
                 label="Role"
                 selectedKeys={[newAdmin.role]}
@@ -527,7 +655,7 @@ function AdminAccountsSection() {
                   )
                 }
               >
-                {ADMIN_ROLES.map((role) => (
+                {availableRoles.map((role) => (
                   <SelectItem key={role}>{roleConfig[role].label}</SelectItem>
                 ))}
               </Select>
@@ -551,26 +679,6 @@ function AdminAccountsSection() {
               isInvalid={!!addErrors.email}
               errorMessage={addErrors.email}
               startContent={<Mail size={16} className="text-default-400" />}
-            />
-
-            <Input
-              label="Phone Number"
-              placeholder="9876543210"
-              type="tel"
-              value={newAdmin.phone}
-              onValueChange={(v) => {
-                setNewAdmin((p) => ({ ...p, phone: v }));
-                setAddErrors((e) => {
-                  const n = { ...e };
-                  delete n.phone;
-                  return n;
-                });
-              }}
-              isRequired
-              variant="bordered"
-              isInvalid={!!addErrors.phone}
-              errorMessage={addErrors.phone}
-              startContent={<Phone size={16} className="text-default-400" />}
             />
 
             <Divider />
@@ -958,8 +1066,8 @@ function AdminCard({
             <span className="text-default-600 truncate">{admin.email}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Phone size={14} className="text-default-400 shrink-0" />
-            <span className="text-default-600">{admin.phone}</span>
+            <Users size={14} className="text-default-400 shrink-0" />
+            <span className="text-default-600">@{admin.username}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock size={14} className="text-default-400 shrink-0" />

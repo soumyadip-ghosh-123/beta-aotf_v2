@@ -66,7 +66,7 @@ export default function AdminHomePage() {
         return "bg-purple-100 text-purple-800 border-purple-300";
       case "admin":
         return "bg-blue-100 text-blue-800 border-blue-300";
-      case "moderator":
+      case "support_admin":
         return "bg-green-100 text-green-800 border-green-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
@@ -79,7 +79,7 @@ export default function AdminHomePage() {
         return "Super Admin";
       case "admin":
         return "Sub-Superadmin";
-      case "moderator":
+      case "support_admin":
         return "Support";
       default:
         return role;

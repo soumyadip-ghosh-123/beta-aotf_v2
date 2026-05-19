@@ -65,7 +65,7 @@ const adminSchema = new Schema(
     name: { type: String, required: true },
     role: {
       type: String,
-      enum: ["super_admin", "admin", "moderator"],
+      enum: ["super_admin", "admin", "support_admin"],
       required: true,
     },
     permissions: { type: permissionsSchema, default: () => ({}) },
@@ -149,7 +149,7 @@ adminSchema.statics.getDefaultPermissions = function (role: string) {
         canTerminateAdmins: false,
         canViewAuditLogs: true,
       };
-    case "moderator": // Support
+    case "support_admin": // Support
       return {
         canManageUsers: false,
         canBlockUsers: false,

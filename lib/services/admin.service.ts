@@ -48,7 +48,7 @@ export async function createAdmin(params: {
   email: string;
   firstName: string;
   lastName?: string;
-  role: "admin" | "moderator";
+  role: "admin" | "support_admin";
   creatorAdminId: string;
   creatorClerkId: string;
   creatorUsername: string;

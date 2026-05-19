@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as adminService from "@/lib/services/admin.service";
 import Admin from "@/lib/models/Admin";
@@ -15,7 +15,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const metadata = sessionClaims?.publicMetadata as Record<string, unknown>;
+    let metadata: Record<string, unknown> | undefined =
+      sessionClaims?.publicMetadata as Record<string, unknown> | undefined;
+
+    if (metadata?.isAdmin !== true) {
+      // Try fetching latest user metadata from Clerk as a fallback
+      try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId as string);
+        metadata = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+      } catch (err) {
+        console.warn("Could not fetch Clerk user metadata fallback:", err);
+      }
+    }
 
     if (metadata?.isAdmin !== true) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -30,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
     }
 
-    // Only super_admin can create admins
+    // Only super_admin can create admins.
     if (currentAdmin.role !== "super_admin") {
       return NextResponse.json(
         { error: "Only superadmin can create admins" },
@@ -56,8 +68,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!["admin", "moderator"].includes(role)) {
+    if (!["admin", "support_admin"].includes(role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+
+    // Only super_admin can create support admin accounts
+    if (role === "support_admin" && currentAdmin.role !== "super_admin") {
+      return NextResponse.json(
+        { error: "Only superadmin can create support admins" },
+        { status: 403 },
+      );
     }
 
     const result = await adminService.createAdmin({
@@ -101,7 +121,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const metadata = sessionClaims?.publicMetadata as Record<string, unknown>;
+    let metadata: Record<string, unknown> | undefined =
+      sessionClaims?.publicMetadata as Record<string, unknown> | undefined;
+
+    if (metadata?.isAdmin !== true) {
+      try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId as string);
+        metadata = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+      } catch (err) {
+        console.warn("Could not fetch Clerk user metadata fallback:", err);
+      }
+    }
 
     if (metadata?.isAdmin !== true) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -138,10 +169,10 @@ export async function GET(req: NextRequest) {
       isLocked: isLocked ? isLocked === "true" : undefined,
     });
 
-    // Sub-superadmins can only see support admins (moderators)
+    // Sub-superadmins can only see support admins
     if (currentAdmin.role === "admin") {
       result.admins = result.admins.filter(
-        (admin) => admin.role === "moderator",
+        (admin) => admin.role === "support_admin",
       );
     }
 

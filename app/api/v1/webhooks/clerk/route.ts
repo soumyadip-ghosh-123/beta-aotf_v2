@@ -284,7 +284,13 @@ async function handleAdminCreated(data: Record<string, unknown>) {
   const username = (data.username as string)?.toLowerCase().trim();
   const publicMetadata =
     (data.public_metadata as Record<string, unknown>) || {};
-  const role = (publicMetadata.role as string) || "moderator";
+  const rawRole = (publicMetadata.role as string) || "support_admin";
+  const normalizedRole =
+    rawRole === "moderator"
+      ? "support_admin"
+      : rawRole === "super_admin" || rawRole === "admin" || rawRole === "support_admin"
+        ? rawRole
+        : "support_admin";
 
   const emails =
     (data.email_addresses as
@@ -308,14 +314,14 @@ async function handleAdminCreated(data: Record<string, unknown>) {
 
   if (!adminDoc) {
     // Create new admin with default permissions based on role
-    const permissions = Admin.getDefaultPermissions(role);
+    const permissions = Admin.getDefaultPermissions(normalizedRole);
 
     adminDoc = await Admin.create({
       clerkId,
       username,
       email,
       name,
-      role: role as "super_admin" | "admin" | "moderator",
+      role: normalizedRole as "super_admin" | "admin" | "support_admin",
       permissions,
       isActive: true,
       isLocked: false,
@@ -323,7 +329,7 @@ async function handleAdminCreated(data: Record<string, unknown>) {
       createdBy: null, // Will be updated via API when admin creates another admin
     });
 
-    console.log(`[clerk-webhook] Created admin ${clerkId} with role ${role}`);
+    console.log(`[clerk-webhook] Created admin ${clerkId} with role ${normalizedRole}`);
   }
 
   // Update Clerk metadata with adminId
