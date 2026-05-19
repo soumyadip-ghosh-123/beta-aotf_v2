@@ -114,6 +114,25 @@ const middleware = clerkMiddleware(async (auth, req) => {
   // Track if user is an admin to skip onboarding checks later
   let isUserAdmin = false;
 
+  const shouldResolveAdminStatus =
+    userId && (isProtectedAdminRequest || isOnboardingRoute(req) || isOnboardingApiRoute(req));
+
+  if (shouldResolveAdminStatus) {
+    try {
+      await dbConnect();
+      const adminDoc = await Admin.findOne(
+        { clerkId: userId },
+        { isActive: 1, isLocked: 1, requirePasswordChange: 1 },
+      ).lean();
+
+      if (adminDoc) {
+        isUserAdmin = true;
+      }
+    } catch (err) {
+      console.error("[proxy] Error resolving admin status for onboarding check:", err);
+    }
+  }
+
   if (isProtectedAdminRequest && !isPublicRoute(req)) {
     // Must be signed in
     if (!userId) {
@@ -213,6 +232,21 @@ const middleware = clerkMiddleware(async (auth, req) => {
   if (userId && meta?.isAdmin === true) {
     // Preserve admin access for non-admin page routes when metadata is fresh.
     isUserAdmin = true;
+  }
+
+  // Short-circuit onboarding requests for admins to avoid repeated client/server
+  // calls when an admin is signed in. This prevents page POSTs to `/onboarding`
+  // and API calls to `/api/v1/onboarding` from being processed.
+  if (isUserAdmin && (pathname === "/api/v1/onboarding" || pathname === "/onboarding")) {
+    if (isApiRequest || pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { ok: true, message: "Onboarding skipped for admin" },
+        { status: 200 },
+      );
+    }
+
+    // For non-API POSTs to the onboarding page, redirect admins to home.
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   // 2. Auth guard for all protected routes

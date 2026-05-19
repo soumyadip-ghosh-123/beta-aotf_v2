@@ -63,6 +63,14 @@ export default function Onboarding() {
 
   // Pre-fill form from DB on mount
   useEffect(() => {
+    const meta = (user as any)?.publicMetadata as Record<string, unknown> | undefined;
+    const isAdmin =
+      meta?.isAdmin === true ||
+      meta?.role === "super_admin" ||
+      meta?.aotfRole === "SUPER_ADMIN";
+
+    if (isAdmin) return; // Admins don't need onboarding — avoid repeated calls
+
     fetch("/api/v1/onboarding")
       .then((r) => (r.ok ? r.json() : null))
       .then(
@@ -200,6 +208,17 @@ export default function Onboarding() {
   const saveProfile = async () => {
     setIsSaving(true);
     setSaveError(null);
+    const meta = (user as any)?.publicMetadata as Record<string, unknown> | undefined;
+    const isAdmin =
+      meta?.isAdmin === true ||
+      meta?.role === "super_admin" ||
+      meta?.aotfRole === "SUPER_ADMIN";
+
+    if (isAdmin) {
+      setIsSaving(false);
+      setProfileSaved(true);
+      return;
+    }
     try {
       const res = await fetch("/api/v1/profile", {
         method: "PATCH",
@@ -240,6 +259,17 @@ export default function Onboarding() {
   const saveOnboardingDetails = async (planOverride?: string) => {
     setIsSavingOnboarding(true);
     setOnboardingDetailsError(null);
+    const meta = (user as any)?.publicMetadata as Record<string, unknown> | undefined;
+    const isAdmin =
+      meta?.isAdmin === true ||
+      meta?.role === "super_admin" ||
+      meta?.aotfRole === "SUPER_ADMIN";
+
+    if (isAdmin) {
+      setIsSavingOnboarding(false);
+      setOnboardingDetailsSaved(true);
+      return;
+    }
     // Use the explicit override first, then fall back to current state
     const planValue =
       planOverride !== undefined ? planOverride : formData.plan || undefined;
