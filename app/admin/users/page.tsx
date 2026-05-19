@@ -1,131 +1,247 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@heroui/modal";
 import { Select, SelectItem } from "@heroui/select";
 import { addToast } from "@heroui/toast";
-import { User, Mail, Phone, Calendar, UserPlus } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Globe,
+  RefreshCw,
+  Ban,
+  BadgeCheck,
+  Trash2,
+  Search,
+} from "lucide-react";
 import AdminSearchBar from "@/components/admin/ui/AdminSearchBar";
 
 type Role = "teacher" | "candidate";
+type Status = "all" | "active" | "blocked" | "deleted";
 
 type UserData = {
   id: string;
+  clerkId: string;
   name: string;
+  username: string;
   email: string;
-  phone: string;
+  phone: string | null;
+  whatsapp?: string | null;
   role: Role;
   createdAt: string;
+  updatedAt?: string;
   status?: "active" | "inactive";
+  statusValue: "active" | "blocked" | "deleted";
+  onboardingCompleted: boolean;
+  avatarUrl?: string | null;
+  profileUrl: string;
+  verifyUrl: string;
+  location?: string | null;
+  qualification?: string | null;
+  board?: string | null;
 };
 
-// Mock data
-const mockUsers: UserData[] = [
-  {
-    id: "u1",
-    name: "Pritam Mahata",
-    email: "pritam@example.com",
-    phone: "9876543210",
-    role: "teacher",
-    createdAt: "2024-01-15",
-    status: "active",
-  },
-  {
-    id: "u2",
-    name: "Anita Sharma",
-    email: "anita@example.com",
-    phone: "9876543211",
-    role: "teacher",
-    createdAt: "2024-02-20",
-    status: "active",
-  },
-  {
-    id: "u3",
-    name: "Rahul Kumar",
-    email: "rahul@example.com",
-    phone: "9876543212",
-    role: "candidate",
-    createdAt: "2024-03-10",
-    status: "active",
-  },
-  {
-    id: "u4",
-    name: "Sneha Patel",
-    email: "sneha@example.com",
-    phone: "9876543213",
-    role: "candidate",
-    createdAt: "2024-03-25",
-    status: "inactive",
-  },
-];
+type UsersResponse = {
+  users: Array<{
+    id: string;
+    clerkId: string;
+    username: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+    role: "teacher" | "teacher_candidate";
+    status: "active" | "blocked" | "deleted";
+    onboardingCompleted: boolean;
+    avatarUrl: string | null;
+    profileUrl: string;
+    verifyUrl: string;
+    location: string | null;
+    qualification: string | null;
+    board: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  summary?: {
+    total: number;
+    active: number;
+    blocked: number;
+    deleted: number;
+    teachers: number;
+    candidates: number;
+  };
+};
+
+const statusLabels: Record<Exclude<Status, "all">, string> = {
+  active: "Active",
+  blocked: "Blocked",
+  deleted: "Deleted",
+};
+
+function toFriendlyRole(role: string): Role {
+  return role === "teacher_candidate" ? "candidate" : "teacher";
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export default function UsersPage() {
   const [selectedTab, setSelectedTab] = useState<Role>("teacher");
-  const [users, setUsers] = useState<UserData[]>(mockUsers);
+  const [statusFilter, setStatusFilter] = useState<Status>("all");
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    role: "teacher" as Role,
-  });
+  const [summary, setSummary] = useState<{
+    total: number;
+    active: number;
+    blocked: number;
+    deleted: number;
+    teachers: number;
+    candidates: number;
+  } | null>(null);
+
+  const fetchUsers = async (role: Role, status: Status) => {
+    const params = new URLSearchParams();
+    params.set("role", role);
+    if (status !== "all") params.set("status", status);
+    params.set("limit", "250");
+
+    const res = await fetch(`/api/admin/app-users?${params.toString()}`);
+    const data = (await res.json().catch(() => ({}))) as UsersResponse & { error?: string };
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to load users");
+    }
+
+    setUsers(
+      data.users.map((user) => ({
+        id: user.id,
+        clerkId: user.clerkId,
+        name: user.name,
+        username: user.username,
+        email: user.email ?? "—",
+        phone: user.phone,
+        whatsapp: user.whatsapp,
+        role: toFriendlyRole(user.role),
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        statusValue: user.status,
+        status: user.status === "active" ? "active" : "inactive",
+        onboardingCompleted: user.onboardingCompleted,
+        avatarUrl: user.avatarUrl,
+        profileUrl: user.profileUrl,
+        verifyUrl: user.verifyUrl,
+        location: user.location,
+        qualification: user.qualification,
+        board: user.board,
+      })),
+    );
+    setSummary(data.summary ?? null);
+  };
+
+  const reloadUsers = async (silent = false) => {
+    silent ? setIsRefreshing(true) : setIsLoading(true);
+    setError(null);
+    try {
+      await fetchUsers(selectedTab, statusFilter);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load users");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    void reloadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTab, statusFilter]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      if (user.role !== selectedTab) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
         user.name.toLowerCase().includes(q) ||
         user.email.toLowerCase().includes(q) ||
-        user.phone.includes(q)
+        user.username.toLowerCase().includes(q) ||
+        (user.phone ?? "").includes(q) ||
+        (user.whatsapp ?? "").includes(q)
       );
     });
-  }, [users, selectedTab, searchQuery]);
+  }, [users, searchQuery]);
 
-  const handleCreateUser = () => {
-    if (!newUser.name || !newUser.email || !newUser.phone) {
-      addToast({ description: "Please fill all fields", color: "danger" });
-      return;
+  const handleStatusChange = async (userId: string, nextStatus: "active" | "blocked" | "deleted") => {
+    setActioningId(userId);
+    try {
+      const res = await fetch(`/api/admin/app-users/${userId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update user status");
+      }
+
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === userId
+            ? {
+                ...user,
+                statusValue: nextStatus,
+                status: nextStatus === "active" ? "active" : "inactive",
+              }
+            : user,
+        ),
+      );
+      addToast({
+        description: `User ${statusLabels[nextStatus]} successfully`,
+        color: "success",
+      });
+      void reloadUsers(true);
+    } catch (err) {
+      addToast({
+        description: err instanceof Error ? err.message : "Failed to update user",
+        color: "danger",
+      });
+    } finally {
+      setActioningId(null);
     }
-
-    const user: UserData = {
-      id: `u${users.length + 1}`,
-      name: newUser.name,
-      email: newUser.email,
-      phone: newUser.phone,
-      role: newUser.role,
-      createdAt: new Date().toISOString().split("T")[0],
-      status: "active",
-    };
-
-    setUsers([...users, user]);
-    addToast({ description: "User created successfully", color: "success" });
-    setNewUser({ name: "", email: "", phone: "", role: "teacher" });
-    onClose();
   };
 
   return (
     <div className="w-full space-y-6 px-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Users Management</h1>
           <p className="text-sm text-default-500 mt-1">
-            Manage teachers and candidates
+            Manage real teacher and candidate accounts
           </p>
         </div>
+        <Button
+          variant="flat"
+          color="primary"
+          startContent={<RefreshCw size={16} />}
+          isLoading={isRefreshing}
+          onPress={() => void reloadUsers(true)}
+        >
+          Refresh
+        </Button>
       </div>
       <Tabs
         selectedKey={selectedTab}
@@ -139,33 +255,83 @@ export default function UsersPage() {
       >
         <Tab
           key="teacher"
-          title={`Teachers (${users.filter((u) => u.role === "teacher").length})`}
+          title={`Teachers (${summary?.teachers ?? filteredUsers.filter((u) => u.role === "teacher").length})`}
         />
         <Tab
           key="candidate"
-          title={`Candidates (${users.filter((u) => u.role === "candidate").length})`}
+          title={`Candidates (${summary?.candidates ?? filteredUsers.filter((u) => u.role === "candidate").length})`}
         />
       </Tabs>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          label="Status"
+          placeholder="Filter by status"
+          selectedKeys={[statusFilter]}
+          className="max-w-56"
+          size="sm"
+          variant="bordered"
+          onSelectionChange={(keys) => {
+            const value = Array.from(keys)[0] as Status | undefined;
+            setStatusFilter(value ?? "all");
+          }}
+        >
+          <SelectItem key="all">All statuses</SelectItem>
+          <SelectItem key="active">Active</SelectItem>
+          <SelectItem key="blocked">Blocked</SelectItem>
+          <SelectItem key="deleted">Deleted</SelectItem>
+        </Select>
+        <div className="flex flex-wrap gap-2 text-xs text-default-500">
+          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.total ?? filteredUsers.length} users</span>
+          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.active ?? 0} active</span>
+          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.blocked ?? 0} blocked</span>
+          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.deleted ?? 0} deleted</span>
+        </div>
+      </div>
+
       <AdminSearchBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
-        placeholder="Search by name, email or phone…"
+        placeholder="Search by name, username, email or phone…"
         resultCount={filteredUsers.length}
         resultLabel="user"
-        onClearAll={() => setSearchQuery("")}
+        onClearAll={() => {
+          setSearchQuery("");
+          setStatusFilter("all");
+        }}
       />
+
+      {error && (
+        <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-danger-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-16 text-center text-default-500">Loading users…</div>
+      ) : null}
+
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {filteredUsers.map((user) => (
-          <Card key={user.id} className="w-full">
+          <Card key={user.id} className="w-full border border-default-200">
             <CardHeader className="flex gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <User className="text-primary" size={24} />
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary font-semibold">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  getInitials(user.name) || <User className="text-primary" size={24} />
+                )}
               </div>
               <div className="flex flex-col">
                 <p className="text-md font-semibold">{user.name}</p>
                 <p className="text-small text-default-500 capitalize">
                   {user.role}
                 </p>
+                <p className="text-tiny text-default-400">@{user.username}</p>
               </div>
             </CardHeader>
             <CardBody className="space-y-2">
@@ -175,12 +341,18 @@ export default function UsersPage() {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Phone size={16} className="text-default-400" />
-                <span className="text-default-600">{user.phone}</span>
+                <span className="text-default-600">{user.phone ?? "—"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar size={16} className="text-default-400" />
                 <span className="text-default-600">
                   Joined: {new Date(user.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Globe size={16} className="text-default-400" />
+                <span className="text-default-600">
+                  {user.onboardingCompleted ? "Onboarding complete" : "Onboarding pending"}
                 </span>
               </div>
             </CardBody>
@@ -190,16 +362,68 @@ export default function UsersPage() {
                 variant="flat"
                 color="primary"
                 className="flex-1"
+                as="a"
+                href={user.verifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 View Profile
               </Button>
               <Button
                 size="sm"
                 variant="flat"
-                color={user.status === "active" ? "success" : "default"}
+                color={user.statusValue === "active" ? "success" : user.statusValue === "blocked" ? "warning" : "default"}
               >
-                {user.status === "active" ? "Active" : "Inactive"}
+                {statusLabels[user.statusValue]}
               </Button>
+            </CardFooter>
+            <CardFooter className="gap-2 pt-0">
+              {user.statusValue === "active" ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="warning"
+                  startContent={<Ban size={16} />}
+                  className="flex-1"
+                  isLoading={actioningId === user.id}
+                  onPress={() => void handleStatusChange(user.id, "blocked")}
+                >
+                  Block
+                </Button>
+              ) : user.statusValue === "blocked" ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="success"
+                  startContent={<BadgeCheck size={16} />}
+                  className="flex-1"
+                  isLoading={actioningId === user.id}
+                  onPress={() => void handleStatusChange(user.id, "active")}
+                >
+                  Unblock
+                </Button>
+              ) : (
+                <Button size="sm" variant="flat" className="flex-1" isDisabled>
+                  Deleted
+                </Button>
+              )}
+
+              {user.statusValue !== "deleted" ? (
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  startContent={<Trash2 size={16} />}
+                  isLoading={actioningId === user.id}
+                  onPress={() => {
+                    if (window.confirm(`Delete ${user.name}? This will mark the account as deleted.`)) {
+                      void handleStatusChange(user.id, "deleted");
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              ) : null}
             </CardFooter>
           </Card>
         ))}
@@ -207,72 +431,9 @@ export default function UsersPage() {
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <User size={48} className="mx-auto text-default-300 mb-4" />
-          <p className="text-default-500">
-            No {selectedTab}s found. Create one to get started.
-          </p>
+          <p className="text-default-500">No {selectedTab}s found for the current filters.</p>
         </div>
       )}
-      {/* Create User Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            Create New User
-          </ModalHeader>
-          <ModalBody>
-            <Input
-              label="Full Name"
-              placeholder="Enter full name"
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-              isRequired
-              variant="bordered"
-            />
-            <Input
-              label="Email"
-              placeholder="Enter email"
-              type="email"
-              value={newUser.email}
-              onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
-              }
-              isRequired
-              variant="bordered"
-            />
-            <Input
-              label="Phone Number"
-              placeholder="Enter phone number"
-              type="tel"
-              value={newUser.phone}
-              onChange={(e) =>
-                setNewUser({ ...newUser, phone: e.target.value })
-              }
-              isRequired
-              variant="bordered"
-            />
-            <Select
-              label="Role"
-              placeholder="Select role"
-              selectedKeys={[newUser.role]}
-              onChange={(e: any) =>
-                setNewUser({ ...newUser, role: e.target.value as Role })
-              }
-              isRequired
-              variant="bordered"
-            >
-              <SelectItem key="teacher">Teacher</SelectItem>
-              <SelectItem key="candidate">Candidate</SelectItem>
-            </Select>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button color="primary" onPress={handleCreateUser}>
-              Create User
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

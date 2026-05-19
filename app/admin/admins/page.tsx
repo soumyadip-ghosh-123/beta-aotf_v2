@@ -70,7 +70,7 @@ export default function AdminManagementPage() {
   return (
     <div className="min-h-screen w-full px-4 py-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <div className="rounded-3xl border border-divider bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6 shadow-sm">
+        <div className="rounded-3xl border border-divider bg-linear-to-br from-slate-50 via-white to-blue-50 p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold text-default-900">Admin Management</h1>
