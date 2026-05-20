@@ -16,6 +16,15 @@ export default function EnquiryForm() {
     Partial<Record<keyof typeof form, string>>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const formatName = (value: string) =>
+    value.replace(
+      /\b([a-zA-Z])([a-zA-Z]*)/g,
+      (_m, first, rest) => `${first.toUpperCase()}${rest.toLowerCase()}`,
+    );
+  const normalizePhone = (value: string) =>
+    value.replace(/\D/g, "").slice(0, 10);
+  const formatPhone = (value: string) =>
+    value.length <= 5 ? value : `${value.slice(0, 5)} ${value.slice(5)}`;
   const placeHolderText =
     role === "guardian"
       ? "I need a science tutor for my son in class 6, ICSE"
@@ -32,6 +41,11 @@ export default function EnquiryForm() {
     setForm((s) => ({ ...s, [field]: value }));
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
   };
+
+  const handleNameChange = (value: string) =>
+    handleChange("name", formatName(value));
+  const handlePhoneChange = (value: string) =>
+    handleChange("phone", normalizePhone(value));
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -55,7 +69,7 @@ export default function EnquiryForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
-          phoneNumber: form.phone.trim(),
+          phoneNumber: form.phone,
           query: form.query.trim(),
         }),
       });
@@ -66,10 +80,7 @@ export default function EnquiryForm() {
         throw new Error(data.error || "Something went wrong");
       }
 
-      showToast(
-        `Enquiry submitted successfully.`,
-        "success"
-      );
+      showToast(`Enquiry submitted successfully.`, "success");
       setForm({ name: "", phone: "", query: "" });
       setErrors({});
     } catch (err: any) {
@@ -83,7 +94,9 @@ export default function EnquiryForm() {
     <Card className="max-w-md w-full mx-auto">
       <CardHeader className="flex flex-col gap-1 ">
         <h3 className="text-lg font-semibold">Let us connect</h3>
-        <p className="text-sm text-default-500">Are you a guardian or client? Select and fill the enquiry form.</p>
+        <p className="text-sm text-default-500">
+          Are you a guardian or client? Select and fill the enquiry form.
+        </p>
       </CardHeader>
       <CardBody>
         <Tabs
@@ -101,7 +114,7 @@ export default function EnquiryForm() {
             label="Name"
             placeholder="Your full name"
             value={form.name}
-            onValueChange={(v) => handleChange("name", v)}
+            onValueChange={handleNameChange}
             isRequired
             isInvalid={!!errors.name}
             errorMessage={errors.name}
@@ -111,8 +124,8 @@ export default function EnquiryForm() {
           <Input
             label="Phone Number"
             placeholder="Your phone number"
-            value={form.phone}
-            onValueChange={(v) => handleChange("phone", v)}
+            value={formatPhone(form.phone)}
+            onValueChange={handlePhoneChange}
             isRequired
             isInvalid={!!errors.phone}
             errorMessage={errors.phone}

@@ -92,6 +92,10 @@ export default function TuitionPostForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const normalizePhone = (value: string) =>
+    value.replace(/\D/g, "").slice(0, 10);
+  const formatPhone = (value: string) =>
+    value.length <= 5 ? value : `${value.slice(0, 5)} ${value.slice(5)}`;
 
   // Fetch post data for edit mode
   useEffect(() => {
@@ -140,7 +144,7 @@ export default function TuitionPostForm({
     setFormData((prev) => ({
       ...prev,
       guardianName: enquiry.name || "",
-      guardianPhone: enquiry.phoneNumber || "",
+      guardianPhone: normalizePhone(enquiry.phoneNumber || ""),
       notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
     }));
   }, [enquiry, isEditMode]);
@@ -150,6 +154,8 @@ export default function TuitionPostForm({
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
+  const handleGuardianPhoneChange = (value: string) =>
+    handleChange("guardianPhone", normalizePhone(value));
 
   const handleStudentChange = (index: number, field: string, value: string) => {
     const newStudents = [...formData.students];
@@ -386,7 +392,7 @@ export default function TuitionPostForm({
       if (formData.notes?.trim()) notesParts.push(formData.notes.trim());
       if (formData.missingSubjects.length > 0)
         notesParts.push(
-          `Missing subjects: ${formData.missingSubjects.join(", ")}`
+          `Missing subjects: ${formData.missingSubjects.join(", ")}`,
         );
       if (notesParts.length > 0) payload.notes = notesParts.join("\n");
 
@@ -422,14 +428,14 @@ export default function TuitionPostForm({
           const messages = Object.entries(data.fieldErrors)
             .map(
               ([field, errors]) =>
-                `${field}: ${(errors as string[]).join(", ")}`
+                `${field}: ${(errors as string[]).join(", ")}`,
             )
             .join("; ");
           throw new Error(messages || data.error || "Validation failed");
         }
         throw new Error(
           data.error ||
-            (isEditMode ? "Failed to update post" : "Failed to create post")
+            (isEditMode ? "Failed to update post" : "Failed to create post"),
         );
       }
 
@@ -447,7 +453,7 @@ export default function TuitionPostForm({
       // Navigate after showing success
       setTimeout(() => {
         router.push(
-          isEditMode ? `/admin/tuitions/${postId}` : "/admin/tuitions"
+          isEditMode ? `/admin/tuitions/${postId}` : "/admin/tuitions",
         );
         router.refresh();
       }, 2000);
@@ -575,10 +581,8 @@ export default function TuitionPostForm({
                     label="Guardian Phone"
                     placeholder="Enter phone number"
                     type="tel"
-                    value={formData.guardianPhone}
-                    onChange={(e) =>
-                      handleChange("guardianPhone", e.target.value)
-                    }
+                    value={formatPhone(formData.guardianPhone)}
+                    onChange={(e) => handleGuardianPhoneChange(e.target.value)}
                     isRequired
                     isInvalid={!!errors.guardianPhone}
                     errorMessage={errors.guardianPhone}
@@ -926,7 +930,7 @@ export default function TuitionPostForm({
                           onClick={() =>
                             handleChange(
                               "notes",
-                              formData.notes ? `${formData.notes}\n${s}` : s
+                              formData.notes ? `${formData.notes}\n${s}` : s,
                             )
                           }
                           className="px-2 py-0.5 text-xs rounded-full border border-default-300
@@ -1090,7 +1094,7 @@ export default function TuitionPostForm({
                               </span>{" "}
                               <span className="font-medium">
                                 {frequencies.find(
-                                  (f) => f.key === formData.frequency
+                                  (f) => f.key === formData.frequency,
                                 )?.label || formData.frequency}
                               </span>
                             </div>
@@ -1122,7 +1126,7 @@ export default function TuitionPostForm({
                             <div className="flex flex-wrap gap-1">
                               {days
                                 .filter((d) =>
-                                  formData.preferredDays.includes(d)
+                                  formData.preferredDays.includes(d),
                                 )
                                 .map((day, idx) => (
                                   <Chip

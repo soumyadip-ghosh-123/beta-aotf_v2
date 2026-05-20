@@ -1,4 +1,13 @@
 import mongoose from "mongoose";
+import dns from "node:dns/promises";
+if (process.env.NODE_ENV === "production") {
+  // In production, use the default DNS servers (e.g. from /etc/resolv.conf)
+  // which should be able to resolve Atlas cluster hostnames.
+} else {
+  // In development, override DNS servers to avoid issues with certain ISPs
+  // that can't resolve Atlas cluster hostnames (e.g. Comcast).
+  dns.setServers(["1.1.1.1"]);
+}
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
