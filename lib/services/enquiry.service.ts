@@ -25,6 +25,7 @@ export interface EnrichedEnquiry {
   lastActionByAdminRole: string | null;
   lastAttemptNumber: number;
   lastActionAt?: Date;
+  lastActionNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +51,8 @@ type LatestEnquiryStatus = {
   adminName: string;
   adminRole: string;
   attemptNumber: number;
+  notes?: string;
+  actionAt?: Date;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -102,6 +105,8 @@ async function getLatestStatusMap(enquiryIds: unknown[]) {
         adminName: { $first: "$adminName" },
         adminRole: { $first: "$adminRole" },
         attemptNumber: { $first: "$attemptNumber" },
+        notes: { $first: "$notes" },
+        actionAt: { $first: "$actionAt" },
       },
     },
   ]);
@@ -138,6 +143,7 @@ function enrichEnquiry(
     lastActionByAdminRole: latest?.adminRole ?? null,
     lastAttemptNumber: latest?.attemptNumber ?? 0,
     lastActionAt: enquiry.lastActionAt,
+    lastActionNote: latest?.notes ?? undefined,
     createdAt: enquiry.createdAt,
     updatedAt: enquiry.updatedAt,
   };
@@ -291,6 +297,7 @@ export async function updateEnquiryStatus(
         currentStatus: input.toStatus,
         lastActionByAdminId: input.adminId,
         lastActionAt: now,
+        lastActionNote: input.notes || undefined,
       };
 
       if (fromStatus === "new" && !enquiry.firstResponseAt) {

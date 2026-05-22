@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { Button } from "@heroui/button";
+import { Modal, ModalContent, ModalHeader, ModalBody, useDisclosure } from "@heroui/modal";
+import { Plus } from "lucide-react";
 import EnquiryCard, { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 import { Spinner } from "@heroui/spinner";
 import AdminSearchBar, {
   FilterConfig,
 } from "@/components/admin/ui/AdminSearchBar";
+import EnquiryForm from "@/components/enquiry/EnquiryForm";
+import { motion } from "motion/react";
+import DateChips from "@/components/admin/ui/DateChips";
 
 const enquiryFilterConfigs: FilterConfig[] = [
   {
@@ -29,6 +35,8 @@ export default function EnquiriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [selectedDateChip, setSelectedDateChip] = useState("");
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const fetchEnquiries = useCallback(async () => {
     setLoading(true);
@@ -64,6 +72,7 @@ export default function EnquiriesPage() {
   const filteredEnquiries = useMemo(() => {
     return enquiries.filter((enq) => {
       if (filterStatus && enq.currentStatus !== filterStatus) return false;
+      if (selectedDateChip && enq.createdAt?.slice(0, 10) !== selectedDateChip) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -72,7 +81,7 @@ export default function EnquiriesPage() {
         enq.query?.toLowerCase().includes(q)
       );
     });
-  }, [enquiries, searchQuery, filterStatus]);
+  }, [enquiries, searchQuery, filterStatus, selectedDateChip]);
 
   if (loading) {
     return (
@@ -96,6 +105,33 @@ export default function EnquiriesPage() {
         <h1 className="text-2xl font-bold text-default-900">Enquiries</h1>
       </div>
 
+      <motion.button
+        onClick={onOpen}
+        aria-label="Create enquiry"
+        whileTap={{ scale: 0.92 }}
+        className="fixed bottom-6 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-purple-600 text-white shadow-xl hover:shadow-2xl transition-shadow"
+      >
+        <Plus size={26} />
+      </motion.button>
+
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="xl" placement="center">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Create Enquiry</ModalHeader>
+              <ModalBody>
+                <EnquiryForm
+                  onSuccess={() => {
+                    fetchEnquiries();
+                    onClose();
+                  }}
+                />
+              </ModalBody>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
       <AdminSearchBar
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -112,6 +148,8 @@ export default function EnquiriesPage() {
           setFilterStatus("");
         }}
       />
+
+      <DateChips selected={selectedDateChip} onChange={setSelectedDateChip} />
 
       {filteredEnquiries.length === 0 ? (
         <p className="text-center text-default-500 py-10">

@@ -9,7 +9,11 @@ import { addToast } from "@heroui/toast";
 import { SendIcon } from "lucide-react";
 import { enquiryFormSchema as schema } from "@/lib/validations/forms";
 
-export default function EnquiryForm() {
+type EnquiryFormProps = {
+  onSuccess?: (enquiryId: string) => void;
+};
+
+export default function EnquiryForm({ onSuccess }: EnquiryFormProps) {
   const [role, setRole] = useState<"guardian" | "client">("guardian");
   const [form, setForm] = useState({ name: "", phone: "", query: "" });
   const [errors, setErrors] = useState<
@@ -81,6 +85,7 @@ export default function EnquiryForm() {
       }
 
       showToast(`Enquiry submitted successfully.`, "success");
+      onSuccess?.(data.enquiryId);
       setForm({ name: "", phone: "", query: "" });
       setErrors({});
     } catch (err: any) {

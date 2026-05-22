@@ -19,6 +19,7 @@ export interface IEnquiry extends Document {
   currentStatus: EnquiryStatus;
   firstResponseAt?: Date;
   resolvedAt?: Date;
+  lastActionNote?: string;
   createdAt: Date;
   updatedAt: Date;
   lastActionByAdminId?: mongoose.Types.ObjectId;
@@ -39,6 +40,7 @@ const EnquirySchema = new Schema<IEnquiry>(
     },
     firstResponseAt: { type: Date },
     resolvedAt: { type: Date },
+    lastActionNote: { type: String },
     lastActionByAdminId: { type: Schema.Types.ObjectId },
     lastActionAt: { type: Date },
   },

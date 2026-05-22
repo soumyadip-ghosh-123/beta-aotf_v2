@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "@heroui/spinner";
 import { Button } from "@heroui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, User } from "lucide-react";
+import { Accordion, AccordionItem } from "@heroui/accordion";
 import JobPostForm from "@/components/admin/postforms/jobPostForm";
 import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
+import { FaPhone } from "react-icons/fa";
 
 interface EnquiryFormPageProps {
   params: Promise<{ id: string }>;
@@ -22,6 +24,17 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   const type = searchParams.get("type") as "job" | "tuition" | null;
+
+  const formatPhone = (value?: string) => {
+    if (!value) return "-";
+    const digits = value.replace(/\D/g, "");
+    if (!digits) return value;
+    const parts: string[] = [];
+    for (let i = 0; i < digits.length; i += 5) {
+      parts.push(digits.slice(i, i + 5));
+    }
+    return parts.join(" ");
+  };
 
   useEffect(() => {
     const loadParams = async () => {
@@ -103,7 +116,7 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full">
       {/* Header with Back Button and Enquiry Info */}
       <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-divider">
         <div className="max-w-3xl mx-auto p-4">
@@ -128,23 +141,36 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
       {/* Enquiry Details Card */}
       {enquiry && (
         <div className="max-w-3xl mx-auto p-4">
-          <div className="bg-default-100 rounded-lg p-4 mb-4">
-            <h3 className="text-lg font-semibold mb-3">Enquiry Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-default-500">Name:</span>
-                <span className="ml-2 font-medium">{enquiry.name}</span>
+          <Accordion variant="splitted" defaultExpandedKeys={[] as never}>
+            <AccordionItem
+              key="enquiry-details"
+              aria-label="Enquiry details"
+              title={
+                <div className="flex sm:flex-row sm:items-center sm:justify-between items-center gap-3 w-full">
+                  <span className="text-sm text-default-900 font-medium">
+                    <User size={18} className="inline" />
+                    {enquiry.name}
+                  </span>
+                  <span className="text-sm text-default-600 font-medium">
+                    <FaPhone className="inline mr-2" />
+                    {formatPhone(enquiry.phoneNumber)}
+                  </span>
+                </div>
+              }
+              subtitle="Tap to view enquiry query"
+            >
+              <div className="pt-2 space-y-2 text-sm">
+                <div>
+                  <span className="text-default-500">Enquiry ID:</span>
+                  <span className="ml-2 font-medium">{enquiry.enquiryId}</span>
+                  <br />
+                  <span className="text-default-500">
+                    Query: {enquiry.query}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="text-default-500">Phone:</span>
-                <span className="ml-2 font-medium">{enquiry.phoneNumber}</span>
-              </div>
-              <div className="md:col-span-2">
-                <span className="text-default-500">Query:</span>
-                <p className="mt-1 text-default-700">{enquiry.query}</p>
-              </div>
-            </div>
-          </div>
+            </AccordionItem>
+          </Accordion>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
@@ -29,8 +29,11 @@ import {
   TrendingUp,
   Briefcase,
   GraduationCap,
+  Copy,
+  SquarePen,
+  PencilLine,
 } from "lucide-react";
-import { FaPhone } from "react-icons/fa";
+import { FaPen, FaPhone } from "react-icons/fa";
 import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
@@ -59,6 +62,7 @@ export type Enquiry = {
   firstResponseAt?: string;
   resolvedAt?: string;
   lastActionAt?: string;
+  lastActionNote?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -82,12 +86,54 @@ export default function EnquiryCard({
     const phoneNumber = enquiry.phoneNumber?.trim().replace(/[^\d+]/g, "");
 
     if (!phoneNumber) {
-      addToast({ description: "No valid phone number available", color: "danger" });
+      addToast({
+        description: "No valid phone number available",
+        color: "danger",
+      });
       return;
     }
 
     window.location.href = `tel:${phoneNumber}`;
   };
+
+  const handleCopyEnquiryId = async () => {
+    try {
+      const text = enquiry.enquiryId ?? "";
+      if (!text) throw new Error("No enquiry id to copy");
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+
+      addToast({ description: "Enquiry ID copied", color: "success" });
+    } catch (err: any) {
+      addToast({
+        description: err?.message || "Failed to copy",
+        color: "danger",
+      });
+    }
+  };
+
+  const openAndLoadStatus = () => {
+    setSelectedStatus(enquiry.currentStatus);
+    // load previous notes if present on the enquiry object
+    setNotes(enquiry.lastActionNote ?? "");
+    onOpen();
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedStatus("");
+      setNotes("");
+    }
+  }, [isOpen]);
 
   const handleCreatePost = (type: "job" | "tuition") => {
     // Navigate to the create form page with enquiry ID and type
@@ -212,8 +258,19 @@ export default function EnquiryCard({
         {/* Header */}
         <CardHeader className="flex items-start justify-between gap-3">
           <div className=" flex flex-col items-start">
-            <p className="text-xs text-default-500">Enquiry ID</p>
-            <p className="font-semibold tracking-wide">{enquiry.enquiryId}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold tracking-wide">{enquiry.enquiryId}</p>
+              <Button
+                isIconOnly
+                size="sm"
+                color="secondary"
+                variant="flat"
+                onPress={handleCopyEnquiryId}
+                aria-label="Copy enquiry ID"
+              >
+                <Copy size={14} />
+              </Button>
+            </div>
             <p className="text-xs text-default-500">
               {formatDate(enquiry.createdAt)}
             </p>
@@ -230,10 +287,9 @@ export default function EnquiryCard({
             title="Name"
             subTitle="Phone Number"
             value={enquiry.name}
-            subValue={enquiry.phoneNumber}
+            subValue={formatPhone(enquiry.phoneNumber)}
             subIcon={<Phone size={16} />}
           />
-
           {/* Query */}
           <Section
             icon={<MessageSquare size={18} />}
@@ -241,7 +297,6 @@ export default function EnquiryCard({
             value={enquiry.query}
             multiline
           />
-
           {/* Meta */}
           <div className="border-t pt-4 space-y-3">
             <MetaRow
@@ -263,14 +318,15 @@ export default function EnquiryCard({
               label="Attempt number"
               value={String(enquiry.lastAttemptNumber ?? 0)}
             />
-          </div>        </CardBody>
+          </div>{" "}
+        </CardBody>
         <CardFooter className="grid grid-cols-3 gap-2 justify-end">
           {/* Create Dropdown */}
           <Dropdown placement="top">
             <DropdownTrigger>
-              <Button color="secondary">Create</Button>
+              <Button color="secondary"><SquarePen />Create</Button>
             </DropdownTrigger>
-            <DropdownMenu 
+            <DropdownMenu
               aria-label="Create Post Type"
               onAction={(key) => handleCreatePost(key as "job" | "tuition")}
             >
@@ -290,8 +346,9 @@ export default function EnquiryCard({
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
-          
-          <Button color="success" onPress={onOpen}>
+
+          <Button color="success" onPress={openAndLoadStatus}>
+            <PencilLine />
             Update
           </Button>
           <Button color="primary" onPress={handleCall}>
@@ -415,4 +472,15 @@ function MetaRow({
 function formatDate(date?: string) {
   if (!date) return "-";
   return new Date(date).toLocaleString();
+}
+
+function formatPhone(value?: string) {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const parts: string[] = [];
+  for (let i = 0; i < digits.length; i += 5) {
+    parts.push(digits.slice(i, i + 5));
+  }
+  return parts.join(" ");
 }
