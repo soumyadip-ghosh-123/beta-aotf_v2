@@ -5,6 +5,8 @@ import LoginAttempt from "@/lib/models/LoginAttempt";
 import * as clerkService from "./clerk.service";
 import * as emailService from "./email.service";
 import mongoose from "mongoose";
+import AdminRole from "@/lib/models/admin/AdminRole";
+import { ADMIN_PERMISSION_KEYS } from "@/lib/admin/admin-permissions";
 
 /**
  * Generate a secure random password
@@ -48,7 +50,7 @@ export async function createAdmin(params: {
   email: string;
   firstName: string;
   lastName?: string;
-  role: "admin" | "support_admin";
+  role: string;
   creatorAdminId: string;
   creatorClerkId: string;
   creatorUsername: string;
@@ -103,7 +105,18 @@ export async function createAdmin(params: {
   }
 
   // Create admin in database
-  const permissions = Admin.getDefaultPermissions(role);
+  const normalizedRole = role.trim().toLowerCase();
+  const roleDoc = await AdminRole.findOne({ name: normalizedRole }).lean();
+  const isSystemRole = ["super_admin", "admin", "support_admin"].includes(
+    normalizedRole,
+  );
+  const rolePermissions = roleDoc?.permissions ?? [];
+  const permissions = isSystemRole
+    ? Admin.getDefaultPermissions(normalizedRole)
+    : ADMIN_PERMISSION_KEYS.reduce<Record<string, boolean>>((acc, key) => {
+        acc[key] = rolePermissions.includes(key);
+        return acc;
+      }, {});
   const name = `${firstName} ${lastName || ""}`.trim();
 
   const admin = await Admin.create({

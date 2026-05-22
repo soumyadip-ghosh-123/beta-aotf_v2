@@ -2,6 +2,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as adminService from "@/lib/services/admin.service";
 import Admin from "@/lib/models/Admin";
+import AdminRole from "@/lib/models/admin/AdminRole";
 import dbConnect from "@/lib/db";
 
 /**
@@ -58,7 +59,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { username, email, firstName, lastName, role } = body;
+    const { username, email, firstName, lastName, role } = body as {
+      username?: string;
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+    };
 
     // Validate input
     if (!username || !email || !firstName || !role) {
@@ -68,16 +75,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!["admin", "support_admin"].includes(role)) {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
-
-    // Only super_admin can create support admin accounts
-    if (role === "support_admin" && currentAdmin.role !== "super_admin") {
-      return NextResponse.json(
-        { error: "Only superadmin can create support admins" },
-        { status: 403 },
-      );
+    const normalizedRole = role.trim().toLowerCase();
+    const roleDoc = await AdminRole.findOne({ name: normalizedRole }).lean();
+    const isSystemRole = ["super_admin", "admin", "support_admin"].includes(
+      normalizedRole,
+    );
+    if (!roleDoc && !isSystemRole) {
+      return NextResponse.json({ error: "Unknown role" }, { status: 400 });
     }
 
     const result = await adminService.createAdmin({
@@ -85,7 +89,7 @@ export async function POST(req: NextRequest) {
       email,
       firstName,
       lastName,
-      role,
+      role: normalizedRole,
       creatorAdminId: currentAdmin._id.toString(),
       creatorClerkId: currentAdmin.clerkId,
       creatorUsername: currentAdmin.username,

@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
+import AdminRole from "@/lib/models/admin/AdminRole";
+import { ADMIN_PERMISSION_KEYS } from "@/lib/admin/admin-permissions";
 
 function splitName(name: string) {
   const [firstName, ...rest] = name.trim().split(/\s+/);
@@ -14,10 +16,11 @@ function splitName(name: string) {
   };
 }
 
-function mapAotfRole(role: "super_admin" | "admin" | "support_admin") {
-  if (role === "super_admin") return "SUPER_ADMIN";
-  if (role === "support_admin") return "SUPPORT_ADMIN";
-  return "ADMIN";
+function mapAotfRole(role: string) {
+  return role
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 function getClerkErrorCode(error: unknown) {
@@ -68,7 +71,7 @@ export async function POST(req: Request) {
   let email = "";
   let name = "";
   let password: string | undefined;
-  let role: "admin" | "support_admin" | "" = "";
+  let role = "";
   let permissions:
     | {
         canManageUsers?: boolean;
@@ -136,7 +139,7 @@ export async function POST(req: Request) {
       email: string;
       name: string;
       password?: string;
-      role: "admin" | "support_admin";
+      role: string;
       permissions?: {
         canManageUsers?: boolean;
         canManagePosts?: boolean;
@@ -162,18 +165,19 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["admin", "support_admin"].includes(role)) {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
+    const normalizedRole = role.trim().toLowerCase();
 
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedUsername = username.trim().toLowerCase();
 
-    // Disallow creating support accounts unless requester is super_admin
-    if (role === "support_admin" && requestingAdmin.role !== "super_admin") {
+    const roleDoc = await AdminRole.findOne({ name: normalizedRole }).lean();
+    const isSystemRole = ["super_admin", "admin", "support_admin"].includes(
+      normalizedRole,
+    );
+    if (!roleDoc && !isSystemRole) {
       return NextResponse.json(
-        { error: "Only super_admin may create support admins" },
-        { status: 403 },
+        { error: "Unknown role. Create the role first." },
+        { status: 400 },
       );
     }
 
@@ -187,12 +191,18 @@ export async function POST(req: Request) {
 
     let newClerkUser;
     let createdNewUser = false;
-    const defaultPermissions = Admin.getDefaultPermissions(role);
+    const rolePermissions = roleDoc?.permissions ?? [];
+    const defaultPermissions = isSystemRole
+      ? Admin.getDefaultPermissions(normalizedRole)
+      : ADMIN_PERMISSION_KEYS.reduce<Record<string, boolean>>((acc, key) => {
+          acc[key] = rolePermissions.includes(key);
+          return acc;
+        }, {});
     const resolvedPermissions = {
       ...defaultPermissions,
       ...(permissions ?? {}),
     };
-    const aotfRole = mapAotfRole(role);
+    const aotfRole = mapAotfRole(normalizedRole);
 
     const existing = await findClerkUser(client, {
       email: normalizedEmail,
@@ -209,7 +219,7 @@ export async function POST(req: Request) {
       await client.users.updateUserMetadata(newClerkUser.id, {
         publicMetadata: {
           isAdmin: true,
-          role,
+          role: normalizedRole,
           aotfRole,
           requirePasswordChange: false,
           permissions: resolvedPermissions,
@@ -251,7 +261,7 @@ export async function POST(req: Request) {
       await client.users.updateUserMetadata(newClerkUser.id, {
         publicMetadata: {
           isAdmin: true,
-          role,
+          role: normalizedRole,
           aotfRole,
           requirePasswordChange: false,
           permissions: resolvedPermissions,
@@ -279,7 +289,7 @@ export async function POST(req: Request) {
           username: clerkUsername,
           email: clerkEmail,
           name,
-          role,
+          role: normalizedRole,
           permissions: resolvedPermissions,
           isActive: true,
           isLocked: false,
@@ -323,13 +333,23 @@ export async function POST(req: Request) {
         });
 
         if (existing) {
-          const normalizedRole = role;
-          const aotfRole = mapAotfRole(normalizedRole);
-          const defaultPermissions = Admin.getDefaultPermissions(normalizedRole);
+          const normalizedRole = role.trim().toLowerCase();
+          const roleDoc = await AdminRole.findOne({ name: normalizedRole }).lean();
+          const isSystemRole = ["super_admin", "admin", "support_admin"].includes(
+            normalizedRole,
+          );
+          const rolePermissions = roleDoc?.permissions ?? [];
+          const defaultPermissions = isSystemRole
+            ? Admin.getDefaultPermissions(normalizedRole)
+            : ADMIN_PERMISSION_KEYS.reduce<Record<string, boolean>>((acc, key) => {
+                acc[key] = rolePermissions.includes(key);
+                return acc;
+              }, {});
           const resolvedPermissions = {
             ...defaultPermissions,
             ...(permissions ?? {}),
           };
+          const aotfRole = mapAotfRole(normalizedRole);
           const { firstName, lastName } = splitName(name);
           const clerkUsername = (existing.username ?? username.trim().toLowerCase()).toLowerCase();
           const clerkEmail =

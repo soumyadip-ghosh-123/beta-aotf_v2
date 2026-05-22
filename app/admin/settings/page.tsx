@@ -54,11 +54,21 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { siteConfig } from "@/config/site";
+import {
+  ADMIN_PERMISSION_CATALOG,
+  ADMIN_PERMISSION_KEYS,
+  type AdminPermissionKey,
+} from "@/lib/admin/admin-permissions";
 
-// Inline admin roles to avoid importing Mongoose (server-only) into a client component
-const ADMIN_ROLES = ["super_admin", "admin", "support_admin"] as const;
-const CREATABLE_ADMIN_ROLES = ["admin", "support_admin"] as const;
-type AdminRole = (typeof ADMIN_ROLES)[number];
+type AdminRole = string;
+
+type AdminRoleOption = {
+  name: string;
+  displayName: string;
+  permissions: string[];
+  isSystemRole?: boolean;
+  level?: number;
+};
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,32 +81,34 @@ interface AdminAccount {
   status: "active" | "inactive";
   createdAt: string;
   lastLogin?: string;
+  permissions?: Record<string, boolean>;
 }
 
 type SettingsTab = "accounts" | "notifications" | "terms";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const roleConfig: Record<
-  AdminRole,
-  { label: string; color: "danger" | "primary"; icon: React.ReactNode }
-> = {
-  super_admin: {
-    label: "Super Admin",
-    color: "danger",
-    icon: <Crown size={14} />,
-  },
-  admin: {
-    label: "Admin",
-    color: "primary",
-    icon: <Building2 size={14} />,
-  },
-  support_admin: {
-    label: "Support Admin",
-    color: "primary",
-    icon: <Headset size={14} />,
-  },
-};
+function getRoleLabel(role: string, roles: AdminRoleOption[]) {
+  const match = roles.find((r) => r.name === role);
+  if (match) return match.displayName;
+  if (role === "super_admin") return "Super Admin";
+  if (role === "admin") return "Admin";
+  if (role === "support_admin") return "Support Admin";
+  return role.replace(/_/g, " ");
+}
+
+function getRoleColor(role: string): "danger" | "primary" | "default" {
+  if (role === "super_admin") return "danger";
+  if (role === "support_admin" || role === "admin") return "primary";
+  return "default";
+}
+
+function getRoleIcon(role: string) {
+  if (role === "super_admin") return <Crown size={14} />;
+  if (role === "support_admin") return <Headset size={14} />;
+  if (role === "admin") return <Building2 size={14} />;
+  return <Shield size={14} />;
+}
 
 function formatDate(d?: string): string {
   if (!d) return "—";
@@ -127,12 +139,37 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-function normalizeAdminRole(role: unknown): AdminRole {
-  if (role === "super_admin" || role === "admin" || role === "support_admin") {
-    return role;
+function permissionsFromRole(roles: AdminRoleOption[], roleName: string) {
+  const role = roles.find((r) => r.name === roleName);
+  const defaults = new Set(role?.permissions ?? []);
+  return ADMIN_PERMISSION_KEYS.reduce<Record<AdminPermissionKey, boolean>>(
+    (acc, key) => {
+      acc[key] = defaults.has(key);
+      return acc;
+    },
+    {} as Record<AdminPermissionKey, boolean>,
+  );
+}
+
+function mergePermissionState(
+  base: Record<AdminPermissionKey, boolean>,
+  override?: Record<string, boolean>,
+) {
+  const next = { ...base } as Record<AdminPermissionKey, boolean>;
+  if (override) {
+    for (const key of ADMIN_PERMISSION_KEYS) {
+      if (typeof override[key] === "boolean") {
+        next[key] = Boolean(override[key]);
+      }
+    }
   }
-  if (role === "moderator") {
-    return "support_admin";
+  return next;
+}
+
+function normalizeAdminRole(role: unknown): AdminRole {
+  if (typeof role === "string" && role.trim()) {
+    if (role === "moderator") return "support_admin";
+    return role.trim().toLowerCase();
   }
   return "admin";
 }
@@ -166,6 +203,9 @@ function AdminAccountsSection() {
     role: string;
     permissions: Record<string, boolean>;
   } | null>(null);
+  const [roles, setRoles] = useState<AdminRoleOption[]>([]);
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -186,6 +226,45 @@ function AdminAccountsSection() {
       mounted = false;
     };
   }, [meta]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/admin/roles");
+        if (!res.ok) {
+          throw new Error("Failed to load roles");
+        }
+        const json = await res.json();
+        const list = (json?.roles ?? []) as Array<Record<string, unknown>>;
+        if (!mounted) return;
+        setRoles(
+          list.map((role) => ({
+            name: String(role.name ?? ""),
+            displayName: String(role.displayName ?? role.name ?? ""),
+            permissions: Array.isArray(role.permissions)
+              ? role.permissions.map((p) => String(p))
+              : [],
+            isSystemRole: Boolean(role.isSystemRole),
+            level: typeof role.level === "number" ? role.level : undefined,
+          })),
+        );
+      } catch (err) {
+        if (!mounted) return;
+        setRoleError(err instanceof Error ? err.message : "Failed to load roles");
+        setRoles([
+          { name: "super_admin", displayName: "Super Admin", permissions: [], isSystemRole: true, level: 100 },
+          { name: "admin", displayName: "Admin", permissions: [], isSystemRole: true, level: 50 },
+          { name: "support_admin", displayName: "Support Admin", permissions: [], isSystemRole: true, level: 10 },
+        ]);
+      } finally {
+        if (mounted) setIsLoadingRoles(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const [admins, setAdmins] = useState<AdminAccount[]>([]);
   const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -209,6 +288,10 @@ function AdminAccountsSection() {
             status: row.isActive === false ? "inactive" : "active",
             createdAt: String(row.createdAt ?? new Date().toISOString()),
             lastLogin: undefined,
+            permissions:
+              typeof row.permissions === "object" && row.permissions !== null
+                ? (row.permissions as Record<string, boolean>)
+                : undefined,
           })),
         );
       } catch (e) {
@@ -236,9 +319,40 @@ function AdminAccountsSection() {
     password: "",
     confirmPassword: "",
   });
+  const [newAdminPermissions, setNewAdminPermissions] = useState<
+    Record<AdminPermissionKey, boolean>
+  >(() => permissionsFromRole(roles, "admin"));
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [addErrors, setAddErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!roles.length) return;
+    setNewAdminPermissions((prev) =>
+      mergePermissionState(permissionsFromRole(roles, newAdmin.role), prev),
+    );
+  }, [roles, newAdmin.role]);
+
+  useEffect(() => {
+    if (!roles.length) return;
+    setNewRolePermissions((prev) =>
+      mergePermissionState(permissionsFromRole(roles, "admin"), prev),
+    );
+  }, [roles]);
+
+  const {
+    isOpen: isRoleOpen,
+    onOpen: openRole,
+    onClose: closeRole,
+  } = useDisclosure();
+  const [isCreatingRole, setIsCreatingRole] = useState(false);
+  const [newRole, setNewRole] = useState({
+    name: "",
+    displayName: "",
+  });
+  const [newRolePermissions, setNewRolePermissions] = useState<
+    Record<AdminPermissionKey, boolean>
+  >(() => permissionsFromRole(roles, "admin"));
 
   // Delete modal
   const {
@@ -266,6 +380,18 @@ function AdminAccountsSection() {
   const [isChangingPwd, setIsChangingPwd] = useState(false);
   const [pwdErrors, setPwdErrors] = useState<Record<string, string>>({});
 
+  // Permissions modal
+  const {
+    isOpen: isPermOpen,
+    onOpen: openPerm,
+    onClose: closePerm,
+  } = useDisclosure();
+  const [permTarget, setPermTarget] = useState<AdminAccount | null>(null);
+  const [permState, setPermState] = useState<
+    Record<AdminPermissionKey, boolean>
+  >(() => permissionsFromRole(roles, "admin"));
+  const [isSavingPerms, setIsSavingPerms] = useState(false);
+
   // Filtered admins
   const filteredAdmins = useMemo(() => {
     if (!searchTerm.trim()) return admins;
@@ -285,7 +411,7 @@ function AdminAccountsSection() {
   ).length;
 
   const availableRoles = isSuperAdmin
-    ? CREATABLE_ADMIN_ROLES
+    ? roles
     : [];
 
   // ── Add Admin ──────────────────────────────────────────────────────────
@@ -327,36 +453,13 @@ function AdminAccountsSection() {
     if (!validateAddForm()) return;
     setIsAdding(true);
     try {
-      // Build permissions defaults based on selected role
-      const defaultPermissions: Record<string, boolean> = {};
-      if (newAdmin.role === "super_admin") {
-        defaultPermissions.canManageAdmins = true;
-        defaultPermissions.canManagePosts = true;
-        defaultPermissions.canManageJobs = true;
-        defaultPermissions.canViewAnalytics = true;
-        defaultPermissions.canHandleEnquiries = true;
-      } else if (newAdmin.role === "admin") {
-        defaultPermissions.canManageAdmins = true;
-        defaultPermissions.canManagePosts = true;
-        defaultPermissions.canManageJobs = true;
-        defaultPermissions.canViewAnalytics = false;
-        defaultPermissions.canHandleEnquiries = true;
-      } else {
-        // support_admin
-        defaultPermissions.canManageAdmins = false;
-        defaultPermissions.canManagePosts = false;
-        defaultPermissions.canManageJobs = false;
-        defaultPermissions.canViewAnalytics = false;
-        defaultPermissions.canHandleEnquiries = true;
-      }
-
       const payload = {
         username: newAdmin.username.trim().toLowerCase(),
         email: newAdmin.email.trim().toLowerCase(),
         name: newAdmin.name.trim(),
         password: newAdmin.password,
         role: newAdmin.role,
-        permissions: defaultPermissions,
+        permissions: newAdminPermissions,
       };
 
       const res = await fetch("/api/v1/admin/provision", {
@@ -400,6 +503,7 @@ function AdminAccountsSection() {
         password: "",
         confirmPassword: "",
       });
+      setNewAdminPermissions(permissionsFromRole(roles, "admin"));
       setAddErrors({});
       closeAdd();
     } catch (err) {
@@ -407,6 +511,76 @@ function AdminAccountsSection() {
       addToast({ description: "Failed to create admin", color: "danger" });
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const buildPermissionList = (record: Record<AdminPermissionKey, boolean>) =>
+    ADMIN_PERMISSION_KEYS.filter((key) => Boolean(record[key]));
+
+  const handleCreateRole = async () => {
+    if (!newRole.name.trim() || !newRole.displayName.trim()) {
+      addToast({ description: "Role name and display name are required", color: "danger" });
+      return;
+    }
+
+    setIsCreatingRole(true);
+    try {
+      const res = await fetch("/api/v1/admin/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newRole.name.trim(),
+          displayName: newRole.displayName.trim(),
+          permissions: buildPermissionList(newRolePermissions),
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        addToast({ description: json?.error || "Failed to create role", color: "danger" });
+        return;
+      }
+
+      const created = json?.role as AdminRoleOption | undefined;
+      if (created) {
+        setRoles((prev) => [
+          ...prev,
+          {
+            name: created.name,
+            displayName: created.displayName,
+            permissions: Array.isArray(created.permissions)
+              ? created.permissions.map((p) => String(p))
+              : [],
+            isSystemRole: Boolean(created.isSystemRole),
+            level: typeof created.level === "number" ? created.level : undefined,
+          },
+        ]);
+        setNewAdmin((prev) => ({ ...prev, role: created.name }));
+        const createdPerms = new Set(
+          Array.isArray(created.permissions) ? created.permissions : [],
+        );
+        setNewAdminPermissions(
+          ADMIN_PERMISSION_KEYS.reduce<Record<AdminPermissionKey, boolean>>(
+            (acc, key) => {
+              acc[key] = createdPerms.has(key);
+              return acc;
+            },
+            {} as Record<AdminPermissionKey, boolean>,
+          ),
+        );
+      }
+
+      addToast({ description: "Role created successfully", color: "success" });
+      setNewRole({ name: "", displayName: "" });
+      setNewRolePermissions(permissionsFromRole(roles, "admin"));
+      closeRole();
+    } catch (err) {
+      addToast({
+        description: err instanceof Error ? err.message : "Failed to create role",
+        color: "danger",
+      });
+    } finally {
+      setIsCreatingRole(false);
     }
   };
 
@@ -448,6 +622,37 @@ function AdminAccountsSection() {
     openPwd();
   };
 
+  const openPermissions = async (admin: AdminAccount) => {
+    setPermTarget(admin);
+    setPermState(
+      mergePermissionState(
+        permissionsFromRole(roles, admin.role),
+        admin.permissions,
+      ),
+    );
+    openPerm();
+
+    if (!admin.permissions) {
+      try {
+        const res = await fetch(`/api/v1/admin/admins/${admin.id}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const perms =
+          typeof json?.admin?.permissions === "object" &&
+          json.admin.permissions !== null
+            ? (json.admin.permissions as Record<string, boolean>)
+            : undefined;
+        if (perms) {
+          setPermState(
+            mergePermissionState(permissionsFromRole(roles, admin.role), perms),
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   const validatePwdForm = (): boolean => {
     const errors: Record<string, string> = {};
     if (!pwdForm.oldPassword)
@@ -482,6 +687,42 @@ function AdminAccountsSection() {
       });
     } finally {
       setIsChangingPwd(false);
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    if (!permTarget) return;
+    setIsSavingPerms(true);
+    try {
+      const res = await fetch(`/api/v1/admin/admins/${permTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: permState }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        addToast({
+          description: json?.error || "Failed to update permissions",
+          color: "danger",
+        });
+        return;
+      }
+
+      setAdmins((prev) =>
+        prev.map((admin) =>
+          admin.id === permTarget.id
+            ? { ...admin, permissions: permState }
+            : admin,
+        ),
+      );
+      addToast({ description: "Permissions updated", color: "success" });
+      closePerm();
+      setPermTarget(null);
+    } catch {
+      addToast({ description: "Failed to update permissions", color: "danger" });
+    } finally {
+      setIsSavingPerms(false);
     }
   };
 
@@ -564,8 +805,10 @@ function AdminAccountsSection() {
           <AdminCard
             key={admin.id}
             admin={admin}
+            roles={roles}
             onDelete={handleDeleteClick}
             onChangePassword={openChangePassword}
+            onPermissions={openPermissions}
             onToggleStatus={toggleAdminStatus}
             onCopyId={copyId}
             canDelete={!(admin.role === "super_admin" && superAdminCount <= 1)}
@@ -648,17 +891,24 @@ function AdminAccountsSection() {
                 variant="bordered"
                 isRequired
                 startContent={
-                  newAdmin.role === "super_admin" ? (
-                    <Crown size={16} className="text-danger" />
-                  ) : (
-                    <Headset size={16} className="text-primary" />
-                  )
+                  getRoleIcon(newAdmin.role)
                 }
               >
                 {availableRoles.map((role) => (
-                  <SelectItem key={role}>{roleConfig[role].label}</SelectItem>
+                  <SelectItem key={role.name}>
+                    {role.displayName}
+                  </SelectItem>
                 ))}
               </Select>
+              {isSuperAdmin ? (
+                <Button
+                  variant="flat"
+                  color="secondary"
+                  onPress={openRole}
+                >
+                  New Role
+                </Button>
+              ) : null}
             </div>
 
             <Input
@@ -736,27 +986,17 @@ function AdminAccountsSection() {
               />
             </div>
 
-            {/* Role description */}
-            <Card className="bg-default-50">
-              <CardBody className="py-3 text-sm text-default-600 space-y-1">
-                <div className="flex items-center gap-2 font-medium">
-                  <Info size={14} className="text-primary" />
-                  Role Permissions
-                </div>
-                <p>
-                  <span className="font-medium text-danger">Super Admin</span> —
-                  Full access: manage all posts, enquiries, ads, settings, and
-                  other admins.
-                </p>
-                <p>
-                  <span className="font-medium text-primary">
-                    Support Admin
-                  </span>{" "}
-                  — Limited access: manage enquiries, update post statuses, view
-                  analytics. Cannot manage admins or settings.
-                </p>
-              </CardBody>
-            </Card>
+            <Divider />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Shield size={14} className="text-primary" />
+                Permissions
+              </div>
+              <PermissionChecklist
+                value={newAdminPermissions}
+                onChange={setNewAdminPermissions}
+              />
+            </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={closeAdd} isDisabled={isAdding}>
@@ -768,6 +1008,46 @@ function AdminAccountsSection() {
               isLoading={isAdding}
             >
               Create Admin
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* ────────── Create Role Modal ────────── */}
+      <Modal isOpen={isRoleOpen} onClose={closeRole} size="lg" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <Shield size={20} className="text-primary" />
+            Create Role
+          </ModalHeader>
+          <ModalBody className="gap-4">
+            <Input
+              label="Role Name"
+              placeholder="customer_relationship_manager"
+              value={newRole.name}
+              onValueChange={(v) => setNewRole((p) => ({ ...p, name: v }))}
+              variant="bordered"
+              isRequired
+            />
+            <Input
+              label="Display Name"
+              placeholder="Customer Relationship Manager"
+              value={newRole.displayName}
+              onValueChange={(v) => setNewRole((p) => ({ ...p, displayName: v }))}
+              variant="bordered"
+              isRequired
+            />
+            <PermissionChecklist
+              value={newRolePermissions}
+              onChange={setNewRolePermissions}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={closeRole} isDisabled={isCreatingRole}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleCreateRole} isLoading={isCreatingRole}>
+              Create Role
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -818,10 +1098,10 @@ function AdminAccountsSection() {
                     <span className="font-semibold">Role:</span>{" "}
                     <Chip
                       size="sm"
-                      color={roleConfig[deleteTarget.role].color}
+                      color={getRoleColor(deleteTarget.role)}
                       variant="flat"
                     >
-                      {roleConfig[deleteTarget.role].label}
+                      {getRoleLabel(deleteTarget.role, roles)}
                     </Chip>
                   </p>
                   <p className="text-sm">
@@ -987,6 +1267,59 @@ function AdminAccountsSection() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* ────────── Permissions Modal ────────── */}
+      <Modal isOpen={isPermOpen} onClose={closePerm} size="lg" scrollBehavior="inside">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <Shield size={20} className="text-primary" />
+            Edit Permissions
+          </ModalHeader>
+          <ModalBody className="gap-4">
+            {permTarget ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-default-50">
+                <Avatar
+                  name={getInitials(permTarget.name)}
+                  size="sm"
+                  classNames={{
+                    base:
+                      permTarget.role === "super_admin"
+                        ? "bg-danger/10"
+                        : "bg-primary/10",
+                    name:
+                      permTarget.role === "super_admin"
+                        ? "text-danger"
+                        : "text-primary",
+                  }}
+                />
+                <div>
+                  <p className="text-sm font-semibold">{permTarget.name}</p>
+                  <p className="text-xs text-default-500">{permTarget.email}</p>
+                </div>
+              </div>
+            ) : null}
+
+            <PermissionChecklist
+              value={permState}
+              onChange={setPermState}
+              disabled={!isSuperAdmin}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={closePerm} isDisabled={isSavingPerms}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSavePermissions}
+              isLoading={isSavingPerms}
+              isDisabled={!isSuperAdmin}
+            >
+              Save Permissions
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }
@@ -995,21 +1328,27 @@ function AdminAccountsSection() {
 
 function AdminCard({
   admin,
+  roles,
   onDelete,
   onChangePassword,
+  onPermissions,
   onToggleStatus,
   onCopyId,
   canDelete,
 }: {
   admin: AdminAccount;
+  roles: AdminRoleOption[];
   onDelete: (a: AdminAccount) => void;
   onChangePassword: (a: AdminAccount) => void;
+  onPermissions: (a: AdminAccount) => void;
   onToggleStatus: (a: AdminAccount) => void;
   onCopyId: (id: string) => void;
   canDelete: boolean;
 }) {
-  const rc = roleConfig[admin.role];
   const isActive = admin.status === "active";
+  const roleLabel = getRoleLabel(admin.role, roles);
+  const roleColor = getRoleColor(admin.role);
+  const roleIcon = getRoleIcon(admin.role);
 
   return (
     <Card className="border border-divider/50 hover:shadow-md transition-shadow">
@@ -1040,12 +1379,12 @@ function AdminCard({
             <div className="flex items-center gap-1.5">
               <Chip
                 size="sm"
-                color={rc.color}
+                color={roleColor}
                 variant="flat"
-                startContent={rc.icon}
+                startContent={roleIcon}
                 classNames={{ content: "text-xs" }}
               >
-                {rc.label}
+                {roleLabel}
               </Chip>
               <button
                 onClick={() => onCopyId(admin.id)}
@@ -1101,6 +1440,16 @@ function AdminCard({
         >
           Password
         </Button>
+        <Button
+          size="sm"
+          variant="flat"
+          color="primary"
+          startContent={<Shield size={14} />}
+          onPress={() => onPermissions(admin)}
+          className="flex-1"
+        >
+          Permissions
+        </Button>
         <Tooltip
           content={
             canDelete ? "Delete admin" : "Cannot delete the only super admin"
@@ -1122,6 +1471,65 @@ function AdminCard({
         </Tooltip>
       </CardFooter>
     </Card>
+  );
+}
+
+function PermissionChecklist({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Record<AdminPermissionKey, boolean>;
+  onChange: (next: Record<AdminPermissionKey, boolean>) => void;
+  disabled?: boolean;
+}) {
+  const groups = ADMIN_PERMISSION_CATALOG.reduce<
+    Record<string, Array<{ key: AdminPermissionKey; label: string }>>
+  >((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = [];
+    acc[item.group].push({ key: item.key, label: item.label });
+    return acc;
+  }, {});
+
+  const groupLabels: Record<string, string> = {
+    users: "User management",
+    content: "Content management",
+    support: "Support",
+    finance: "Finance",
+    analytics: "Analytics",
+    admin: "Admin management",
+  };
+
+  return (
+    <div className="space-y-4">
+      {Object.keys(groups).map((groupKey) => (
+        <Card key={groupKey} className="bg-default-50">
+          <CardHeader className="pb-2">
+            <h4 className="text-sm font-semibold">
+              {groupLabels[groupKey] ?? groupKey}
+            </h4>
+          </CardHeader>
+          <CardBody className="pt-0 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {groups[groupKey].map((perm) => (
+              <Switch
+                key={perm.key}
+                isSelected={Boolean(value[perm.key])}
+                onValueChange={(checked) =>
+                  onChange({
+                    ...value,
+                    [perm.key]: checked,
+                  })
+                }
+                isDisabled={disabled}
+                size="sm"
+              >
+                {perm.label}
+              </Switch>
+            ))}
+          </CardBody>
+        </Card>
+      ))}
+    </div>
   );
 }
 

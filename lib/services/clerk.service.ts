@@ -11,15 +11,22 @@ export interface CreateAdminUserParams {
   firstName: string;
   lastName?: string;
   password: string;
-  role: "super_admin" | "admin" | "support_admin";
+  role: string;
 }
 
 export interface UpdateAdminMetadataParams {
   clerkId: string;
-  role: "super_admin" | "admin" | "support_admin";
+  role: string;
   isAdmin: boolean;
   requirePasswordChange?: boolean;
   isLocked?: boolean;
+}
+
+function normalizeAotfRole(role: string) {
+  return role
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 /**
@@ -40,6 +47,7 @@ export async function createAdminUser(params: CreateAdminUserParams) {
       publicMetadata: {
         isAdmin: true,
         role,
+        aotfRole: normalizeAotfRole(role),
         requirePasswordChange: true,
       },
       privateMetadata: {
@@ -85,6 +93,7 @@ export async function updateAdminMetadata(params: UpdateAdminMetadataParams) {
     const publicMetadata: Record<string, unknown> = {
       isAdmin,
       role,
+      aotfRole: normalizeAotfRole(role),
     };
     if (requirePasswordChange !== undefined) {
       publicMetadata.requirePasswordChange = requirePasswordChange;

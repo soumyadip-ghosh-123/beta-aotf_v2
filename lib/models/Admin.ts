@@ -65,8 +65,8 @@ const adminSchema = new Schema(
     name: { type: String, required: true },
     role: {
       type: String,
-      enum: ["super_admin", "admin", "support_admin"],
       required: true,
+      trim: true,
     },
     permissions: { type: permissionsSchema, default: () => ({}) },
     isActive: { type: Boolean, default: true },
