@@ -184,9 +184,23 @@ export default function SettingsPage() {
       {/* Header */}
       <h1 className="text-2xl font-bold text-default-900 flex items-center gap-2">
         <Settings size={24} className="text-default-500" />
-        Accounts
+        Settings
       </h1>
-      <AdminAccountsSection />
+      <Tabs
+        selectedKey={activeTab}
+        onSelectionChange={(key) => setActiveTab(key as SettingsTab)}
+        aria-label="Admin settings tabs"
+        color="primary"
+        className="w-full"
+      >
+        <Tab key="accounts" title="Accounts" />
+        <Tab key="notifications" title="Notifications" />
+        <Tab key="terms" title="Policies" />
+      </Tabs>
+
+      {activeTab === "accounts" ? <AdminAccountsSection /> : null}
+      {activeTab === "notifications" ? <NotificationSettingsSection /> : null}
+      {activeTab === "terms" ? <TermsSettingsSection /> : null}
     </div>
   );
 }
@@ -595,8 +609,19 @@ function AdminAccountsSection() {
     if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      // TODO: wire to real API
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch(
+        `/api/v1/admin/admins/${deleteTarget.id}/terminate`,
+        { method: "POST" },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        addToast({
+          description: json?.error || "Failed to delete admin",
+          color: "danger",
+        });
+        return;
+      }
+
       setAdmins((prev) => prev.filter((a) => a.id !== deleteTarget.id));
       addToast({
         description: `Admin "${deleteTarget.name}" deleted`,
@@ -812,6 +837,7 @@ function AdminAccountsSection() {
             onToggleStatus={toggleAdminStatus}
             onCopyId={copyId}
             canDelete={!(admin.role === "super_admin" && superAdminCount <= 1)}
+            canEditPermissions={isSuperAdmin}
           />
         ))}
       </div>
@@ -1335,6 +1361,7 @@ function AdminCard({
   onToggleStatus,
   onCopyId,
   canDelete,
+  canEditPermissions,
 }: {
   admin: AdminAccount;
   roles: AdminRoleOption[];
@@ -1344,6 +1371,7 @@ function AdminCard({
   onToggleStatus: (a: AdminAccount) => void;
   onCopyId: (id: string) => void;
   canDelete: boolean;
+  canEditPermissions: boolean;
 }) {
   const isActive = admin.status === "active";
   const roleLabel = getRoleLabel(admin.role, roles);
@@ -1447,6 +1475,7 @@ function AdminCard({
           startContent={<Shield size={14} />}
           onPress={() => onPermissions(admin)}
           className="flex-1"
+          isDisabled={!canEditPermissions}
         >
           Permissions
         </Button>
@@ -1755,6 +1784,78 @@ function NotificationSettingsSection() {
             isSelected={notifications.pushSystemAlerts}
             onToggle={() => toggleNotification("pushSystemAlerts")}
           />
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
+function TermsSettingsSection() {
+  const policies = [
+    {
+      label: "Terms of Service",
+      description: "Review the platform terms used across onboarding and contracts.",
+      href: "/terms",
+      icon: <FileText size={18} className="text-primary" />,
+    },
+    {
+      label: "Privacy Policy",
+      description: "Confirm data handling disclosures and retention policies.",
+      href: "/privacy-policy",
+      icon: <Shield size={18} className="text-success" />,
+    },
+    {
+      label: "Refund Policy",
+      description: "Check refund rules applied to paid registrations and disputes.",
+      href: "/refund-policy",
+      icon: <RotateCcw size={18} className="text-warning" />,
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <FileText size={18} className="text-default-500" />
+            <h3 className="text-base font-semibold">Policies & Documents</h3>
+          </div>
+        </CardHeader>
+        <Divider />
+        <CardBody className="gap-3">
+          {policies.map((policy) => (
+            <div key={policy.label} className="flex items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 rounded-lg bg-default-100 p-2">
+                  {policy.icon}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-default-900">
+                    {policy.label}
+                  </p>
+                  <p className="text-xs text-default-500">
+                    {policy.description}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="flat"
+                color="primary"
+                size="sm"
+                onPress={() => window.open(policy.href, "_blank", "noopener,noreferrer")}
+              >
+                View
+              </Button>
+            </div>
+          ))}
+        </CardBody>
+      </Card>
+
+      <Card className="bg-default-50">
+        <CardBody className="space-y-2 text-sm text-default-600">
+          <p className="font-medium text-default-700">Support contacts</p>
+          <p>Email: {siteConfig.contact.email}</p>
+          <p>Phone: {siteConfig.contact.phone}</p>
         </CardBody>
       </Card>
     </div>

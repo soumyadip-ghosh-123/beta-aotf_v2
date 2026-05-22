@@ -52,6 +52,16 @@ function isClerkDuplicateError(error: unknown) {
   return code === "form_identifier_exists" || code === "422";
 }
 
+function sanitizePermissionOverrides(overrides?: Record<string, boolean>) {
+  if (!overrides) return {} as Record<string, boolean>;
+  return ADMIN_PERMISSION_KEYS.reduce<Record<string, boolean>>((acc, key) => {
+    if (typeof overrides[key] === "boolean") {
+      acc[key] = overrides[key];
+    }
+    return acc;
+  }, {});
+}
+
 async function findClerkUser(
   client: Awaited<ReturnType<typeof clerkClient>>,
   params: { email: string; username: string },
@@ -73,15 +83,7 @@ export async function POST(req: Request) {
   let password: string | undefined;
   let role = "";
   let permissions:
-    | {
-        canManageUsers?: boolean;
-        canManagePosts?: boolean;
-        canManageJobs?: boolean;
-        canProcessRefunds?: boolean;
-        canViewAnalytics?: boolean;
-        canHandleEnquiries?: boolean;
-        canManageAdmins?: boolean;
-      }
+    | Record<string, boolean>
     | undefined;
 
   try {
@@ -140,15 +142,7 @@ export async function POST(req: Request) {
       name: string;
       password?: string;
       role: string;
-      permissions?: {
-        canManageUsers?: boolean;
-        canManagePosts?: boolean;
-        canManageJobs?: boolean;
-        canProcessRefunds?: boolean;
-        canViewAnalytics?: boolean;
-        canHandleEnquiries?: boolean;
-        canManageAdmins?: boolean;
-      };
+      permissions?: Record<string, boolean>;
     };
 
     username = body.username;
@@ -200,7 +194,7 @@ export async function POST(req: Request) {
         }, {});
     const resolvedPermissions = {
       ...defaultPermissions,
-      ...(permissions ?? {}),
+      ...sanitizePermissionOverrides(permissions),
     };
     const aotfRole = mapAotfRole(normalizedRole);
 
@@ -347,7 +341,7 @@ export async function POST(req: Request) {
               }, {});
           const resolvedPermissions = {
             ...defaultPermissions,
-            ...(permissions ?? {}),
+            ...sanitizePermissionOverrides(permissions),
           };
           const aotfRole = mapAotfRole(normalizedRole);
           const { firstName, lastName } = splitName(name);

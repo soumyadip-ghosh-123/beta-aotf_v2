@@ -32,7 +32,6 @@ const NAV_ITEMS = [
   { href: "/admin/feedbacks",    label: "Feedbacks",        icon: Star            },
   { href: "/admin/reviews",      label: "Reviews",          icon: Star            },
   { href: "/admin/users",        label: "Users",            icon: Users           },
-  { href: "/admin/admins",       label: "Admin Management", icon: Users           },
   { href: "/admin/teachers",     label: "Renowned Teachers",icon: GraduationCap   },
   { href: "/admin/ads",          label: "Ads",              icon: Megaphone       },
   { href: "/admin/invoices",     label: "Invoices",         icon: FileText        },

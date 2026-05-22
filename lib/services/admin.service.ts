@@ -4,6 +4,7 @@ import AuditLog from "@/lib/models/AuditLog";
 import LoginAttempt from "@/lib/models/LoginAttempt";
 import * as clerkService from "./clerk.service";
 import * as emailService from "./email.service";
+
 import mongoose from "mongoose";
 import AdminRole from "@/lib/models/admin/AdminRole";
 import { ADMIN_PERMISSION_KEYS } from "@/lib/admin/admin-permissions";
@@ -179,6 +180,7 @@ export async function getAdmins(params?: {
   role?: string;
   isActive?: boolean;
   isLocked?: boolean;
+  includeTerminated?: boolean;
 }) {
   await dbConnect();
 
@@ -194,6 +196,11 @@ export async function getAdmins(params?: {
 
   if (params?.isLocked !== undefined) {
     query.isLocked = params.isLocked;
+  }
+
+  // Exclude terminated admins by default
+  if (!params?.includeTerminated) {
+    query.terminatedAt = null;
   }
 
   const admins = await Admin.find(query)
@@ -380,10 +387,32 @@ export async function terminateAdmin(params: {
     };
   }
 
+  if (admin.terminatedAt) {
+    return {
+      success: false,
+      error: "Admin is already terminated",
+    };
+  }
+
   admin.isActive = false;
   admin.terminatedBy = new mongoose.Types.ObjectId(terminatorAdminId);
   admin.terminatedAt = new Date();
   await admin.save();
+
+  // Hard-delete the admin from Clerk so they cannot log back in.
+  // Fall back to ban if delete fails (e.g. clerkId mismatch).
+  try {
+    const deleteResult = await clerkService.deleteAdminUser(admin.clerkId);
+    if (!deleteResult.success) {
+      // Ban as fallback — prevents sign-in without deleting the Clerk record
+      await clerkService.setAdminLockStatus(admin.clerkId, true);
+      console.warn(
+        `[terminateAdmin] Clerk delete failed for ${admin.username}, fell back to ban`,
+      );
+    }
+  } catch (err) {
+    console.error("[terminateAdmin] Failed to remove admin from Clerk:", err);
+  }
 
   // Log action
   await logAction({
@@ -400,7 +429,12 @@ export async function terminateAdmin(params: {
 
   return {
     success: true,
-    admin,
+    admin: {
+      id: admin._id.toString(),
+      username: admin.username,
+      name: admin.name,
+      terminatedAt: admin.terminatedAt,
+    },
   };
 }
 

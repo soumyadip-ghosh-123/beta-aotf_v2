@@ -13,8 +13,14 @@ function toPermissionArray(input: Record<string, boolean> | undefined) {
 }
 
 async function ensureSystemRoles() {
-  const existing = await AdminRole.find({ name: { $in: SYSTEM_ROLES } }).lean();
-  const existingNames = new Set(existing.map((role) => role.name));
+  // Global sanitizeFilter strips $in operators, so we query each role individually
+  // using plain equality — the same pattern used throughout this codebase.
+  const existingDocs = await Promise.all(
+    SYSTEM_ROLES.map((name) => AdminRole.findOne({ name }).lean()),
+  );
+  const existingNames = new Set(
+    existingDocs.filter(Boolean).map((role) => role!.name),
+  );
 
   const missing = SYSTEM_ROLES.filter((name) => !existingNames.has(name));
   if (missing.length === 0) return;

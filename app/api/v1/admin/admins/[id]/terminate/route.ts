@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as adminService from "@/lib/services/admin.service";
 import Admin from "@/lib/models/Admin";
@@ -19,7 +19,17 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const metadata = sessionClaims?.publicMetadata as Record<string, unknown>;
+    let metadata = sessionClaims?.publicMetadata as Record<string, unknown> | undefined;
+
+    if (metadata?.isAdmin !== true) {
+      try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        metadata = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+      } catch {
+        // Ignore and fall through.
+      }
+    }
 
     if (metadata?.isAdmin !== true) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -33,8 +43,11 @@ export async function POST(
       return NextResponse.json({ error: "Admin not found" }, { status: 404 });
     }
 
-    // Only super_admin can terminate admins
-    if (currentAdmin.role !== "super_admin") {
+    // Only super_admin or permissioned admins can terminate admins
+    if (
+      currentAdmin.role !== "super_admin" &&
+      !currentAdmin.permissions.canTerminateAdmins
+    ) {
       return NextResponse.json(
         { error: "Only superadmin can terminate admins" },
         { status: 403 },
