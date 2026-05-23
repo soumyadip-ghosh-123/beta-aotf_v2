@@ -95,7 +95,6 @@ const AdSchema = new Schema<IAd>(
 
 // ─── Indexes ────────────────────────────────────────────────────────────
 
-AdSchema.index({ adId: 1 }, { unique: true });
 AdSchema.index({ status: 1, placement: 1 });
 AdSchema.index({ startDate: 1, endDate: 1 });
 AdSchema.index({ createdAt: -1 });

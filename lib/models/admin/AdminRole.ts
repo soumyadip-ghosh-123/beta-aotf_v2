@@ -11,7 +11,6 @@ const adminRoleSchema = new Schema(
   { timestamps: true },
 );
 
-adminRoleSchema.index({ name: 1 }, { unique: true });
 
 export type IAdminRole = InferSchemaType<typeof adminRoleSchema> & {
   _id: mongoose.Types.ObjectId;
