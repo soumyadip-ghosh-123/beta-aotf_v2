@@ -2,16 +2,15 @@ import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const adminUserSchema = new Schema(
   {
-    clerkUserId: { type: String, required: true, unique: true, index: true },
+    clerkUserId: { type: String, required: true, unique: true },
     email: { type: String, required: true, lowercase: true, trim: true },
     name: { type: String, required: true, trim: true },
-    role: { type: String, required: true, index: true },
+    role: { type: String, required: true },
     status: {
       type: String,
       enum: ["INVITED", "ACTIVE", "SUSPENDED", "TERMINATED"],
       required: true,
       default: "INVITED",
-      index: true,
     },
     invitedBy: { type: Schema.Types.ObjectId, ref: "AdminUser", default: null },
     invitedAt: { type: Date, default: Date.now },
@@ -27,7 +26,6 @@ const adminUserSchema = new Schema(
   { timestamps: true },
 );
 
-adminUserSchema.index({ clerkUserId: 1 }, { unique: true });
 adminUserSchema.index({ role: 1 });
 adminUserSchema.index({ status: 1 });
 adminUserSchema.index({ email: 1 });

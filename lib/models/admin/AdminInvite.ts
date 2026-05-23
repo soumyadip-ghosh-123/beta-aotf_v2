@@ -2,8 +2,8 @@ import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
 const adminInviteSchema = new Schema(
   {
-    token: { type: String, required: true, unique: true, index: true },
-    email: { type: String, required: true, lowercase: true, trim: true, index: true },
+    token: { type: String, required: true, unique: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     assignedRole: { type: String, required: true, trim: true },
     invitedBy: { type: Schema.Types.ObjectId, ref: "AdminUser", required: true },
     inviteeName: { type: String, required: true, trim: true },
@@ -12,7 +12,6 @@ const adminInviteSchema = new Schema(
       enum: ["PENDING", "ACCEPTED", "EXPIRED", "REVOKED"],
       required: true,
       default: "PENDING",
-      index: true,
     },
     expiresAt: { type: Date, required: true },
     acceptedAt: { type: Date, default: null },
@@ -20,7 +19,6 @@ const adminInviteSchema = new Schema(
   { timestamps: true },
 );
 
-adminInviteSchema.index({ token: 1 }, { unique: true });
 adminInviteSchema.index({ email: 1 });
 adminInviteSchema.index({ status: 1 });
 
