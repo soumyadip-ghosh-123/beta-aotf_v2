@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import type { Dispatch, SetStateAction } from "react";
 import type { IEvent, IUser } from "@/calendar/interfaces";
@@ -20,6 +20,9 @@ interface ICalendarContext {
   setVisibleHours: Dispatch<SetStateAction<TVisibleHours>>;
   events: IEvent[];
   setLocalEvents: Dispatch<SetStateAction<IEvent[]>>;
+  /** Trigger a full refetch from the API */
+  refreshEvents: () => Promise<void>;
+  isRefreshing: boolean;
 }
 
 const CalendarContext = createContext({} as ICalendarContext);
@@ -36,19 +39,41 @@ const WORKING_HOURS = {
 
 const VISIBLE_HOURS = { from: 7, to: 18 };
 
-export function CalendarProvider({ children, users, events }: { children: React.ReactNode; users: IUser[]; events: IEvent[] }) {
+export function CalendarProvider({
+  children,
+  users,
+  events: initialEvents,
+}: {
+  children: React.ReactNode;
+  users: IUser[];
+  events: IEvent[];
+}) {
   const [badgeVariant, setBadgeVariant] = useState<TBadgeVariant>("colored");
   const [visibleHours, setVisibleHours] = useState<TVisibleHours>(VISIBLE_HOURS);
   const [workingHours, setWorkingHours] = useState<TWorkingHours>(WORKING_HOURS);
-
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedUserId, setSelectedUserId] = useState<IUser["id"] | "all">("all");
+  const [localEvents, setLocalEvents] = useState<IEvent[]>(initialEvents);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // This localEvents doesn't need to exists in a real scenario.
-  // It's used here just to simulate the update of the events.
-  // In a real scenario, the events would be updated in the backend
-  // and the request that fetches the events should be refetched
-  const [localEvents, setLocalEvents] = useState<IEvent[]>(events);
+  const refreshEvents = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/admin/calendar-events", { cache: "no-store" });
+      const data = await res.json().catch(() => ({ events: [] }));
+      if (data.events) setLocalEvents(data.events);
+    } catch (err) {
+      console.error("[CalendarProvider] refreshEvents failed:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Auto-refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => void refreshEvents(), 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [refreshEvents]);
 
   const handleSelectDate = (date: Date | undefined) => {
     if (!date) return;
@@ -69,9 +94,10 @@ export function CalendarProvider({ children, users, events }: { children: React.
         setVisibleHours,
         workingHours,
         setWorkingHours,
-        // If you go to the refetch approach, you can remove the localEvents and pass the events directly
         events: localEvents,
         setLocalEvents,
+        refreshEvents,
+        isRefreshing,
       }}
     >
       {children}

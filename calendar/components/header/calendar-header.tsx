@@ -1,19 +1,12 @@
 import Link from "next/link";
-import {
-  Columns,
-  Grid3x3,
-  List,
-  Plus,
-  Grid2x2,
-  CalendarRange,
-} from "lucide-react";
-
+import { Columns, List, Grid2x2, CalendarRange } from "lucide-react";
 import { Button } from "@heroui/button";
 
 import { UserSelect } from "@/calendar/components/header/user-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { AddEventDialog } from "@/calendar/components/dialogs/add-event-dialog";
+import { RefreshButton } from "@/calendar/components/header/refresh-button";
 
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
@@ -23,81 +16,100 @@ interface IProps {
   events: IEvent[];
 }
 
+// ─── Legend item ─────────────────────────────────────────────────────────
+
+function Dot({ color, label }: { color: string; label: string }) {
+  const cls: Record<string, string> = {
+    blue:   "bg-blue-500",
+    yellow: "bg-yellow-500",
+    orange: "bg-orange-500",
+    green:  "bg-green-500",
+    red:    "bg-red-500",
+    purple: "bg-purple-500",
+    gray:   "bg-neutral-400",
+  };
+  return (
+    <span className="flex items-center gap-1 text-[11px] text-default-500 whitespace-nowrap">
+      <span className={`size-2 rounded-full shrink-0 ${cls[color] ?? "bg-blue-500"}`} />
+      {label}
+    </span>
+  );
+}
+
 export function CalendarHeader({ view, events }: IProps) {
   return (
-    <div className="flex flex-col gap-4 border-b p-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex items-center gap-3">
-        <TodayButton />
-        <DateNavigator view={view} events={events} />
-      </div>
-
-      <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
-        <div className="flex w-full items-center gap-1.5">
-          <div className="inline-flex first:rounded-r-none last:rounded-l-none [&:not(:first-child):not(:last-child)]:rounded-none">
-            <Button
-              aria-label="View by day"
-              isIconOnly
-              variant={view === "day" ? "solid" : "flat"}
-              className="rounded-r-none [&_svg]:size-5"
-            >
-              <Link href="/admin/day-view">
-                <List strokeWidth={1.8} />
-              </Link>
-            </Button>
-
-            <Button
-              aria-label="View by week"
-              isIconOnly
-              variant={view === "week" ? "solid" : "flat"}
-              className="-ml-px rounded-none [&_svg]:size-5"
-            >
-              <Link href="/admin/week-view">
-                <Columns strokeWidth={1.8} />
-              </Link>
-            </Button>
-
-            <Button
-              aria-label="View by month"
-              isIconOnly
-              variant={view === "month" ? "solid" : "flat"}
-              className="-ml-px rounded-none [&_svg]:size-5"
-            >
-              <Link href="/admin/month-view">
-                <Grid2x2 strokeWidth={1.8} />
-              </Link>
-            </Button>
-
-            {/* <Button
-              aria-label="View by year"
-              isIconOnly
-              variant={view === "year" ? "solid" : "flat"}
-              className="-ml-px rounded-none [&_svg]:size-5"
-            >
-              <Link href="/admin/year-view">
-                <Grid3x3 strokeWidth={1.8} />
-              </Link>
-            </Button> */}
-
-            <Button
-              aria-label="View by agenda"
-              isIconOnly
-              variant={view === "agenda" ? "solid" : "flat"}
-              className="-ml-px rounded-l-none [&_svg]:size-5"
-            >
-              <Link href="/admin/agenda-view">
-                <CalendarRange strokeWidth={1.8} />
-              </Link>
-            </Button>
-          </div>
-
-          <UserSelect />
+    <div className="flex flex-col gap-3 border-b p-4">
+      {/* Top row */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
+          <TodayButton />
+          <DateNavigator view={view} events={events} />
         </div>
 
-        <AddEventDialog>
-          <Button className="w-full sm:w-auto">
-            Add Event
-          </Button>
-        </AddEventDialog>
+        <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
+          <div className="flex w-full items-center gap-1.5">
+            <div className="inline-flex first:rounded-r-none last:rounded-l-none [&:not(:first-child):not(:last-child)]:rounded-none">
+              <Button aria-label="View by day" isIconOnly variant={view === "day" ? "solid" : "flat"} className="rounded-r-none [&_svg]:size-5">
+                <Link href="/admin/day-view"><List strokeWidth={1.8} /></Link>
+              </Button>
+              <Button aria-label="View by week" isIconOnly variant={view === "week" ? "solid" : "flat"} className="-ml-px rounded-none [&_svg]:size-5">
+                <Link href="/admin/week-view"><Columns strokeWidth={1.8} /></Link>
+              </Button>
+              <Button aria-label="View by month" isIconOnly variant={view === "month" ? "solid" : "flat"} className="-ml-px rounded-none [&_svg]:size-5">
+                <Link href="/admin/month-view"><Grid2x2 strokeWidth={1.8} /></Link>
+              </Button>
+              <Button aria-label="View by agenda" isIconOnly variant={view === "agenda" ? "solid" : "flat"} className="-ml-px rounded-l-none [&_svg]:size-5">
+                <Link href="/admin/agenda-view"><CalendarRange strokeWidth={1.8} /></Link>
+              </Button>
+            </div>
+
+            <UserSelect />
+            <RefreshButton />
+          </div>
+
+          <AddEventDialog>
+            <Button className="w-full sm:w-auto" color="primary" size="sm">
+              + Add Reminder
+            </Button>
+          </AddEventDialog>
+        </div>
+      </div>
+
+      {/* ── Status legend ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+        <p className="col-span-2 text-[11px] font-semibold text-default-400 uppercase tracking-wide sm:hidden mb-0.5">Legend</p>
+
+        {/* Tuition */}
+        <Dot color="blue"   label="📚 Applied" />
+        <Dot color="yellow" label="📚 Demo Confirmation" />
+        <Dot color="orange" label="📚 Guardian Confirmed" />
+        <Dot color="green"  label="📚 Completed" />
+
+        {/* Divider for sm+ */}
+        <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+
+        {/* Enquiry */}
+        <Dot color="orange" label="📋 Pending" />
+        <Dot color="green"  label="📋 Resolved" />
+
+        <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+
+        {/* Job */}
+        <Dot color="orange" label="💼 Job Pending" />
+        <Dot color="blue"   label="💼 Sent to Company" />
+
+        <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+
+        {/* Feedback */}
+        <Dot color="red"    label="💬 Needs Review" />
+        <Dot color="yellow" label="💬 Under Review" />
+        <Dot color="green"  label="💬 Resolved" />
+
+        <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+
+        {/* Misc */}
+        <Dot color="gray"   label="Closed / Done" />
+        <Dot color="red"    label="Declined" />
       </div>
     </div>
   );

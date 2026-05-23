@@ -1,8 +1,6 @@
 "use client";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { AlertTriangle } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { cloneElement, isValidElement } from "react";
 import type { ReactElement } from "react";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -11,10 +9,8 @@ import { useCalendar } from "@/calendar/contexts/calendar-context";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
-import { DatePicker } from "@heroui/date-picker";
 import { Select, SelectItem } from "@heroui/select";
-
-import { CalendarDate, Time } from "@internationalized/date";
+import { addToast } from "@heroui/toast";
 
 import {
   Modal,
@@ -26,8 +22,36 @@ import {
 
 import { Avatar } from "@heroui/avatar";
 
-import { eventSchema } from "@/calendar/schemas";
-import type { TEventFormData } from "@/calendar/schemas";
+// ─── Status options per category ─────────────────────────────────────────
+
+const STATUS_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  tuition: [
+    { value: "demo_reminder", label: "Demo Reminder" },
+    { value: "demo_confirmation", label: "Demo Confirmation" },
+    { value: "guardian_confirmed", label: "Guardian Confirmed" },
+    { value: "completed", label: "Completed" },
+  ],
+  enquiry: [
+    { value: "pending", label: "Pending" },
+    { value: "resolved", label: "Resolved" },
+  ],
+  job: [
+    { value: "pending", label: "Pending" },
+    { value: "sent_to_company", label: "Sent to Company" },
+  ],
+  feedback: [
+    { value: "open", label: "Open" },
+    { value: "under_review", label: "Under Review" },
+    { value: "action_taken", label: "Action Taken" },
+    { value: "resolved", label: "Resolved" },
+  ],
+};
+
+function toLocalDatetimeInput() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
 
 interface IProps {
   children: React.ReactNode;
@@ -36,229 +60,217 @@ interface IProps {
 }
 
 export function AddEventDialog({ children, startDate, startTime }: IProps) {
-  const { users } = useCalendar();
-  type DatePickerValue = React.ComponentProps<typeof DatePicker>["value"];
-
-  const form = useForm<TEventFormData>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      startDate,
-      startTime,
-    },
-  });
-
-  const onSubmit = (_values: TEventFormData) => {
-    onClose();
-    form.reset();
-  };
-
-  useEffect(() => {
-    form.reset({ startDate, startTime });
-  }, [startDate, startTime, form]);
+  const { users, refreshEvents } = useCalendar();
   const { isOpen, onClose, onToggle } = useDisclosure();
 
-  type TriggerProps = {
-    onPress?: () => void;
-  };
+  const [saving, setSaving] = useState(false);
+
+  // ── Form state ────────────────────────────────────────────────────────
+  const initialDueAt = (() => {
+    if (startDate) {
+      const d = new Date(startDate);
+      if (startTime) d.setHours(startTime.hour, startTime.minute);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+    return toLocalDatetimeInput();
+  })();
+
+  const [form, setForm] = useState({
+    category: "tuition" as string,
+    status: "demo_reminder" as string,
+    title: "",
+    note: "",
+    dueAt: initialDueAt,
+    userId: "",        // selected admin id (optional)
+    handledByAdminName: "",
+    refLabel: "",
+  });
 
   const trigger = isValidElement(children)
-    ? cloneElement(children as ReactElement<TriggerProps>, {
+    ? cloneElement(children as ReactElement<{ onPress?: () => void }>, {
         onPress: onToggle,
       })
     : children;
+
+  const handleCategoryChange = (cat: string) => {
+    setForm((p) => ({
+      ...p,
+      category: cat,
+      status: STATUS_OPTIONS[cat]?.[0]?.value ?? "",
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim()) {
+      addToast({ description: "Title is required", color: "danger" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const selectedUser = users.find((u) => u.id === form.userId);
+      const payload = {
+        category: form.category,
+        status: form.status,
+        title: form.title.trim(),
+        note: form.note.trim() || undefined,
+        dueAt: new Date(form.dueAt).toISOString(),
+        refLabel: form.refLabel.trim() || undefined,
+        handledByAdminId: selectedUser?.id !== "system" ? selectedUser?.id : undefined,
+        handledByAdminName: (selectedUser?.name ?? form.handledByAdminName.trim()) || undefined,
+      };
+
+      const res = await fetch("/api/admin/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to create reminder");
+
+      addToast({ description: "Reminder added to calendar ✅", color: "success" });
+      onClose();
+
+      // Reset form
+      setForm({
+        category: "tuition",
+        status: "demo_reminder",
+        title: "",
+        note: "",
+        dueAt: toLocalDatetimeInput(),
+        userId: "",
+        handledByAdminName: "",
+        refLabel: "",
+      });
+
+      // Refresh calendar events so the new reminder appears
+      await refreshEvents();
+    } catch (err) {
+      addToast({
+        description: err instanceof Error ? err.message : "Failed to save",
+        color: "danger",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <>
       {trigger}
 
-      <Modal isOpen={isOpen} onOpenChange={onToggle} placement="top">
+      <Modal isOpen={isOpen} onOpenChange={onToggle} placement="top" scrollBehavior="inside">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Add New Event</ModalHeader>
+              <ModalHeader>Add Calendar Reminder</ModalHeader>
 
-              <ModalBody>
-                <p className="text-sm text-warning flex items-center gap-1">
-                  <AlertTriangle className="size-4" />
-                  Demo only — no backend call.
-                </p>
-
-                <form
-                  id="event-form"
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="grid gap-4 py-4"
+              <ModalBody className="space-y-3">
+                {/* Category */}
+                <Select
+                  label="Category"
+                  selectedKeys={[form.category]}
+                  onSelectionChange={(keys) => handleCategoryChange(Array.from(keys)[0] as string)}
+                  variant="bordered"
+                  size="sm"
                 >
-                  {/* USER */}
-                  <Select
-                    label="Responsible"
-                    selectedKeys={
-                      form.watch("user") ? [form.watch("user")] : []
-                    }
-                    onSelectionChange={(keys) => {
-                      const value = Array.from(keys)[0] as string;
-                      form.setValue("user", value);
-                    }}
-                    isInvalid={!!form.formState.errors.user}
-                    errorMessage={form.formState.errors.user?.message}
-                  >
-                    {users.map((user) => (
-                      <SelectItem key={user.id} textValue={user.name ?? "User"}>
-                        <div className="flex items-center gap-2">
-                          <Avatar
-                            src={user.picturePath ?? undefined}
-                            name={user.name ?? "User"}
-                            className="size-6"
-                          />
-                          {user.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </Select>
+                  <SelectItem key="tuition">📚 Tuition</SelectItem>
+                  <SelectItem key="enquiry">📋 Enquiry</SelectItem>
+                  <SelectItem key="job">💼 Job</SelectItem>
+                  <SelectItem key="feedback">💬 Feedback</SelectItem>
+                </Select>
 
-                  {/* TITLE */}
-                  <Input
-                    label="Title"
-                    placeholder="Enter a title"
-                    {...form.register("title")}
-                    isInvalid={!!form.formState.errors.title}
-                    errorMessage={form.formState.errors.title?.message}
+                {/* Status */}
+                <Select
+                  label="Status / Type"
+                  selectedKeys={[form.status]}
+                  onSelectionChange={(keys) =>
+                    setForm((p) => ({ ...p, status: Array.from(keys)[0] as string }))
+                  }
+                  variant="bordered"
+                  size="sm"
+                >
+                  {(STATUS_OPTIONS[form.category] ?? []).map((opt) => (
+                    <SelectItem key={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </Select>
+
+                {/* Title */}
+                <Input
+                  label="Title"
+                  placeholder="e.g. Call guardian for demo confirmation"
+                  value={form.title}
+                  onValueChange={(v) => setForm((p) => ({ ...p, title: v }))}
+                  variant="bordered"
+                  size="sm"
+                  isRequired
+                />
+
+                {/* Due date + time */}
+                <div>
+                  <label className="text-xs text-default-500 mb-1 block font-medium">
+                    Due Date &amp; Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.dueAt}
+                    onChange={(e) => setForm((p) => ({ ...p, dueAt: e.target.value }))}
+                    className="w-full rounded-xl border border-default-200 bg-default-50 px-3 py-2 text-sm outline-none focus:border-primary transition-colors"
                   />
+                </div>
 
-                  {/* START DATE */}
-                  <DatePicker
-                    label="Start date"
-                    value={
-                      form.watch("startDate")
-                        ? new CalendarDate(
-                            form.watch("startDate").getFullYear(),
-                            form.watch("startDate").getMonth() + 1,
-                            form.watch("startDate").getDate(),
-                          ) as unknown as DatePickerValue
-                        : null
-                    }
-                    onChange={(val) => {
-                      if (!val) return;
-                      const date = val as CalendarDate;
-                      form.setValue(
-                        "startDate",
-                        new Date(date.year, date.month - 1, date.day),
-                      );
-                    }}
-                    isInvalid={!!form.formState.errors.startDate}
-                    errorMessage={form.formState.errors.startDate?.message}
-                  />
+                {/* Assigned Admin */}
+                <Select
+                  label="Assigned to Admin"
+                  selectedKeys={form.userId ? [form.userId] : []}
+                  onSelectionChange={(keys) =>
+                    setForm((p) => ({ ...p, userId: Array.from(keys)[0] as string ?? "" }))
+                  }
+                  variant="bordered"
+                  size="sm"
+                >
+                  {users.map((u) => (
+                    <SelectItem key={u.id} textValue={u.name ?? "User"}>
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={u.picturePath ?? undefined}
+                          name={u.name ?? "User"}
+                          className="size-5"
+                        />
+                        {u.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </Select>
 
-                  {/* START TIME */}
-                  <Input
-                    label="Start time"
-                    type="time"
-                    value={
-                      form.watch("startTime")
-                        ? `${String(form.watch("startTime").hour).padStart(2, "0")}:${String(
-                            form.watch("startTime").minute,
-                          ).padStart(2, "0")}`
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const [hour, minute] = e.target.value
-                        .split(":")
-                        .map(Number);
-                      form.setValue("startTime", { hour, minute });
-                    }}
-                    isInvalid={!!form.formState.errors.startTime}
-                    errorMessage={form.formState.errors.startTime?.message}
-                  />
+                {/* Ref label */}
+                <Input
+                  label="Reference (optional)"
+                  placeholder="e.g. POST-010525-001 or ENQ-001"
+                  value={form.refLabel}
+                  onValueChange={(v) => setForm((p) => ({ ...p, refLabel: v }))}
+                  variant="bordered"
+                  size="sm"
+                />
 
-                  {/* END DATE */}
-                  <DatePicker
-                    label="End date"
-                    value={
-                      form.watch("endDate")
-                        ? new CalendarDate(
-                            form.watch("endDate").getFullYear(),
-                            form.watch("endDate").getMonth() + 1,
-                            form.watch("endDate").getDate(),
-                          ) as unknown as DatePickerValue
-                        : null
-                    }
-                    onChange={(val) => {
-                      if (!val) return;
-                      const date = val as CalendarDate;
-                      form.setValue(
-                        "endDate",
-                        new Date(date.year, date.month - 1, date.day),
-                      );
-                    }}
-                    isInvalid={!!form.formState.errors.endDate}
-                    errorMessage={form.formState.errors.endDate?.message}
-                  />
-
-                  {/* END TIME */}
-                  <Input
-                    label="End time"
-                    type="time"
-                    value={
-                      form.watch("endTime")
-                        ? `${String(form.watch("endTime").hour).padStart(2, "0")}:${String(
-                            form.watch("endTime").minute,
-                          ).padStart(2, "0")}`
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const [hour, minute] = e.target.value
-                        .split(":")
-                        .map(Number);
-                      form.setValue("endTime", { hour, minute });
-                    }}
-                    isInvalid={!!form.formState.errors.endTime}
-                    errorMessage={form.formState.errors.endTime?.message}
-                  />
-
-                  {/* COLOR */}
-                  <Select
-                    label="Color"
-                    selectedKeys={
-                      form.watch("color") ? [form.watch("color")] : []
-                    }
-                    onSelectionChange={(keys) => {
-                      const value = Array.from(
-                        keys,
-                      )[0] as TEventFormData["color"];
-                      form.setValue("color", value);
-                    }}
-                    isInvalid={!!form.formState.errors.color}
-                    errorMessage={form.formState.errors.color?.message}
-                  >
-                    {[
-                      "blue",
-                      "green",
-                      "red",
-                      "yellow",
-                      "purple",
-                      "orange",
-                      "gray",
-                    ].map((c) => (
-                      <SelectItem key={c}>{c}</SelectItem>
-                    ))}
-                  </Select>
-
-                  {/* DESCRIPTION */}
-                  <Textarea
-                    label="Description"
-                    {...form.register("description")}
-                    isInvalid={!!form.formState.errors.description}
-                    errorMessage={form.formState.errors.description?.message}
-                  />
-                </form>
+                {/* Note */}
+                <Textarea
+                  label="Note (optional)"
+                  placeholder="Add any relevant details…"
+                  value={form.note}
+                  onValueChange={(v) => setForm((p) => ({ ...p, note: v }))}
+                  variant="bordered"
+                  size="sm"
+                  minRows={2}
+                />
               </ModalBody>
+
               <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
+                <Button variant="flat" onPress={onClose} isDisabled={saving}>
                   Cancel
                 </Button>
-
-                <Button form="event-form" type="submit">
-                  Create Event
+                <Button color="primary" onPress={handleSave} isLoading={saving}>
+                  Add to Calendar
                 </Button>
               </ModalFooter>
             </>

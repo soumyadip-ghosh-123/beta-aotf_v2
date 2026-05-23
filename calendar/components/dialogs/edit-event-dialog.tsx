@@ -102,11 +102,6 @@ export function EditEventDialog({ children, event }: IProps) {
               <ModalHeader>Edit Event</ModalHeader>
 
               <ModalBody>
-                <p className="text-sm text-warning flex items-center gap-1">
-                  <AlertTriangle className="size-4" />
-                  Demo only — local state update.
-                </p>
-
                 <form
                   id="event-form"
                   onSubmit={form.handleSubmit(onSubmit)}

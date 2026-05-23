@@ -1,21 +1,16 @@
-/**
- * calendar/requests.ts  (server-side — called from layout.tsx)
- *
- * Fetches all real data and maps to IEvent[].
- * Uses plain find() + JS filter to avoid $exists/$in being stripped by sanitizeFilter.
- */
-import type { IEvent, IUser } from "@/calendar/interfaces";
-import type { TEventColor } from "@/calendar/types";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Application from "@/lib/models/Application";
 import Post from "@/lib/models/Post";
 import Job from "@/lib/models/Job";
 import Enquiry from "@/lib/models/Enquiry";
 import Feedback from "@/lib/models/Feedback";
-import TodoEvent from "@/lib/models/TodoEvent";
 import Admin from "@/lib/models/Admin";
+import TodoEvent from "@/lib/models/TodoEvent";
+import type { IEvent, IUser } from "@/calendar/interfaces";
+import type { TEventColor } from "@/calendar/types";
 
-// ─── Status maps ──────────────────────────────────────────────────────────
+// ─── Status → label + color ───────────────────────────────────────────────
 
 const TUITION_APP_STATUS: Record<string, { label: string; color: TEventColor }> = {
   applied:       { label: "Demo Reminder",      color: "blue"   },
@@ -55,20 +50,22 @@ const TODO_STATUS: Record<string, { label: string; color: TEventColor }> = {
   action_taken:       { label: "Action Taken",       color: "purple" },
 };
 
-const SYS: IUser = { id: "system", name: "System", picturePath: null };
-let _idCounter = 1;
+// ─── Helpers ──────────────────────────────────────────────────────────────
 
-const mkEvt = (
+const SYS: IUser = { id: "system", name: "System", picturePath: null };
+let _id = 1;
+
+function mkEvt(
   title: string,
   desc: string,
   color: TEventColor,
   date: Date,
   durMin = 60,
   user: IUser = SYS,
-): IEvent => {
+): IEvent {
   const start = isNaN(date.getTime()) ? new Date() : date;
   return {
-    id: _idCounter++,
+    id: _id++,
     startDate: start.toISOString(),
     endDate: new Date(start.getTime() + durMin * 60_000).toISOString(),
     title,
@@ -76,24 +73,24 @@ const mkEvt = (
     description: desc,
     user,
   };
-};
+}
 
-// ─── Main fetcher ─────────────────────────────────────────────────────────
+// ─── GET /api/admin/calendar-events ──────────────────────────────────────
 
-export async function getEvents(): Promise<IEvent[]> {
+export async function GET() {
   try {
-    _idCounter = 1;
     await dbConnect();
+    _id = 1;
     const events: IEvent[] = [];
 
-    // ── Admin map ─────────────────────────────────────────────────────────
+    // ── Admin map ────────────────────────────────────────────────────────
     const admins = await Admin.find({ isActive: true, terminatedAt: null })
       .select("name _id clerkId")
-      .lean() as any[];
+      .lean();
 
     const adminById = new Map<string, IUser>();
     const adminByClerkId = new Map<string, IUser>();
-    for (const a of admins) {
+    for (const a of admins as any[]) {
       const u: IUser = { id: a._id.toString(), name: a.name ?? "Admin", picturePath: null };
       adminById.set(a._id.toString(), u);
       if (a.clerkId) adminByClerkId.set(a.clerkId, u);
@@ -101,7 +98,7 @@ export async function getEvents(): Promise<IEvent[]> {
     const byAdmin = (id?: string, clerk?: string): IUser =>
       (id && adminById.get(id)) || (clerk && adminByClerkId.get(clerk)) || SYS;
 
-    // ── 1. ALL applications — split in JS to avoid $exists ────────────────
+    // ── 1. ALL Applications — split by JS (avoids $exists sanitizeFilter) ─
     const allApps = await Application.find({})
       .sort({ updatedAt: -1 })
       .limit(1000)
@@ -110,31 +107,33 @@ export async function getEvents(): Promise<IEvent[]> {
     const tuitionApps = allApps.filter((a) => typeof a.postId === "string" && a.postId);
     const jobApps     = allApps.filter((a) => typeof a.jobIdPublic === "string" && a.jobIdPublic);
 
-    // Post lookup — one findOne per unique postId
+    // Build post lookup (one findOne per unique postId — avoids $in)
     const seenPosts = new Set<string>();
     const postMap = new Map<string, any>();
     for (const a of tuitionApps) {
-      if (seenPosts.has(a.postId)) continue;
-      seenPosts.add(a.postId);
-      const p = await Post.findOne({ postId: a.postId })
-        .select("guardianName guardianPhone location postId")
-        .lean();
-      if (p) postMap.set(a.postId, p);
+      if (!seenPosts.has(a.postId)) {
+        seenPosts.add(a.postId);
+        const p = await Post.findOne({ postId: a.postId })
+          .select("guardianName guardianPhone location postId")
+          .lean();
+        if (p) postMap.set(a.postId, p);
+      }
     }
 
-    // Job lookup — one findOne per unique jobIdPublic
+    // Build job lookup
     const seenJobs = new Set<string>();
     const jobMap = new Map<string, any>();
     for (const a of jobApps) {
-      if (seenJobs.has(a.jobIdPublic)) continue;
-      seenJobs.add(a.jobIdPublic);
-      const j = await Job.findOne({ jobId: a.jobIdPublic })
-        .select("title clientName jobId")
-        .lean();
-      if (j) jobMap.set(a.jobIdPublic, j);
+      if (!seenJobs.has(a.jobIdPublic)) {
+        seenJobs.add(a.jobIdPublic);
+        const j = await Job.findOne({ jobId: a.jobIdPublic })
+          .select("title clientName jobId")
+          .lean();
+        if (j) jobMap.set(a.jobIdPublic, j);
+      }
     }
 
-    // ── Tuition applications ───────────────────────────────────────────────
+    // ── Tuition application events ────────────────────────────────────────
     for (const a of tuitionApps) {
       const st = TUITION_APP_STATUS[a.status] ?? { label: a.status, color: "blue" as TEventColor };
       const post = postMap.get(a.postId);
@@ -142,6 +141,7 @@ export async function getEvents(): Promise<IEvent[]> {
         ? `${(post as any).guardianName} · ${(post as any).guardianPhone} · ${(post as any).location}`
         : `Post: ${a.postId}`;
 
+      // Use scheduled date for DC/GC, else fall back to updatedAt
       const rawDate =
         (a.status === "DC" && a.dcMeta?.scheduledDate) ||
         (a.status === "GC" && a.gcMeta?.scheduledDate) ||
@@ -172,7 +172,7 @@ export async function getEvents(): Promise<IEvent[]> {
       ));
     }
 
-    // ── Enquiries ─────────────────────────────────────────────────────────
+    // ── Enquiry events ────────────────────────────────────────────────────
     const enquiries = await Enquiry.find({}).sort({ updatedAt: -1 }).limit(300).lean() as any[];
     for (const e of enquiries) {
       const st = ENQ_STATUS[e.currentStatus] ?? { label: e.currentStatus ?? "new", color: "orange" as TEventColor };
@@ -196,19 +196,11 @@ export async function getEvents(): Promise<IEvent[]> {
       ));
     }
 
-    // ── Job applications ──────────────────────────────────────────────────
+    // ── Job application events ────────────────────────────────────────────
     for (const a of jobApps) {
       const isForwarded = ["DC", "GC", "approved"].includes(a.status);
-      const label = isForwarded
-        ? "Sent to Company"
-        : a.status === "applied"
-        ? "Pending"
-        : (TUITION_APP_STATUS[a.status]?.label ?? a.status);
-      const color: TEventColor = isForwarded
-        ? "blue"
-        : a.status === "applied"
-        ? "orange"
-        : (TUITION_APP_STATUS[a.status]?.color ?? "blue");
+      const label = isForwarded ? "Sent to Company" : a.status === "applied" ? "Pending" : (TUITION_APP_STATUS[a.status]?.label ?? a.status);
+      const color: TEventColor = isForwarded ? "blue" : a.status === "applied" ? "orange" : (TUITION_APP_STATUS[a.status]?.color ?? "blue");
       const job = jobMap.get(a.jobIdPublic);
       const jobInfo = job ? `${(job as any).title} @ ${(job as any).clientName}` : `Job: ${a.jobIdPublic}`;
       const adminUser = byAdmin(a.approvalMeta?.approvedByAdminId?.toString());
@@ -231,7 +223,7 @@ export async function getEvents(): Promise<IEvent[]> {
       ));
     }
 
-    // ── Feedbacks ─────────────────────────────────────────────────────────
+    // ── Feedback events ───────────────────────────────────────────────────
     const feedbacks = await Feedback.find({}).sort({ updatedAt: -1 }).limit(300).lean() as any[];
     for (const f of feedbacks) {
       const st = FB_STATUS[f.status] ?? { label: f.status ?? "open", color: "purple" as TEventColor };
@@ -258,7 +250,7 @@ export async function getEvents(): Promise<IEvent[]> {
       ));
     }
 
-    // ── Manual TodoEvent reminders ─────────────────────────────────────────
+    // ── Manual TodoEvent reminders ────────────────────────────────────────
     const todos = await TodoEvent.find({}).sort({ dueAt: 1 }).limit(500).lean() as any[];
     const catEmoji: Record<string, string> = { tuition: "📚", enquiry: "📋", job: "💼", feedback: "💬" };
     for (const t of todos) {
@@ -282,28 +274,9 @@ export async function getEvents(): Promise<IEvent[]> {
       ));
     }
 
-    return events;
+    return NextResponse.json({ events });
   } catch (err) {
-    console.error("[calendar/requests] getEvents error:", err);
-    return [];
-  }
-}
-
-export async function getUsers(): Promise<IUser[]> {
-  try {
-    await dbConnect();
-    const admins = await Admin.find({ isActive: true, terminatedAt: null })
-      .select("name _id")
-      .lean() as any[];
-    return [
-      SYS,
-      ...admins.map((a) => ({
-        id: a._id.toString(),
-        name: a.name ?? "Admin",
-        picturePath: null,
-      })),
-    ];
-  } catch {
-    return [SYS];
+    console.error("[calendar-events] Error:", err);
+    return NextResponse.json({ events: [], error: String(err) }, { status: 500 });
   }
 }
