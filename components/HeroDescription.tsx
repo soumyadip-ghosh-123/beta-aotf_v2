@@ -29,10 +29,10 @@ const HeroDescription = () => {
           <p className="-translate-x-2">Join community of 1m+ founders </p>
         </div> */}
         <h1 className="font-semibold md:text-left text-3xl md:text-5xl md:leading-15 max-w-xl leading-10">
-          Connecting
+          Find Trusted
           <br />
           <TextType
-            text={["Quality Educators", "Skilled Professionals"]}
+            text={["Tutors", "Freelancers", "Career Opportunities"]}
             typingSpeed={75}
             pauseDuration={1500}
             showCursor={true}
@@ -42,11 +42,10 @@ const HeroDescription = () => {
           {/* <span className="text-[#ff9f51]"> Quality Educators </span>
           <span className="text-[#ff9f51]">Skilled Professionals</span>  */}
           <br />
-          <span className="bg-[#2e8b57] text-white"> Across India</span>
+          <span className="bg-[#72b18c] text-white text-2xl"> All in One Place</span>
         </h1>
-        <p className="md:text-left text-md max-w-lg mt-2">
-          Built on trust and transparency, AOTF makes it easy to find the right
-          tutor or professional with confidence.
+        <p className="md:text-left text-lg max-w-lg mt-2">
+          AOTF connects students, guardians, educators, freelancers, and clients through verified opportunities, personalized guidance, and reliable support across India.
         </p>
         <div className="flex items-center justify-center gap-4 mt-4 text-sm">
           <Redirect to="/enquiry">
@@ -55,14 +54,14 @@ const HeroDescription = () => {
               className="relative overflow-hidden flex items-center gap-2 px-7 py-2.5
     text-white font-semibold tracking-wide
 
-    bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500
+    bg-linear-to-r from-indigo-600 via-purple-600 to-pink-500
     shadow-lg shadow-purple-500/30
 
     hover:shadow-pink-500/40 hover:-translate-y-1
     active:scale-95 transition-all duration-300
 
     before:absolute before:inset-0 before:rounded-full
-    before:bg-gradient-to-r before:from-white/20 before:to-transparent
+    before:bg-linear-to-r before:from-white/20 before:to-transparent
     before:opacity-0 hover:before:opacity-100 before:transition
 
     group"
@@ -71,7 +70,7 @@ const HeroDescription = () => {
               <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-500">
                 <span
                   className="absolute -left-full top-0 h-full w-1/2 
-      bg-gradient-to-r from-transparent via-white/40 to-transparent 
+      bg-linear-to-r from-transparent via-white/40 to-transparent 
       skew-x-12 animate-[shine_1.2s_ease]"
                 />
               </span>

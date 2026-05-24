@@ -98,7 +98,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
                       <Button
                         variant="shadow"
                         color="primary"
-                        className="mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95"
+                        className="mt-2 bg-linear-to-r from-indigo-600 to-[#8A7DFF] active:scale-95 w-fit px-4 py-2 rounded-full text-sm"
                       >
                         {slide.buttonText || "Learn More"}
                       </Button>

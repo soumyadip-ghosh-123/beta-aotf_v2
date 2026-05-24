@@ -106,15 +106,15 @@ export default function ServicesPage() {
         {/* Platform Value */}
         <section className="rounded-2xl bg-gray-50 p-6">
           <h2 className="mb-6 text-3xl font-semibold text-gray-900">
-            Why Choose AOTF
+            Why People Trust AOTF
           </h2>
           <ul className="grid gap-3 md:grid-cols-2">
-            <ValuePoint text="Verified teachers, freelancers, and clients" />
-            <ValuePoint text="Transparent application and approval process" />
-            <ValuePoint text="Admin-monitored platform for quality control" />
-            <ValuePoint text="Secure payments and structured onboarding" />
-            <ValuePoint text="Support for both education and professional hiring" />
-            <ValuePoint text="Designed for scalability and trust" />
+            <ValuePoint text="Verified tutors and freelancers" />
+            <ValuePoint text="Personalized matching process" />
+            <ValuePoint text="Affordable and flexible learning options" />
+            <ValuePoint text="Direct communication and support" />
+            <ValuePoint text="Opportunities for both students and professionals" />
+            <ValuePoint text="Focused on quality, not just quantity" />
           </ul>
         </section>
       </main>

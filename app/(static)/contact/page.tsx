@@ -15,8 +15,13 @@ export default function DocsPage() {
                 <div className="space-y-2">
                   <h2 className="text-2xl font-bold">Get in touch</h2>
                   <p className="max-w-150 text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                    Have a question or want to work together? Fill out the form
-                    and we&apos;ll get back to you as soon as possible.
+                    Whether you’re looking for a tutor, a freelancer, or want to join our growing network, we’d love to hear from you.
+                  </p>
+                  <p className="max-w-150 text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
+                    Whether someone is searching for the right tutor, trying to build a freelance career, or looking for reliable academic support, the process often feels confusing and unorganized.
+                  </p>
+                  <p className="max-w-150 text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
+                    AOTF aims to bridge that gap by creating a trusted platform where learning, mentorship, and opportunities come together.
                   </p>
                 </div>
                 <form className="space-y-4">
@@ -36,10 +41,7 @@ export default function DocsPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="message">Message</label>
-                    <Textarea
-                      id="message"
-                      placeholder="Enter your message"
-                    />
+                    <Textarea id="message" placeholder="Enter your message" />
                   </div>
                   <Button type="submit">Submit</Button>
                 </form>

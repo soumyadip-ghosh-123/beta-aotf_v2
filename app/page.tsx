@@ -17,24 +17,25 @@ export default function Home() {
           slides={[
             {
               src: "./image1.png",
-              title: "First Slide",
-              description: "This is the first image",
-              buttonText: "Enquiry",
-              link: "/enquiry",
+              title: "Find a Tutor",
+              // description in 5 -6 words
+              description: "Discover personalized learning with trusted tutors",
+              buttonText: "Find Tuitions",
+              link: "/posts",
             },
             {
               src: "./scatch_image.png",
-              title: "Second Slide",
-              description: "This is the second image",
-              buttonText: "Join Now",
-              link: "/sign-up",
+              title: "Hire a Freelancer",
+              description: "Connect with verified freelancers for your projects",
+              buttonText: "Find Jobs",
+              link: "/jobs",
             },
             {
               src: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/gallery/slide3.png",
-              title: "Third Slide",
-              description: "This is the third image",
-              buttonText: "View posts",
-              link: "/posts",
+              title: "Join as Educator",
+              description: "Share your knowledge and earn by teaching students",
+              buttonText: "Join Now",
+              link: "/sign-up",
             },
           ]}
           autoPlay
