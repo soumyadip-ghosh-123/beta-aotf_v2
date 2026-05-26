@@ -68,7 +68,7 @@ export function EBill({
 
       {/* ORDER INFO */}
       <section className="grid grid-cols-2 gap-y-4 py-4 border-y border-slate-100">
-        <Info label="Order Number" value={orderNumber} />
+        <Info label="Invoice ID" value={invoiceId} />
         <Info label="Order Type" value={orderType} />
         <Info label="Fees" value={`₹ ${amount}`} highlight />
         <Info label="Date" value={format(date, "dd/MM/yy HH:mm")} />
@@ -76,7 +76,6 @@ export function EBill({
         {/* ✅ NEW FIELDS */}
         <Info label="Post ID" value={postId} />
         <Info label="Enquiry ID" value={enquiryId || "-"} />
-        <Info label="Invoice ID" value={invoiceId} />
         <Info label="Tutor" value={`${tutorName}`} />
         <Info label="Tutor Phone" value={tutorPhone} />
       </section>
