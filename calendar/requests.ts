@@ -65,16 +65,20 @@ const mkEvt = (
   date: Date,
   durMin = 60,
   user: IUser = SYS,
+  category = "tuition",
+  sourceId = "",
 ): IEvent => {
   const start = isNaN(date.getTime()) ? new Date() : date;
   return {
-    id: _idCounter++,
+    id: `legacy-${_idCounter++}`,
     startDate: start.toISOString(),
     endDate: new Date(start.getTime() + durMin * 60_000).toISOString(),
     title,
     color,
     description: desc,
     user,
+    category,
+    sourceId,
   };
 };
 
@@ -169,6 +173,8 @@ export async function getEvents(): Promise<IEvent[]> {
         new Date(rawDate),
         60,
         adminUser,
+        "tuition",
+        a._id.toString(),
       ));
     }
 
@@ -193,6 +199,8 @@ export async function getEvents(): Promise<IEvent[]> {
         date,
         30,
         adminUser,
+        "enquiry",
+        e._id.toString(),
       ));
     }
 
@@ -228,6 +236,8 @@ export async function getEvents(): Promise<IEvent[]> {
         new Date(a.updatedAt ?? Date.now()),
         60,
         adminUser,
+        "job",
+        a._id.toString(),
       ));
     }
 
@@ -255,6 +265,8 @@ export async function getEvents(): Promise<IEvent[]> {
         date,
         30,
         adminUser,
+        "feedback",
+        f._id.toString(),
       ));
     }
 
@@ -279,6 +291,8 @@ export async function getEvents(): Promise<IEvent[]> {
         new Date(t.dueAt),
         60,
         adminUser,
+        "reminder",
+        t._id.toString(),
       ));
     }
 

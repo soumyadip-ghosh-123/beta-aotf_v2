@@ -1,4 +1,10 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import {
+  upsertCalendarEvent,
+  deleteCalendarEvent,
+  mapTodo,
+  todoEventKey,
+} from "@/lib/services/calendar-event.service";
 
 // ─── Category + status enums ─────────────────────────────────────────────
 
@@ -98,6 +104,24 @@ TodoEventSchema.index({ dueAt: 1, isDone: 1 });
 TodoEventSchema.index({ category: 1, dueAt: -1 });
 TodoEventSchema.index({ refId: 1 });
 TodoEventSchema.index({ handledByAdminId: 1, dueAt: 1 });
+
+// ─── Calendar write-through hooks ──────────────────────────────────────────
+
+TodoEventSchema.post("save", function (doc) {
+  void upsertCalendarEvent(mapTodo(doc.toObject()));
+});
+
+TodoEventSchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void upsertCalendarEvent(mapTodo(raw));
+});
+
+TodoEventSchema.post("findOneAndDelete", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void deleteCalendarEvent(todoEventKey(raw._id?.toString?.() ?? ""));
+});
 
 const TodoEvent: Model<ITodoEvent> =
   models.TodoEvent ||

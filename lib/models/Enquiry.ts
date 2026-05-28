@@ -1,4 +1,10 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import {
+  upsertCalendarEvent,
+  deleteCalendarEvent,
+  mapEnquiry,
+  enquiryEventKey,
+} from "@/lib/services/calendar-event.service";
 
 export const ENQUIRY_STATUSES = [
   "new",
@@ -61,6 +67,24 @@ EnquirySchema.index(
   { phoneNumber: 1, currentStatus: 1 },
   { name: "enquiry_ix_4" },
 );
+
+// ─── Calendar write-through hooks ──────────────────────────────────────────
+
+EnquirySchema.post("save", function (doc) {
+  void upsertCalendarEvent(mapEnquiry(doc.toObject()));
+});
+
+EnquirySchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void upsertCalendarEvent(mapEnquiry(raw));
+});
+
+EnquirySchema.post("findOneAndDelete", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void deleteCalendarEvent(enquiryEventKey(raw._id?.toString?.() ?? ""));
+});
 
 const Enquiry: Model<IEnquiry> =
   models.Enquiry || mongoose.model<IEnquiry>("Enquiry", EnquirySchema);

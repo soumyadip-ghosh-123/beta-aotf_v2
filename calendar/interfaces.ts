@@ -7,13 +7,15 @@ export interface IUser {
 }
 
 export interface IEvent {
-  id: number;
+  id: string;
   startDate: string;
   endDate: string;
   title: string;
   color: TEventColor;
   description: string;
   user: IUser;
+  category: string;
+  sourceId: string;
 }
 
 export interface ICalendarCell {

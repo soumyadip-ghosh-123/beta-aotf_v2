@@ -1,4 +1,9 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import {
+  upsertCalendarEvent,
+  deleteCalendarEvent,
+  mapApplication,
+} from "@/lib/services/calendar-event.service";
 
 // ─── Enums ──────────────────────────────────────────────────────────────
 
@@ -190,6 +195,47 @@ ApplicationSchema.index({ postId: 1, status: 1 });
 ApplicationSchema.index({ applicantId: 1, status: 1 });
 ApplicationSchema.index({ applicantType: 1, status: 1 });
 ApplicationSchema.index({ appliedAt: -1 });
+
+// ─── Calendar write-through hooks ──────────────────────────────────────────
+//
+// post('save')            → fires after Application.create() / doc.save()
+// post('findOneAndUpdate') → fires after findOneAndUpdate / findByIdAndUpdate
+//                            NOTE: only called when the query returns a doc
+//                            (i.e. the document must exist and { new:true } or
+//                            the default old-doc behaviour both work here since
+//                            we re-fetch from the result)
+// post('findOneAndDelete') → fires after findOneAndDelete / findByIdAndDelete
+//
+// updateMany is intentionally excluded — the hook doesn't receive individual
+// updated docs. The auto-decline path in application.service.ts handles it
+// explicitly with a follow-up bulk-upsert.
+
+ApplicationSchema.post("save", function (doc) {
+  const input = mapApplication(doc.toObject());
+  if (input) void upsertCalendarEvent(input);
+});
+
+ApplicationSchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const input = mapApplication(
+    typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>),
+  );
+  if (input) void upsertCalendarEvent(input);
+});
+
+ApplicationSchema.post("findOneAndDelete", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function"
+    ? doc.toObject()
+    : (doc as unknown as Record<string, any>);
+  const id = raw._id?.toString?.() ?? "";
+  const isTuition = typeof raw.postId === "string" && raw.postId;
+  if (isTuition) {
+    void deleteCalendarEvent(`application:${id}:tuition`);
+  } else if (typeof raw.jobIdPublic === "string" && raw.jobIdPublic) {
+    void deleteCalendarEvent(`application:${id}:job`);
+  }
+});
 
 const Application: Model<IApplication> =
   models.Application ||

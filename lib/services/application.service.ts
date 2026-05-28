@@ -12,6 +12,10 @@ import Post, { type IPost } from "@/lib/models/Post";
 import User from "@/lib/models/User";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { ensureUserRecord } from "@/lib/utils/ensure-user";
+import {
+  bulkUpsertCalendarEvents,
+  mapApplication,
+} from "@/lib/services/calendar-event.service";
 
 async function ensureApplicationStorageReady() {
   await dbConnect();
@@ -836,6 +840,10 @@ export async function updateApplicationStatus(
       filter.jobIdPublic = application.jobIdPublic;
     }
 
+    // Get the IDs of the applications that will be auto-declined BEFORE updating them
+    const docsToDecline = await Application.find(filter).select("_id").lean() as any[];
+    const docsToDeclineIds = docsToDecline.map((d) => d._id);
+
     await Application.updateMany(filter, {
       $set: {
         status: "auto_declined",
@@ -846,6 +854,19 @@ export async function updateApplicationStatus(
         },
       },
     });
+
+    // ── Sync auto-declined docs to calendar_events ────────────────────────
+    try {
+      if (docsToDeclineIds.length > 0) {
+        const declined = await Application.find({ _id: { $in: docsToDeclineIds } }).lean() as any[];
+        const inputs = declined
+          .map((d) => mapApplication(d))
+          .filter((x): x is NonNullable<typeof x> => x !== null);
+        await bulkUpsertCalendarEvents(inputs);
+      }
+    } catch (err) {
+      console.error("[applicationService] calendar bulk-upsert after auto-decline failed:", err);
+    }
   }
 
   // ─── Un-auto-decline others when reverting from approved ──────────────
@@ -881,12 +902,29 @@ export async function updateApplicationStatus(
       filter.jobIdPublic = application.jobIdPublic;
     }
 
+    // Get the IDs of the applications that will be reverted BEFORE updating them
+    const docsToRevert = await Application.find(filter).select("_id").lean() as any[];
+    const docsToRevertIds = docsToRevert.map((d) => d._id);
+
     await Application.updateMany(filter, {
       $set: {
         status: "applied",
         declineMeta: null,
       },
     });
+
+    // ── Sync reverted docs to calendar_events ─────────────────────────────
+    try {
+      if (docsToRevertIds.length > 0) {
+        const reverted = await Application.find({ _id: { $in: docsToRevertIds } }).lean() as any[];
+        const inputs = reverted
+          .map((d) => mapApplication(d))
+          .filter((x): x is NonNullable<typeof x> => x !== null);
+        await bulkUpsertCalendarEvents(inputs);
+      }
+    } catch (err) {
+      console.error("[applicationService] calendar bulk-upsert after revert failed:", err);
+    }
   }
 
   return updated;

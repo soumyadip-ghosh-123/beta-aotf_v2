@@ -1,4 +1,10 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import {
+  upsertCalendarEvent,
+  deleteCalendarEvent,
+  mapFeedback,
+  feedbackEventKey,
+} from "@/lib/services/calendar-event.service";
 
 export const FEEDBACK_USER_TYPES = ["teacher", "teacher_candidate"] as const;
 export const FEEDBACK_CATEGORIES = [
@@ -101,6 +107,24 @@ FeedbackSchema.index(
   { category: 1, createdAt: -1 },
   { background: true, name: "feedbackType_1_createdAt_-1" },
 );
+
+// ─── Calendar write-through hooks ──────────────────────────────────────────
+
+FeedbackSchema.post("save", function (doc) {
+  void upsertCalendarEvent(mapFeedback(doc.toObject()));
+});
+
+FeedbackSchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void upsertCalendarEvent(mapFeedback(raw));
+});
+
+FeedbackSchema.post("findOneAndDelete", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  void deleteCalendarEvent(feedbackEventKey(raw._id?.toString?.() ?? ""));
+});
 
 const Feedback: Model<IFeedback> =
   models.Feedback || mongoose.model<IFeedback>("Feedback", FeedbackSchema);

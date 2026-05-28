@@ -121,13 +121,15 @@ const EVENTS = [
 const mockGenerator = (numberOfEvents: number): IEvent[] => {
   const result: IEvent[] = [
     {
-      id: 1204,
+      id: "1204",
       startDate: new Date("2025-09-20T00:00:00-03:00").toISOString(),
       endDate: new Date("2025-09-20T23:59:00-03:00").toISOString(),
       title: "My wedding :)",
       color: "red",
       description: "Can't wait to see the most beautiful woman in that dress!",
       user: USERS_MOCK[0],
+      category: "mock",
+      sourceId: "mock-1204",
     },
   ];
 
@@ -143,14 +145,16 @@ const mockGenerator = (numberOfEvents: number): IEvent[] => {
   endRange.setDate(now.getDate() + 30);
 
   // Create an event happening now
-  const currentEvent = {
-    id: currentId++,
+  const currentEvent: IEvent = {
+    id: String(currentId++),
     startDate: new Date(now.getTime() - 30 * 60000).toISOString(),
     endDate: new Date(now.getTime() + 30 * 60000).toISOString(),
     title: EVENTS[Math.floor(Math.random() * EVENTS.length)],
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
     description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     user: randomUser,
+    category: "mock",
+    sourceId: `mock-${currentId}`,
   };
 
   // Only add the current event if it's not on September 20th
@@ -208,13 +212,15 @@ const mockGenerator = (numberOfEvents: number): IEvent[] => {
     }
 
     result.push({
-      id: currentId++,
+      id: String(currentId++),
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       title: EVENTS[Math.floor(Math.random() * EVENTS.length)],
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
       description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
       user: USERS_MOCK[Math.floor(Math.random() * USERS_MOCK.length)],
+      category: "mock",
+      sourceId: `mock-${currentId}`,
     });
 
     i++;
