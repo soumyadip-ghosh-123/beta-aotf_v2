@@ -71,6 +71,10 @@ interface Application {
   };
 }
 
+interface TuitionInvoiceStatus {
+  paymentStatus?: "paid" | "unpaid" | "partial";
+}
+
 export default function CandidateDetailPage({
   params,
 }: {
@@ -89,6 +93,7 @@ export default function CandidateDetailPage({
   const [gcDate, setGcDate] = useState<string>("");
   const [approvedDate, setApprovedDate] = useState<string>("");
   const [declineReason, setDeclineReason] = useState<string>("");
+  const [paymentStatus, setPaymentStatus] = useState<"paid" | "unpaid">("unpaid");
   const [isUpdating, setIsUpdating] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -129,6 +134,18 @@ export default function CandidateDetailPage({
         }
         if (app.declineMeta?.reason) {
           setDeclineReason(app.declineMeta.reason);
+        }
+
+        const invoiceRes = await fetch(
+          `/api/admin/invoices?postId=${encodeURIComponent(postId)}&limit=1`,
+          { credentials: "include" }
+        );
+        if (invoiceRes.ok) {
+          const invoiceData = await invoiceRes.json();
+          const invoice = (invoiceData.invoices?.[0] ?? null) as TuitionInvoiceStatus | null;
+          setPaymentStatus(invoice?.paymentStatus === "paid" ? "paid" : "unpaid");
+        } else {
+          setPaymentStatus("unpaid");
         }
       } catch (err) {
         setFetchError(
@@ -383,12 +400,22 @@ export default function CandidateDetailPage({
         date: application.approvalMeta?.approvedAt,
         status: "approved",
       },
+      {
+        id: "payment",
+        label: "Payment Status",
+        date: undefined,
+        status: "payment",
+        paymentLabel: paymentStatus === "paid" ? "Paid" : "Unpaid",
+      },
     ];
     return points;
-  }, [application]);
+  }, [application, paymentStatus]);
 
   const getCheckpointStatus = (checkpointStatus: string) => {
     if (!application) return "pending";
+    if (checkpointStatus === "payment") {
+      return paymentStatus === "paid" ? "completed" : "pending";
+    }
     const statusOrder = ["applied", "DC", "GC", "approved"];
     const currentIndex = statusOrder.indexOf(application.status);
     const checkpointIndex = statusOrder.indexOf(checkpointStatus);
@@ -618,6 +645,13 @@ export default function CandidateDetailPage({
                       >
                         {checkpoint.label}
                       </h3>
+                      {checkpoint.id === "payment" && (
+                        <p
+                          className={`text-sm font-medium ${paymentStatus === "paid" ? "text-success-600" : "text-danger-500"}`}
+                        >
+                          {checkpoint.paymentLabel}
+                        </p>
+                      )}
                       {checkpoint.date && (
                         <p className="text-sm text-default-500">
                           {checkpoint.id === "DC" || checkpoint.id === "GC"

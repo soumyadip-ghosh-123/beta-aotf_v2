@@ -350,27 +350,16 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
       <Divider />
 
       <CardFooter className="grid grid-cols-2 gap-2 py-3 flex-wrap">
-        {post.invoiceId ? (
+        {post.invoiceId || post.invoiceGenerated ? (
           <Button
             size="sm"
-            color="success"
+            color={post.invoiceId ? "success" : "secondary"}
             variant="flat"
             startContent={<Receipt size={16} />}
-            onPress={() => window.open(`/invoices/${post.invoiceId}`, "_blank")}
+            onPress={() => onGenerateInvoice?.(post)}
             className="flex-1"
           >
-            View Invoice
-          </Button>
-        ) : post.invoiceGenerated ? (
-          <Button
-            size="sm"
-            color="default"
-            variant="flat"
-            startContent={<Receipt size={16} />}
-            isDisabled
-            className="flex-1"
-          >
-            Invoice Created
+            {post.invoiceId ? "Edit Invoice" : "Invoice Created"}
           </Button>
         ) : (
           <Button

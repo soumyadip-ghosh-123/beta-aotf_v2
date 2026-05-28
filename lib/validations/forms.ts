@@ -543,3 +543,21 @@ export const adListFilterConfigs = [
   adPlacementFilterConfig,
   ...dateFilterConfigs,
 ] as const;
+
+
+
+// ---------------------------------------------------------------------
+// source lists:
+// ---------------------------------------------------------------------
+export const sourceLists = [
+  { key: "just_dial", label: "Just Dial" },
+  { key: "sulekha", label: "Sulekha" },
+  { key: "urban_pro", label: "Urban Pro" },
+  { key: "facebook", label: "Facebook" },
+  { key: "instagram", label: "Instagram" },
+  { key: "twitter", label: "Twitter" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "google", label: "Google" },
+  { key: "referral", label: "Referral" },
+  { key: "other", label: "Other" },
+] as const;

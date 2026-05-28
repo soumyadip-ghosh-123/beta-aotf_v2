@@ -97,6 +97,49 @@ interface InvoiceFormState {
   teacherPhone: string;
 }
 
+interface ExistingInvoiceRecord {
+  invoiceId: string;
+  recipient?: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  };
+  amount?: {
+    currency?: string;
+    grandTotal?: number;
+  };
+  breakdown?: {
+    items?: Array<{
+      name?: string;
+      description?: string;
+      quantity?: number;
+      unitAmount?: number;
+      total?: number;
+      postDetails?: {
+        postId?: string;
+        preferredTime?: string;
+        preferredDays?: string[];
+        location?: string;
+        classType?: string;
+        frequencyPerWeek?: number;
+      };
+    }>;
+    notes?: string;
+  };
+  paymentStatus?: "paid" | "unpaid" | "partial";
+  paymentDate?: string;
+  invoiceDate?: string;
+  dueDate?: string;
+  partialPayment?: {
+    amountPaid?: number;
+    percentagePaid?: number;
+  };
+  assignedTeacher?: {
+    name?: string;
+    phone?: string;
+  };
+}
+
 function InvoiceModal({
   post,
   onClose,
@@ -154,11 +197,14 @@ function InvoiceModal({
           const approved = apps.find((a) => a.status === "approved");
           if (approved?.applicantSnapshot) {
             const snap = approved.applicantSnapshot;
-            setForm((p) => ({
-              ...p,
-              teacherName: snap.name ?? "",
-              teacherPhone: snap.phone ?? "",
-            }));
+            setForm((p) => {
+              if (p.teacherName.trim()) return p;
+              return {
+                ...p,
+                teacherName: snap.name ?? "",
+                teacherPhone: snap.phone ?? "",
+              };
+            });
           }
         }
       } catch {
@@ -171,11 +217,79 @@ function InvoiceModal({
   }, [post.id]);
 
   const [saving, setSaving] = useState(false);
+  const [existingInvoice, setExistingInvoice] = useState<ExistingInvoiceRecord | null>(null);
+  const [loadingExistingInvoice, setLoadingExistingInvoice] = useState(false);
 
   const total = form.unitAmount;
+  const existingRate = existingInvoice?.breakdown?.items?.[0]?.unitAmount ?? null;
+  const allowRateEdit = existingInvoice
+    ? (existingRate ?? existingInvoice.amount?.grandTotal ?? 0) === 0
+    : form.unitAmount === 0;
 
   const set = (k: keyof InvoiceFormState, v: string | number) =>
     setForm((p) => ({ ...p, [k]: v }));
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchExistingInvoice = async () => {
+      setLoadingExistingInvoice(true);
+      try {
+        const res = await fetch(
+          `/api/admin/invoices?postId=${encodeURIComponent(post.id)}&limit=1`,
+          { credentials: "include" }
+        );
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const invoice = (data.invoices?.[0] ?? null) as ExistingInvoiceRecord | null;
+        if (!active || !invoice) return;
+
+        setExistingInvoice(invoice);
+
+        const firstItem = invoice.breakdown?.items?.[0];
+        setForm((prev) => ({
+          ...prev,
+          recipientName: invoice.recipient?.name ?? prev.recipientName,
+          recipientPhone: invoice.recipient?.phone ?? prev.recipientPhone,
+          recipientAddress: invoice.recipient?.address ?? prev.recipientAddress,
+          invoiceDate: invoice.invoiceDate
+            ? new Date(invoice.invoiceDate).toISOString().slice(0, 10)
+            : prev.invoiceDate,
+          dueDate: invoice.dueDate
+            ? new Date(invoice.dueDate).toISOString().slice(0, 10)
+            : prev.dueDate,
+          itemName: firstItem?.name ?? prev.itemName,
+          itemDescription: firstItem?.description ?? prev.itemDescription,
+          unitAmount:
+            firstItem?.unitAmount ?? invoice.amount?.grandTotal ?? prev.unitAmount,
+          notes: invoice.breakdown?.notes ?? prev.notes,
+          paymentStatus: invoice.paymentStatus ?? prev.paymentStatus,
+          paymentDate: invoice.paymentDate
+            ? new Date(invoice.paymentDate).toISOString().slice(0, 10)
+            : prev.paymentDate,
+          partialMode: invoice.partialPayment?.amountPaid ? "amount" : prev.partialMode,
+          partialAmount:
+            invoice.partialPayment?.amountPaid?.toString() ?? prev.partialAmount,
+          partialPct:
+            invoice.partialPayment?.percentagePaid?.toString() ?? prev.partialPct,
+          currency: invoice.amount?.currency ?? prev.currency,
+          teacherName: invoice.assignedTeacher?.name ?? prev.teacherName,
+          teacherPhone: invoice.assignedTeacher?.phone ?? prev.teacherPhone,
+        }));
+      } catch {
+        // Keep the post defaults if there is no invoice or the fetch fails.
+      } finally {
+        if (active) setLoadingExistingInvoice(false);
+      }
+    };
+
+    fetchExistingInvoice();
+
+    return () => {
+      active = false;
+    };
+  }, [post.id]);
 
   const handleAmountChange = (v: string) => {
     set("partialAmount", v);
@@ -254,8 +368,12 @@ function InvoiceModal({
         body.assignedTeacherPhone = form.teacherPhone.trim() || undefined;
       }
 
-      const res = await fetch("/api/admin/invoices", {
-        method: "POST",
+      const endpoint = existingInvoice
+        ? `/api/admin/invoices/${existingInvoice.invoiceId}`
+        : "/api/admin/invoices";
+
+      const res = await fetch(endpoint, {
+        method: existingInvoice ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(body),
@@ -273,7 +391,9 @@ function InvoiceModal({
       const data = await res.json();
       if (data.success) {
         addToast({
-          description: `Invoice ${data.invoice.invoiceId} created!`,
+          description: existingInvoice
+            ? `Invoice ${data.invoice.invoiceId} updated!`
+            : `Invoice ${data.invoice.invoiceId} created!`,
           color: "success",
         });
         onSuccess(data.invoice.invoiceId);
@@ -438,9 +558,16 @@ function InvoiceModal({
                 min={0}
                 className={inputCls}
                 value={form.unitAmount}
-                readOnly
-                disabled
+                readOnly={!allowRateEdit}
+                disabled={!allowRateEdit}
+                onChange={(e) => set("unitAmount", Number(e.target.value || 0))}
+                placeholder={allowRateEdit ? "Enter rate" : undefined}
               />
+              {!allowRateEdit && (
+                <p className="text-[11px] text-default-400 mt-1">
+                  The rate is locked because this invoice already has a non-zero amount.
+                </p>
+              )}
             </div>
             <div>
               <label className={labelCls}>Total</label>
@@ -585,7 +712,7 @@ function InvoiceModal({
           isLoading={saving}
           className="flex-1"
         >
-          Create Invoice
+          {existingInvoice ? "Update Invoice" : "Create Invoice"}
         </Button>
       </div>
     </div>
@@ -986,8 +1113,8 @@ const Page = () => {
                   Create and save an invoice for this tuition post
                 </p>
                 <p className="text-sm text-red-400">
-                  *Details are pre filled based on the post information and
-                  approved application.
+                  *Details are pre filled based on the post information,
+                  approved application, and any existing invoice for this post.
                 </p>
               </ModalHeader>
               <ModalBody>

@@ -53,6 +53,10 @@ export async function PUT(
     }
 
     const {
+      recipientName,
+      recipientPhone,
+      recipientAddress,
+      recipientEmail,
       paymentStatus,
       paymentDate,
       partialAmountPaid,
@@ -60,14 +64,62 @@ export async function PUT(
       // Full revision fields
       revisionReason,
       // Allow updating notes, items etc. (treated as a revision)
+      items,
+      currency,
+      taxPercentage,
+      taxAmount,
+      subTotal,
+      grandTotal,
       notes,
       dueDate,
+      assignedTeacherName,
+      assignedTeacherPhone,
     } = body;
+
+    if (recipientName !== undefined) existing.recipient.name = recipientName;
+    if (recipientPhone !== undefined) existing.recipient.phone = recipientPhone;
+    if (recipientAddress !== undefined) existing.recipient.address = recipientAddress;
+    if (recipientEmail !== undefined) existing.recipient.email = recipientEmail;
+
+    if (Array.isArray(items) && items.length > 0) {
+      existing.breakdown.items = items.map(
+        (item: {
+          name: string;
+          description?: string;
+          quantity: number;
+          unitAmount: number;
+          total: number;
+          postDetails?: object;
+        }) => ({
+          name: item.name,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitAmount: Number(item.unitAmount),
+          total: Number(item.total),
+          postDetails: item.postDetails,
+        }),
+      );
+    }
+
+    if (currency !== undefined) existing.amount.currency = String(currency);
+    if (taxPercentage !== undefined)
+      existing.amount.taxPercentage = Number(taxPercentage) || 0;
+    if (taxAmount !== undefined) existing.amount.taxAmount = Number(taxAmount) || 0;
+    if (subTotal !== undefined) existing.amount.subTotal = Number(subTotal) || 0;
+    if (grandTotal !== undefined)
+      existing.amount.grandTotal = Number(grandTotal) || 0;
+
+    if (assignedTeacherName !== undefined || assignedTeacherPhone !== undefined) {
+      existing.assignedTeacher = {
+        name: assignedTeacherName ?? existing.assignedTeacher?.name ?? "",
+        phone: assignedTeacherPhone ?? existing.assignedTeacher?.phone,
+      };
+    }
 
     // ── Partial payment calculation ─────────────────────────────────────────
     let partialPayment = existing.partialPayment;
     if (paymentStatus === "partial") {
-      const total = existing.amount.grandTotal;
+      const total = grandTotal !== undefined ? Number(grandTotal) || 0 : existing.amount.grandTotal;
       let amountPaid = 0;
       let pctPaid = 0;
 
