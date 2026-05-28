@@ -8,6 +8,12 @@ import {
   JOB_STATUSES,
   COMMISSION_BASIS_TYPES,
 } from "@/lib/models/Job";
+import { sourceLists } from "@/lib/validations/forms";
+
+const sourceKeys = sourceLists.map((source) => source.key) as [
+  string,
+  ...string[],
+];
 
 // ─── Admin-facing: create a new job post ────────────────────────────────
 
@@ -33,6 +39,8 @@ const createJobBaseSchema = z.object({
     .string({ message: "Phone number is required" })
     .trim()
     .min(1, "Guardian phone is required"),
+
+  source: z.enum(sourceKeys),
 
   companyType: z.enum(COMPANY_TYPES, {
     message: `Company type must be one of: ${COMPANY_TYPES.join(", ")}`,

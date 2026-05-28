@@ -47,6 +47,7 @@ import {
   tuitionStatuses,
   tuitionFormDefaults,
   tuitionNotesSuggestions,
+  sourceLists,
 } from "@/lib/validations/forms";
 import { FaRupeeSign } from "react-icons/fa";
 import { CustomCheckbox } from "@/components/ui/CustomCheckbox";
@@ -112,6 +113,7 @@ export default function TuitionPostForm({
           ...tuitionFormDefaults,
           guardianName: post.guardianName || "",
           guardianPhone: post.guardianPhone || "",
+          source: post.source || tuitionFormDefaults.source,
           students: post.students?.length
             ? post.students.map((s: any) => ({
                 class: s.className || "",
@@ -247,10 +249,12 @@ export default function TuitionPostForm({
           const step1Schema = z.object({
             guardianName: tuitionFormSchema.shape.guardianName,
             guardianPhone: tuitionFormSchema.shape.guardianPhone,
+            source: tuitionFormSchema.shape.source,
           });
           step1Schema.parse({
             guardianName: formData.guardianName,
             guardianPhone: formData.guardianPhone,
+            source: formData.source,
           });
           break;
 
@@ -326,9 +330,11 @@ export default function TuitionPostForm({
           z.object({
             guardianName: tuitionFormSchema.shape.guardianName,
             guardianPhone: tuitionFormSchema.shape.guardianPhone,
+            source: tuitionFormSchema.shape.source,
           }).parse({
             guardianName: formData.guardianName,
             guardianPhone: formData.guardianPhone,
+            source: formData.source,
           });
           break;
         case 2:
@@ -377,6 +383,7 @@ export default function TuitionPostForm({
       const payload: Record<string, unknown> = {
         guardianName: formData.guardianName.trim(),
         guardianPhone: formData.guardianPhone.trim(),
+        source: formData.source,
         students: mappedStudents,
         classType: classTypeToApi[formData.classType] || "offline",
         frequencyPerWeek: parseInt(formData.frequency || "3", 10),
@@ -561,7 +568,7 @@ export default function TuitionPostForm({
                 <h4 className="text-lg font-semibold text-default-700">
                   Guardian Details
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     label="Guardian Name"
                     placeholder="Enter guardian name"
@@ -591,6 +598,23 @@ export default function TuitionPostForm({
                       <Phone size={18} className="text-default-400" />
                     }
                   />
+                  <Select
+                    label="Source"
+                    placeholder="Select source"
+                    selectedKeys={formData.source ? new Set([formData.source]) : new Set<string>()}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0] as string | undefined;
+                      if (value) handleChange("source", value);
+                    }}
+                    isRequired
+                    isInvalid={!!errors.source}
+                    errorMessage={errors.source}
+                    variant="bordered"
+                  >
+                    {sourceLists.map((source) => (
+                      <SelectItem key={source.key}>{source.label}</SelectItem>
+                    ))}
+                  </Select>
                 </div>
               </div>
             </Step>

@@ -39,6 +39,7 @@ import {
   jobStatuses,
   jobFormDefaults,
   jobNotesSuggestions,
+  sourceLists,
 } from "@/lib/validations/forms";
 
 type WorkType = "job" | "project";
@@ -94,6 +95,7 @@ export default function JobPostForm({
           workType: (job.workType || "job") as WorkType,
           clientName: job.clientName || "",
           clientPhone: job.phoneNumber || "",
+          source: job.source || jobFormDefaults.source,
           companyName: "",
           companyType: job.companyType || "",
           designation: job.title || "",
@@ -179,10 +181,12 @@ export default function JobPostForm({
           const step1Schema = z.object({
             clientName: jobFormSchema.shape.clientName,
             clientPhone: jobFormSchema.shape.clientPhone,
+            source: jobFormSchema.shape.source,
           });
           step1Schema.parse({
             clientName: formData.clientName,
             clientPhone: formData.clientPhone,
+            source: formData.source,
           });
           break;
 
@@ -270,9 +274,11 @@ export default function JobPostForm({
           z.object({
             clientName: jobFormSchema.shape.clientName,
             clientPhone: jobFormSchema.shape.clientPhone,
+            source: jobFormSchema.shape.source,
           }).parse({
             clientName: formData.clientName,
             clientPhone: formData.clientPhone,
+            source: formData.source,
           });
           break;
         case 2:
@@ -344,6 +350,7 @@ export default function JobPostForm({
         title: formData.designation.trim(),
         clientName: formData.clientName.trim(),
         phoneNumber: formData.clientPhone.trim(),
+        source: formData.source,
         companyType: formData.companyType || "company",
         locationType: locationTypeMap[formData.locationType] || "onsite",
         location: formData.location.trim(),
@@ -525,7 +532,7 @@ export default function JobPostForm({
                 <h4 className="text-lg font-semibold text-default-700">
                   Client Details
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Input
                     label="Client Name"
                     placeholder="Enter client name"
@@ -555,6 +562,23 @@ export default function JobPostForm({
                       <Phone size={18} className="text-default-400" />
                     }
                   />
+                  <Select
+                    label="Source"
+                    placeholder="Select source"
+                    selectedKeys={formData.source ? new Set([formData.source]) : new Set<string>()}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0] as string | undefined;
+                      if (value) handleChange("source", value);
+                    }}
+                    isRequired
+                    isInvalid={!!errors.source}
+                    errorMessage={errors.source}
+                    variant="bordered"
+                  >
+                    {sourceLists.map((source) => (
+                      <SelectItem key={source.key}>{source.label}</SelectItem>
+                    ))}
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

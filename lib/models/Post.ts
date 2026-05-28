@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import { sourceLists } from "@/lib/validations/forms";
 
 // ─── Enums ──────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ const StudentSchema = new Schema<IStudent>(
   { _id: false },
 );
 
+const sourceEnumValues = sourceLists.map((source) => source.key);
+
 // ─── Main Document: Post ────────────────────────────────────────────────
 
 export interface IPost extends Document {
@@ -42,6 +45,7 @@ export interface IPost extends Document {
   enquiryId?: mongoose.Types.ObjectId;
   guardianName: string;
   guardianPhone: string;
+  source: string;
   students: IStudent[];
   classType: ClassType;
   frequencyPerWeek: number;
@@ -70,6 +74,11 @@ const PostSchema = new Schema<IPost>(
     enquiryId: { type: Schema.Types.ObjectId },
     guardianName: { type: String, required: true },
     guardianPhone: { type: String, required: true },
+    source: {
+      type: String,
+      enum: sourceEnumValues,
+      required: true,
+    },
     students: {
       type: [StudentSchema],
       required: true,
@@ -121,5 +130,15 @@ PostSchema.index({ "students.subjectsNormalized": 1 });
 
 const Post: Model<IPost> =
   models.Post || mongoose.model<IPost>("Post", PostSchema);
+
+if (!Post.schema.path("source")) {
+  Post.schema.add({
+    source: {
+      type: String,
+      enum: sourceEnumValues,
+      required: true,
+    },
+  });
+}
 
 export default Post;

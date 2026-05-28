@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model, models } from "mongoose";
+import { sourceLists } from "@/lib/validations/forms";
 
 // ─── Enums ──────────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export interface IJob extends Document {
   title: string;
   clientName: string;
   phoneNumber: string;
+  source: string;
   companyType: CompanyType;
   locationType: LocationType;
   location: string;
@@ -65,6 +67,11 @@ const JobSchema = new Schema<IJob>(
     title: { type: String, required: true },
     clientName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
+    source: {
+      type: String,
+      enum: sourceLists.map((source) => source.key),
+      required: true,
+    },
     companyType: {
       type: String,
       enum: COMPANY_TYPES,
@@ -115,5 +122,15 @@ const JobSchema = new Schema<IJob>(
 );
 
 const Job: Model<IJob> = models.Job || mongoose.model<IJob>("Job", JobSchema);
+
+if (!Job.schema.path("source")) {
+  Job.schema.add({
+    source: {
+      type: String,
+      enum: sourceLists.map((source) => source.key),
+      required: true,
+    },
+  });
+}
 
 export default Job;

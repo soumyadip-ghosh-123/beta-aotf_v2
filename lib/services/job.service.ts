@@ -135,6 +135,7 @@ export async function createJob(input: CreateJobInput): Promise<IJob> {
     title: input.title,
     clientName: input.clientName,
     phoneNumber: input.phoneNumber,
+    source: input.source,
     companyType: input.companyType,
     locationType: input.locationType,
     location: input.location,

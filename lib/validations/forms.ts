@@ -208,12 +208,37 @@ export const jobStatuses = [
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SOURCE OPTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const sourceLists = [
+  { key: "just_dial", label: "Just Dial" },
+  { key: "sulekha", label: "Sulekha" },
+  { key: "urban_pro", label: "Urban Pro" },
+  { key: "facebook", label: "Facebook" },
+  { key: "instagram", label: "Instagram" },
+  { key: "twitter", label: "Twitter" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "google", label: "Google" },
+  { key: "referral", label: "Referral" },
+  { key: "other", label: "Other" },
+] as const;
+
+export type SourceKey = (typeof sourceLists)[number]["key"];
+
+const sourceKeys = sourceLists.map((source) => source.key) as [
+  SourceKey,
+  ...SourceKey[],
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DEFAULT FORM VALUES
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const tuitionFormDefaults: {
   guardianName: string;
   guardianPhone: string;
+  source: SourceKey;
   students: { class: string; subject: string; board: string }[];
   missingSubjects: string[];
   remuneration: string;
@@ -227,6 +252,7 @@ export const tuitionFormDefaults: {
 } = {
   guardianName: "",
   guardianPhone: "",
+  source: "just_dial",
   students: [{ class: "", subject: "", board: "" }],
   missingSubjects: [],
   remuneration: "",
@@ -243,6 +269,7 @@ export const jobFormDefaults: {
   workType: "job" | "project";
   clientName: string;
   clientPhone: string;
+  source: SourceKey;
   companyName: string;
   companyType: string;
   designation: string;
@@ -266,6 +293,7 @@ export const jobFormDefaults: {
   workType: "job",
   clientName: "",
   clientPhone: "",
+  source: "just_dial",
   companyName: "",
   companyType: "",
   designation: "",
@@ -304,6 +332,7 @@ export const tuitionFormSchema = z.object({
     .max(50, "Guardian name must be at most 50 characters")
     .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
   guardianPhone: z.string().min(1, "Phone number is required"),
+  source: z.enum(sourceKeys),
   students: z
     .array(studentFormSchema)
     .min(1, "At least one student is required"),
@@ -332,6 +361,7 @@ export const jobFormSchema = z.object({
     .max(50, "Client name must be at most 50 characters")
     .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
   clientPhone: z.string().min(1, "Phone number is required"),
+  source: z.enum(sourceKeys),
   companyName: z.string().optional(),
   companyType: z.enum(["individual", "company"]).optional(),
   designation: z.string().min(2, "Designation is required"),
@@ -546,18 +576,3 @@ export const adListFilterConfigs = [
 
 
 
-// ---------------------------------------------------------------------
-// source lists:
-// ---------------------------------------------------------------------
-export const sourceLists = [
-  { key: "just_dial", label: "Just Dial" },
-  { key: "sulekha", label: "Sulekha" },
-  { key: "urban_pro", label: "Urban Pro" },
-  { key: "facebook", label: "Facebook" },
-  { key: "instagram", label: "Instagram" },
-  { key: "twitter", label: "Twitter" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "google", label: "Google" },
-  { key: "referral", label: "Referral" },
-  { key: "other", label: "Other" },
-] as const;

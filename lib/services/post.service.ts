@@ -180,6 +180,7 @@ export async function createPost(input: CreatePostParams): Promise<IPost> {
     postId,
     guardianName: input.guardianName,
     guardianPhone: input.guardianPhone,
+    source: input.source,
     enquiryId: input.enquiryId
       ? new mongoose.Types.ObjectId(input.enquiryId)
       : undefined,

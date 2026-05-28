@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CLASS_TYPES, POST_STATUSES } from "@/lib/models/Post";
+import { sourceLists } from "@/lib/validations/forms";
 
 // ─── Student sub-schema ─────────────────────────────────────────────────
 
@@ -18,6 +19,11 @@ const studentSchema = z.object({
   subjectsNormalized: z.array(z.string().trim()).optional().default([]),
 });
 
+const sourceKeys = sourceLists.map((source) => source.key) as [
+  string,
+  ...string[],
+];
+
 // ─── Admin-facing: create a new tuition post ────────────────────────────
 
 export const createPostSchema = z.object({
@@ -30,6 +36,8 @@ export const createPostSchema = z.object({
     .string({ message: "Guardian phone is required" })
     .trim()
     .min(1, "Guardian phone is required"),
+
+  source: z.enum(sourceKeys),
 
   enquiryId: z.string().optional(),
 
