@@ -39,6 +39,10 @@ export const createPostSchema = z.object({
 
   source: z.enum(sourceKeys),
 
+  paymentstatus: z.enum(["done", "pending"]).optional(),
+  paymentDate: z.string().optional(),
+  tentativeDate: z.string().optional(),
+
   enquiryId: z.string().optional(),
 
   students: z.array(studentSchema).min(1, "At least one student is required"),

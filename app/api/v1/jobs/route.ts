@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   handleApiError,
@@ -6,6 +7,8 @@ import {
   getClientIp,
   checkJsonContentType,
 } from "@/lib/api-utils";
+import Admin from "@/lib/models/Admin";
+import dbConnect from "@/lib/db";
 import { createJobSchema, listJobsSchema } from "@/lib/validations/job";
 import { createJob, listJobs } from "@/lib/services/job.service";
 import { createRateLimiter } from "@/lib/rate-limit";
@@ -27,6 +30,14 @@ const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
  */
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
     // CSRF origin check
     const csrfBlock = checkCsrfOrigin(request);
     if (csrfBlock) return csrfBlock;
@@ -40,9 +51,21 @@ export async function POST(request: NextRequest) {
     const rateLimitBlock = checkRateLimit(createLimiter, ip);
     if (rateLimitBlock) return rateLimitBlock;
 
+    await dbConnect();
+    const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+    if (!currentAdmin) {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const input = createJobSchema.parse(body);
-    const job = await createJob(input);
+    const job = await createJob({
+      ...input,
+      createdByAdminId: currentAdmin._id.toString(),
+    });
 
     return NextResponse.json(
       { message: "Job created successfully", job },
