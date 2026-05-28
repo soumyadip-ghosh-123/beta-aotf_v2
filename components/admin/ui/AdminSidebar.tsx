@@ -25,7 +25,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/admin",              label: "Dashboard",        icon: LayoutDashboard },
-  { href: "/admin/agenda-view",  label: "Calendar",         icon: CalendarDays    },
+  { href: "/admin/agenda-view",  label: "Updates",          icon: CalendarDays    },
   { href: "/admin/tuitions",     label: "Tuitions",         icon: BookOpen        },
   { href: "/admin/jobs",         label: "Jobs",             icon: Briefcase       },
   { href: "/admin/enquiries",    label: "Enquiries",        icon: MessageSquare   },
