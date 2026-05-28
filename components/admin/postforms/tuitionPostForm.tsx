@@ -145,7 +145,7 @@ export default function TuitionPostForm({
       ...prev,
       guardianName: enquiry.name || "",
       guardianPhone: normalizePhone(enquiry.phoneNumber || ""),
-      notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
+      notes: "",
     }));
   }, [enquiry, isEditMode]);
   const handleChange = (field: string, value: any) => {
@@ -652,25 +652,6 @@ export default function TuitionPostForm({
                         </Autocomplete>
 
                         <Autocomplete
-                          label="Subject"
-                          placeholder="Search subject"
-                          selectedKey={student.subject}
-                          onSelectionChange={(key) =>
-                            handleStudentChange(index, "subject", key as string)
-                          }
-                          isRequired
-                          isInvalid={!!errors[`students.${index}.subject`]}
-                          errorMessage={errors[`students.${index}.subject`]}
-                          variant="bordered"
-                        >
-                          {subjects.map((sub) => (
-                            <AutocompleteItem key={sub.key}>
-                              {sub.label}
-                            </AutocompleteItem>
-                          ))}
-                        </Autocomplete>
-
-                        <Autocomplete
                           label="Board"
                           placeholder="Search board"
                           selectedKey={student.board}
@@ -685,6 +666,25 @@ export default function TuitionPostForm({
                           {boards.map((board) => (
                             <AutocompleteItem key={board.key}>
                               {board.label}
+                            </AutocompleteItem>
+                          ))}
+                        </Autocomplete>
+
+                        <Autocomplete
+                          label="Subject"
+                          placeholder="Search subject"
+                          selectedKey={student.subject}
+                          onSelectionChange={(key) =>
+                            handleStudentChange(index, "subject", key as string)
+                          }
+                          isRequired
+                          isInvalid={!!errors[`students.${index}.subject`]}
+                          errorMessage={errors[`students.${index}.subject`]}
+                          variant="bordered"
+                        >
+                          {subjects.map((sub) => (
+                            <AutocompleteItem key={sub.key}>
+                              {sub.label}
                             </AutocompleteItem>
                           ))}
                         </Autocomplete>

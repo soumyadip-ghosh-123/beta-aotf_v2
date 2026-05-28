@@ -85,31 +85,31 @@ export const Navbar = () => {
                   <DropdownItem
                     key="admin-dashboard"
                     textValue="Admin Dashboard"
-                    onPress={() => router.push(`/admin/dashboard`)}
+                    onPress={() => router.push(`/admin/agenda-view`)}
                   >
                     <div className="flex items-center gap-2">
                       <RiDashboardHorizontalFill className="text-default-500" />
-                      <p className="font-semibold">Admin Dashboard</p>
+                      <p className="font-semibold">Updates</p>
                     </div>
                   </DropdownItem>
                   <DropdownItem
                     key="admin-users"
                     textValue="Admin Users"
-                    onPress={() => router.push(`/admin/users`)}
+                    onPress={() => router.push(`/admin/tuitions`)}
                   >
                     <div className="flex items-center gap-2">
                       <FaUserAlt className="text-default-500" />
-                      <p className="font-semibold">Admin Users</p>
+                      <p className="font-semibold">Tuitions</p>
                     </div>
                   </DropdownItem>
                   <DropdownItem
                     key="admin-settings"
                     textValue="Admin Settings"
-                    onPress={() => router.push(`/admin/settings`)}
+                    onPress={() => router.push(`/admin/jobs`)}
                   >
                     <div className="flex items-center gap-2">
                       <MdFeedback className="text-default-500" />
-                      <p className="font-semibold">Admin Settings</p>
+                      <p className="font-semibold">Jobs</p>
                     </div>
                   </DropdownItem>
                 </>

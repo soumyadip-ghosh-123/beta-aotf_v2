@@ -18,24 +18,39 @@ import { z } from "zod";
 
 export const subjects = [
   { key: "mathematics", label: "Mathematics" },
-  { key: "science", label: "Science" },
-  { key: "english", label: "English" },
-  { key: "hindi", label: "Hindi" },
-  { key: "social-studies", label: "Social Studies" },
   { key: "physics", label: "Physics" },
+  { key: "science", label: "Science" },
   { key: "chemistry", label: "Chemistry" },
   { key: "biology", label: "Biology" },
-  { key: "computer-science", label: "Computer Science" },
-  { key: "accountancy", label: "Accountancy" },
-  { key: "economics", label: "Economics" },
-  { key: "business-studies", label: "Business Studies" },
+
+  { key: "english", label: "English" },
+  { key: "bengali", label: "Bengali" },
+  { key: "hindi", label: "Hindi" },
+  { key: "french", label: "French" },
+  { key: "sanskrit", label: "Sanskrit" },
+
   { key: "history", label: "History" },
   { key: "geography", label: "Geography" },
+  { key: "social-studies", label: "Social Studies" },
   { key: "political-science", label: "Political Science" },
-  { key: "bengali", label: "Bengali" },
-  { key: "sanskrit", label: "Sanskrit" },
+  { key: "philosophy", label: "Philosophy" },
+  { key: "psychology", label: "Psychology" },
+  { key: "sociology", label: "Sociology" },
+
+  { key: "computer", label: "Computer" },
+  { key: "computer-science", label: "Computer Science" },
+  { key: "computer-application", label: "Computer Application" },
+
+  { key: "statistics", label: "Statistics" },
+  { key: "economics", label: "Economics" },
+  { key: "commerce", label: "Commerce" },
+  { key: "accountancy", label: "Accountancy" },
+  { key: "business-studies", label: "Business Studies" },
+  { key: "entrepreneurship", label: "Entrepreneurship" },
+
   { key: "drawing", label: "Drawing / Art" },
   { key: "music", label: "Music" },
+  { key: "swimming", label: "Swimming" },
 ] as const;
 
 export const boards = [
@@ -48,6 +63,9 @@ export const boards = [
 ] as const;
 
 export const classes = [
+  { key: "nursery", label: "Nursery" },
+  { key: "kg1", label: "Kindergarten-1" },
+  { key: "kg2", label: "Kindergarten-2" },
   { key: "1", label: "Class 1" },
   { key: "2", label: "Class 2" },
   { key: "3", label: "Class 3" },
@@ -60,6 +78,16 @@ export const classes = [
   { key: "10", label: "Class 10" },
   { key: "11", label: "Class 11" },
   { key: "12", label: "Class 12" },
+  { key: "bsc", label: "B.Sc" },
+  { key: "ba", label: "B.A" },
+  { key: "bcom", label: "B.Com" },
+  { key: "msc", label: "M.Sc" },
+  { key: "ma", label: "M.A" },
+  { key: "mcom", label: "M.Com" },
+  { key: "btech", label: "B.Tech" },
+  { key: "mtech", label: "M.Tech" },
+  { key: "bca", label: "B.C.A" },
+  { key: "mca", label: "M.C.A" },
 ] as const;
 
 export const frequencies = [
@@ -391,12 +419,9 @@ export function yearOptions(count = 5): { key: string; label: string }[] {
 export const tuitionNotesSuggestions = [
   "Only Female Teacher Required",
   "Only Male Teacher Required",
-  "Local Teacher Preferred",
   "Must Speak English",
-  "Home Tuition Only",
-  "Online Classes Preferred",
-  "Weekends Only",
-  "Budget is Negotiable",
+  "Aged & Experienced teacher required",
+  "English and Hindi communication required",
 ] as const;
 
 /** Quick-pick suggestion chips for the job "Additional Notes" textarea */
