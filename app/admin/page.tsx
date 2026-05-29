@@ -1,225 +1,155 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import dynamic from "next/dynamic";
+import type { SuperAdminPayload } from "@/components/admin/dashboard/SuperAdminDashboard";
+import type { AdminPayload } from "@/components/admin/dashboard/AdminDashboard";
+import type { SupportAdminPayload } from "@/components/admin/dashboard/SupportAdminDashboard";
 
-interface AdminData {
-  _id: string;
-  username: string;
-  email: string;
-  name: string;
-  role: string;
-  permissions: Record<string, boolean>;
-  isActive: boolean;
-  isLocked: boolean;
+// Lazy-load dashboard views — code split so each role only loads its bundle
+const SuperAdminDashboard = dynamic(
+  () => import("@/components/admin/dashboard/SuperAdminDashboard"),
+  { ssr: false }
+);
+const AdminDashboard = dynamic(
+  () => import("@/components/admin/dashboard/AdminDashboard"),
+  { ssr: false }
+);
+const SupportAdminDashboard = dynamic(
+  () => import("@/components/admin/dashboard/SupportAdminDashboard"),
+  { ssr: false }
+);
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type DashboardPayload = SuperAdminPayload | AdminPayload | SupportAdminPayload;
+
+// ─── Skeleton ───────────────────────────────────────────────────────────────
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8 animate-pulse">
+      {/* Stat cards skeleton */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 h-32">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 mb-3" />
+            <div className="h-3 w-24 rounded bg-zinc-100 dark:bg-zinc-800 mb-2" />
+            <div className="h-7 w-16 rounded bg-zinc-100 dark:bg-zinc-800" />
+          </div>
+        ))}
+      </div>
+      {/* Body skeleton */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 h-56" />
+        ))}
+      </div>
+    </div>
+  );
 }
 
+// ─── Role label helpers ──────────────────────────────────────────────────────
+
+function getRoleLabel(role: string) {
+  switch (role) {
+    case "super_admin":   return "Super Admin";
+    case "admin":         return "Sub-Superadmin";
+    case "support_admin": return "Support Admin";
+    default:              return role;
+  }
+}
+
+function getRoleBadge(role: string) {
+  switch (role) {
+    case "super_admin":
+      return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800";
+    case "admin":
+      return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+    case "support_admin":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+    default:
+      return "bg-zinc-100 text-zinc-700 border-zinc-200";
+  }
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export default function AdminHomePage() {
-  const { user } = useUser();
-  const router = useRouter();
-  const [adminData, setAdminData] = useState<AdminData | null>(null);
+  const { user, isLoaded: clerkLoaded } = useUser();
+  const [payload, setPayload] = useState<DashboardPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        // Get admin data from metadata or fetch from API
-        const metadata = user?.publicMetadata;
+    if (!clerkLoaded || !user) return;
 
-        if (metadata?.adminId) {
-          const response = await fetch(
-            `/api/v1/admin/admins/${metadata.adminId}`
-          );
-          if (response.ok) {
-            const result = await response.json();
-            setAdminData(result.admin);
-          }
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch("/api/v1/admin/dashboard");
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? `HTTP ${res.status}`);
         }
-      } catch (error) {
-        console.error("Error fetching admin data:", error);
+        const data = await res.json();
+        setPayload(data);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load dashboard");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user) {
-      fetchAdminData();
-    }
-  }, [user]);
+    fetchDashboard();
+  }, [clerkLoaded, user]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p>Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case "super_admin":
-        return "bg-purple-100 text-purple-800 border-purple-300";
-      case "admin":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "support_admin":
-        return "bg-green-100 text-green-800 border-green-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "super_admin":
-        return "Super Admin";
-      case "admin":
-        return "Sub-Superadmin";
-      case "support_admin":
-        return "Support";
-      default:
-        return role;
-    }
-  };
+  // ── Greeting ──
+  const meta  = user?.publicMetadata as Record<string, unknown> | undefined;
+  const role  = (meta?.role as string) ?? "";
+  const name  = (user?.firstName ?? "Admin");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-gray-600">
-          Welcome back, {adminData?.name || user?.firstName}!
-        </p>
-      </div>
 
-      {/* Admin Info Card */}
-      <div className="mb-8 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-semibold">Your Account</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-sm text-gray-600">Name</p>
-            <p className="font-medium">{adminData?.name}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Username</p>
-            <p className="font-medium">{adminData?.username}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Email</p>
-            <p className="font-medium">{adminData?.email}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Role</p>
-            <span
-              className={`inline-block rounded-full border px-3 py-1 text-sm font-medium ${getRoleBadgeColor(adminData?.role || "")}`}
-            >
-              {getRoleLabel(adminData?.role || "")}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="mb-4 text-xl font-semibold">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {adminData?.permissions?.canHandleEnquiries && (
-            <Link
-              href="/admin/enquiries"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">📩</div>
-              <h3 className="mb-1 font-semibold">Manage Enquiries</h3>
-              <p className="text-sm text-gray-600">
-                View and respond to customer enquiries
-              </p>
-            </Link>
-          )}
-          {adminData?.permissions?.canHandleFeedbacks && (
-            <Link
-              href="/admin/feedbacks"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">⭐</div>
-              <h3 className="mb-1 font-semibold">Manage Feedbacks</h3>
-              <p className="text-sm text-gray-600">
-                Review customer feedback and ratings
-              </p>
-            </Link>
-          )}
-          {adminData?.permissions?.canManagePosts && (
-            <Link
-              href="/admin/tuitions"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">📚</div>
-              <h3 className="mb-1 font-semibold">Manage Tuitions</h3>
-              <p className="text-sm text-gray-600">
-                Create and manage tuition posts
-              </p>
-            </Link>
-          )}
-          {adminData?.permissions?.canManageJobs && (
-            <Link
-              href="/admin/jobs"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">💼</div>
-              <h3 className="mb-1 font-semibold">Manage Jobs</h3>
-              <p className="text-sm text-gray-600">
-                Create and manage job postings
-              </p>
-            </Link>
-          )}{" "}
-          {adminData?.permissions?.canManageAdmins && (
-            <Link
-              href="/admin/settings"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">👥</div>
-              <h3 className="mb-1 font-semibold">Manage Admins</h3>
-              <p className="text-sm text-gray-600">
-                View and manage admin users
-              </p>
-            </Link>
-          )}
-          <Link
-            href="/admin/renowned-teachers"
-            className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div className="mb-2 text-3xl">🎓</div>
-            <h3 className="mb-1 font-semibold">Renowned Teachers</h3>
-            <p className="text-sm text-gray-600">
-              Manage teacher cards shown on the homepage
-            </p>
-          </Link>
-          {adminData?.permissions?.canViewAnalytics && (
-            <Link
-              href="/admin/settings"
-              className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 text-3xl">📊</div>
-              <h3 className="mb-1 font-semibold">Analytics</h3>
-              <p className="text-sm text-gray-600">
-                View platform statistics and reports
-              </p>
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Status Indicator */}
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-green-500" />
-          <p className="text-sm font-medium text-green-900">
-            Admin account is active and operational
+      {/* ── Page header ── */}
+      <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+            Welcome back, {name}!
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Here&apos;s what&apos;s happening on your platform today.
           </p>
         </div>
+        {role && (
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadge(role)}`}>
+            {getRoleLabel(role)}
+          </span>
+        )}
       </div>
+
+      {/* ── Content ── */}
+      {isLoading || !clerkLoaded ? (
+        <DashboardSkeleton />
+      ) : error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 p-6 text-center">
+          <p className="text-sm font-medium text-red-700 dark:text-red-400">Failed to load dashboard</p>
+          <p className="text-xs text-red-500 mt-1">{error}</p>
+          <button
+            onClick={() => { setIsLoading(true); setError(null); }}
+            className="mt-4 text-xs text-red-600 underline hover:no-underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : payload?.role === "super_admin" ? (
+        <SuperAdminDashboard data={payload} />
+      ) : payload?.role === "admin" ? (
+        <AdminDashboard data={payload} />
+      ) : payload?.role === "support_admin" ? (
+        <SupportAdminDashboard data={payload} />
+      ) : null}
     </div>
   );
 }

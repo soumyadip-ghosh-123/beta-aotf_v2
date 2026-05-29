@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "motion/react";
 import {
   LayoutDashboard,
@@ -19,25 +20,56 @@ import {
   Menu,
   X,
   ChevronRight,
+  CreditCard,
 } from "lucide-react";
+import type { AdminPermissionKey } from "@/lib/admin/admin-permissions";
 
 // ─── Nav items ─────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
-  { href: "/admin",              label: "Dashboard",        icon: LayoutDashboard },
-  { href: "/admin/agenda-view",  label: "Updates",          icon: CalendarDays    },
-  { href: "/admin/tuitions",     label: "Tuitions",         icon: BookOpen        },
-  { href: "/admin/jobs",         label: "Jobs",             icon: Briefcase       },
-  { href: "/admin/enquiries",    label: "Enquiries",        icon: MessageSquare   },
-  { href: "/admin/feedbacks",    label: "Feedbacks",        icon: Star            },
-  { href: "/admin/reviews",      label: "Reviews",          icon: Star            },
-  { href: "/admin/users",        label: "Users",            icon: Users           },
-  { href: "/admin/teachers",     label: "Renowned Teachers",icon: GraduationCap   },
-  { href: "/admin/ads",          label: "Ads",              icon: Megaphone       },
-  { href: "/admin/invoices",     label: "Invoices",         icon: FileText        },
-  { href: "/admin/payments",     label: "Payments",         icon: FileText        },
-  { href: "/admin/settings",     label: "Settings",         icon: Settings        },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  /** If set, the item is only shown when the admin has this permission === true */
+  permission?: AdminPermissionKey;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/admin",              label: "Dashboard",         icon: LayoutDashboard },
+  { href: "/admin/agenda-view",  label: "Updates",           icon: CalendarDays    },
+  { href: "/admin/tuitions",     label: "Tuitions",          icon: BookOpen,        permission: "canManagePosts"             },
+  { href: "/admin/jobs",         label: "Jobs",              icon: Briefcase,       permission: "canManageJobs"              },
+  { href: "/admin/enquiries",    label: "Enquiries",         icon: MessageSquare,   permission: "canHandleEnquiries"         },
+  { href: "/admin/feedbacks",    label: "Feedbacks",         icon: Star,            permission: "canHandleFeedbacks"         },
+  { href: "/admin/reviews",      label: "Reviews",           icon: Star                                                      },
+  { href: "/admin/users",        label: "Users",             icon: Users,           permission: "canManageUsers"             },
+  { href: "/admin/teachers",     label: "Renowned Teachers", icon: GraduationCap,   permission: "canManageRenownedTeachers"  },
+  { href: "/admin/ads",          label: "Ads",               icon: Megaphone                                                 },
+  { href: "/admin/invoices",     label: "Invoices",          icon: FileText                                                  },
+  { href: "/admin/payments",     label: "Payments",          icon: CreditCard,      permission: "canViewPayments"            },
+  { href: "/admin/settings",     label: "Settings",          icon: Settings,        permission: "canManageAdmins"            },
 ];
+
+// ─── Skeleton row ───────────────────────────────────────────────────────────
+
+function NavSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+        >
+          <div className="h-[17px] w-[17px] rounded bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
+          <div
+            className="h-3 rounded bg-zinc-200 dark:bg-zinc-700 animate-pulse"
+            style={{ width: `${48 + (i % 3) * 20}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -45,6 +77,18 @@ export default function AdminSidebar() {
   const pathname  = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  const { user, isLoaded } = useUser();
+
+  // Resolve permissions from Clerk publicMetadata
+  const permissions = (user?.publicMetadata?.permissions ?? {}) as Record<string, boolean>;
+
+  // Filter nav items based on permissions
+  const visibleItems = isLoaded
+    ? NAV_ITEMS.filter((item) =>
+        !item.permission || permissions[item.permission] === true
+      )
+    : [];
 
   // Close on route change
   useEffect(() => { setIsOpen(false); }, [pathname]);
@@ -130,35 +174,39 @@ export default function AdminSidebar() {
               </button>
             </div>
 
-            {/* Nav links */}
-            <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = isActive(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`
-                      group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                      transition-all duration-150 relative
-                      ${active
-                        ? "bg-primary/10 text-primary dark:bg-primary/20"
-                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
-                      }
-                    `}
-                  >
-                    <Icon
-                      size={17}
-                      className={active ? "text-primary" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"}
-                    />
-                    <span className="flex-1">{label}</span>
-                    {active && (
-                      <ChevronRight size={14} className="text-primary opacity-70" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
+            {/* Nav links or skeleton */}
+            {!isLoaded ? (
+              <NavSkeleton />
+            ) : (
+              <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+                {visibleItems.map(({ href, label, icon: Icon }) => {
+                  const active = isActive(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`
+                        group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+                        transition-all duration-150 relative
+                        ${active
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        }
+                      `}
+                    >
+                      <Icon
+                        size={17}
+                        className={active ? "text-primary" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300"}
+                      />
+                      <span className="flex-1">{label}</span>
+                      {active && (
+                        <ChevronRight size={14} className="text-primary opacity-70" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-zinc-200 dark:border-zinc-700">

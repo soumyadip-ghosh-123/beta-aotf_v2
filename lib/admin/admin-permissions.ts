@@ -21,7 +21,8 @@ export type AdminPermissionKey =
   | "canDeactivateAdmins"
   | "canResetAdminPasswords"
   | "canTerminateAdmins"
-  | "canViewAuditLogs";
+  | "canViewAuditLogs"
+  | "canManageRenownedTeachers";
 
 export const ADMIN_PERMISSION_CATALOG: Array<{
   key: AdminPermissionKey;
@@ -36,6 +37,7 @@ export const ADMIN_PERMISSION_CATALOG: Array<{
   { key: "canCreateJobPosts", label: "Create job posts", group: "content" },
   { key: "canEditPosts", label: "Edit posts", group: "content" },
   { key: "canDeletePosts", label: "Delete posts", group: "content" },
+  { key: "canManageRenownedTeachers", label: "Manage renowned teachers", group: "content" },
   { key: "canHandleEnquiries", label: "Handle enquiries", group: "support" },
   { key: "canHandleFeedbacks", label: "Handle feedback", group: "support" },
   { key: "canUpdateEnquiryStatus", label: "Update enquiry status", group: "support" },
