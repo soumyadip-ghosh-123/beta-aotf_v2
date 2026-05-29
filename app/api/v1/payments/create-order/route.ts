@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const plan = body.plan as string;
+    const plan = body.plan as "teacher" | "teacher_candidate";
 
     if (!["teacher", "teacher_candidate"].includes(plan)) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
-import AuditLog from "@/lib/models/AuditLog";
+import AuditLog, { type IAuditLog } from "@/lib/models/AuditLog";
 import LoginAttempt from "@/lib/models/LoginAttempt";
 import * as clerkService from "./clerk.service";
 import * as emailService from "./email.service";
@@ -27,8 +27,8 @@ async function logAction(params: {
   adminId: string;
   adminClerkId: string;
   adminUsername: string;
-  action: string;
-  targetType?: string;
+  action: IAuditLog["action"];
+  targetType?: IAuditLog["targetType"];
   targetId?: string;
   targetIdentifier?: string;
   details?: Record<string, unknown>;
