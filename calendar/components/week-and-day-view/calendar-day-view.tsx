@@ -55,7 +55,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
           </div>
         </div>
 
-        <ScrollArea className="h-[800px]" type="always">
+        <ScrollArea className="h-200" type="always">
           <div className="flex">
             {/* Hours column */}
             <div className="relative w-18">
@@ -80,13 +80,13 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
 
                       <DroppableTimeBlock date={selectedDate} hour={hour} minute={0}>
                         <AddEventDialog startDate={selectedDate} startTime={{ hour, minute: 0 }}>
-                          <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          <div className="absolute inset-x-0 top-0 h-6 cursor-pointer transition-colors hover:bg-accent" />
                         </AddEventDialog>
                       </DroppableTimeBlock>
 
                       <DroppableTimeBlock date={selectedDate} hour={hour} minute={15}>
                         <AddEventDialog startDate={selectedDate} startTime={{ hour, minute: 15 }}>
-                          <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          <div className="absolute inset-x-0 top-6 h-6 cursor-pointer transition-colors hover:bg-accent" />
                         </AddEventDialog>
                       </DroppableTimeBlock>
 
@@ -94,13 +94,13 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
 
                       <DroppableTimeBlock date={selectedDate} hour={hour} minute={30}>
                         <AddEventDialog startDate={selectedDate} startTime={{ hour, minute: 30 }}>
-                          <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          <div className="absolute inset-x-0 top-12 h-6 cursor-pointer transition-colors hover:bg-accent" />
                         </AddEventDialog>
                       </DroppableTimeBlock>
 
                       <DroppableTimeBlock date={selectedDate} hour={hour} minute={45}>
                         <AddEventDialog startDate={selectedDate} startTime={{ hour, minute: 45 }}>
-                          <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          <div className="absolute inset-x-0 top-18 h-6 cursor-pointer transition-colors hover:bg-accent" />
                         </AddEventDialog>
                       </DroppableTimeBlock>
                     </div>
@@ -144,7 +144,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
         <div className="flex-1 space-y-3">
           {currentEvents.length > 0 ? (
             <div className="flex items-start gap-2 px-4 pt-4">
-              <span className="relative mt-[5px] flex size-2.5">
+              <span className="relative mt-1.25 flex size-2.5">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex size-2.5 rounded-full bg-green-600"></span>
               </span>
@@ -156,7 +156,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
           )}
 
           {currentEvents.length > 0 && (
-            <ScrollArea className="h-[422px] px-4" type="always">
+            <ScrollArea className="h-105.5 px-4" type="always">
               <div className="space-y-6 pb-4">
                 {currentEvents.map(event => {
                   const user = users.find(user => user.id === event.user.id);

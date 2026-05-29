@@ -3,6 +3,7 @@ import OurServices from "@/components/OurServices";
 import Testimonials from "@/components/Testimonials";
 import ImageSlider from "@/components/ImageSlider";
 import HeroDescription from "@/components/HeroDescription";
+import Counter from "@/components/Counter";
 import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
 import Footer from "@/components/Footer";
 import LeadershipCard from "@/components/home/LeadershipCard";
@@ -26,7 +27,8 @@ export default function Home() {
             {
               src: "./scatch_image.png",
               title: "Hire a Freelancer",
-              description: "Connect with verified freelancers for your projects",
+              description:
+                "Connect with verified freelancers for your projects",
               buttonText: "Find Jobs",
               link: "/jobs",
             },
@@ -42,6 +44,12 @@ export default function Home() {
           interval={3000}
         />
         <HeroDescription />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Counter label="Active users" start={628} />
+          <Counter label="Teachers" start={2768} />
+          <Counter label="Freelancers" start={842} />
+          <Counter label="Success Rate" start={89} suffix="%" float />
+        </div>
         <div className="grid grid-cols-1 gap-6 ">
           <LeadershipCard
             name="John Doe"

@@ -54,13 +54,13 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents }: IProps) 
       }
     });
 
-    return Array.from(allDates.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
+    return Array.from(allDates.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
   }, [singleDayEvents, multiDayEvents, selectedDate]);
 
   const hasAnyEvents = singleDayEvents.length > 0 || multiDayEvents.length > 0;
 
   return (
-    <div className="h-[800px]">
+    <div className="h-200">
       <ScrollArea className="h-full" type="always">
         <div className="space-y-6 p-4">
           {eventsByDay.map(dayGroup => (
