@@ -12,13 +12,30 @@ const razorpay = new Razorpay({
 
 export async function POST(req: Request) {
   try {
-    const { userId: clerkId } = await auth();
+    const { userId: clerkId, sessionClaims } = await auth();
     if (!clerkId) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 },
       );
     }
+
+    // ── Legacy-migration short-circuit ───────────────────────────────────────
+    // Users migrated from the old backend already paid there. Their Clerk
+    // publicMetadata carries migratedFromLegacy: true + registrationFeeStatus: "paid".
+    // Return a sentinel response so the onboarding page skips Razorpay and
+    // calls /api/v1/payments/activate-legacy instead.
+    const meta = (sessionClaims?.publicMetadata ?? {}) as Record<string, unknown>;
+    if (
+      meta.migratedFromLegacy === true &&
+      meta.registrationFeeStatus === "paid"
+    ) {
+      console.log(
+        `[create-order] Migrated legacy user ${clerkId} — skipping Razorpay`,
+      );
+      return NextResponse.json({ alreadyPaid: true });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const body = await req.json();
     const plan = body.plan as "teacher" | "teacher_candidate";

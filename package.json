@@ -12,6 +12,7 @@
     "ship:zip": "mkdir -p package && rm -f package/aotf_v2.zip && zip -r package/aotf_v2.zip . -x 'node_modules/*' '.git/*' '.next/*' 'package/*' '*.zip'"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.14",
     "@clerk/nextjs": "^6.39.0",
     "@heroui/accordion": "2.2.26",
     "@heroui/alert": "2.2.29",
@@ -86,7 +87,7 @@
     "cloudinary": "^2.9.0",
     "clsx": "2.1.1",
     "date-fns": "^3.6.0",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "framer-motion": "12.23.26",
     "google-auth-library": "^10.6.2",
     "googleapis": "^171.4.0",
@@ -96,6 +97,7 @@
     "jspdf": "^4.2.0",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.562.0",
+    "mongodb": "^7.2.0",
     "mongoose": "^9.1.1",
     "motion": "^12.23.26",
     "next": "16.1.6",

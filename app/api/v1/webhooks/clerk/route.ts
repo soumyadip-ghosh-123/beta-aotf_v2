@@ -237,8 +237,52 @@ async function handleUserCreated(data: Record<string, unknown>) {
   // claims. MongoDB is the source of truth; Clerk publicMetadata is the read
   // cache. proxy.ts reads onboardingCompleted from sessionClaims to gate routes.
   //
+  // For legacy-migrated users (migratedFromLegacy: true + registrationFeeStatus: "paid"
+  // in publicMetadata), we preserve those flags in the metadata update so the
+  // onboarding flow knows to skip Razorpay. We also seed an OnboardingDetails
+  // document with expiresAt = null so MongoDB never auto-deletes their record.
+  //
   // Retry with backoff: Clerk occasionally fires user.created before the user
   // is fully available via the Management API, causing a transient 404.
+
+  // Read the metadata that was set by the migration script (present on the
+  // event payload as public_metadata).
+  const incomingMeta = (data.public_metadata as Record<string, unknown>) ?? {};
+  const isMigratedLegacy =
+    incomingMeta.migratedFromLegacy === true &&
+    incomingMeta.registrationFeeStatus === "paid";
+
+  // For migrated users: create an OnboardingDetails stub immediately with
+  // expiresAt = null so the 30-day deletion TTL never fires.
+  if (isMigratedLegacy) {
+    const userDoc = await User.findOne({ clerkId });
+    if (userDoc) {
+      await OnboardingDetails.findOneAndUpdate(
+        { clerkId },
+        {
+          $setOnInsert: {
+            userId: userDoc._id,
+            clerkId,
+            phone: null,
+            whatsapp: null,
+            address: null,
+            teachingExp: null,
+            jobExp: null,
+            qualification: null,
+            board: null,
+            plan: (incomingMeta.legacyPlan as string) ?? null,
+            status: "incomplete",
+            expiresAt: null, // no TTL — they already paid
+          },
+        },
+        { upsert: true },
+      );
+      console.log(
+        `[clerk-webhook] Seeded OnboardingDetails (no TTL) for migrated user ${clerkId}`,
+      );
+    }
+  }
+
   const delays = [500, 1500, 3000];
   let lastErr: unknown;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
@@ -248,10 +292,21 @@ async function handleUserCreated(data: Record<string, unknown>) {
     try {
       const client = await clerkClient();
       await client.users.updateUserMetadata(clerkId, {
-        publicMetadata: {
-          role: "teacher",
-          onboardingCompleted: false,
-        },
+        publicMetadata: isMigratedLegacy
+          ? {
+              // Preserve all migration flags so the onboarding page and
+              // activate-legacy endpoint can read them from the JWT.
+              role: (incomingMeta.legacyPlan as string) ?? "teacher",
+              onboardingCompleted: false,
+              migratedFromLegacy: true,
+              registrationFeeStatus: "paid",
+              legacyPlan: incomingMeta.legacyPlan ?? "teacher",
+              legacyTeacherId: incomingMeta.legacyTeacherId ?? null,
+            }
+          : {
+              role: "teacher",
+              onboardingCompleted: false,
+            },
       });
       lastErr = null;
       break;

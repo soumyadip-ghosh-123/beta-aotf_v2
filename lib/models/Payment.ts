@@ -10,7 +10,7 @@ const paymentSchema = new Schema(
     clerkId: { type: String, required: true },
     purpose: {
       type: String,
-      enum: ["registration", "plan_upgrade", "admin_grant", "refund"],
+      enum: ["registration", "plan_upgrade", "admin_grant", "refund", "legacy_migration"],
       required: true,
     },
     fromPlan: {

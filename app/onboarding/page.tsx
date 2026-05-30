@@ -40,6 +40,16 @@ function loadRazorpayScript(): Promise<void> {
 export default function Onboarding() {
   const { user } = useUser();
   const { session } = useSession();
+
+  // ── Legacy-migration detection ─────────────────────────────────────────────
+  // Users migrated from the old backend have these flags in Clerk publicMetadata.
+  // They skip Razorpay and activate directly via /api/v1/payments/activate-legacy.
+  const publicMeta = (user?.publicMetadata ?? {}) as Record<string, unknown>;
+  const isLegacyMigrated =
+    publicMeta.migratedFromLegacy === true &&
+    publicMeta.registrationFeeStatus === "paid";
+  // ──────────────────────────────────────────────────────────────────────────
+
   const [formData, setFormData] = useState<OnboardingFormData>({
     phone: "",
     whatsapp: "",
@@ -373,7 +383,7 @@ export default function Onboarding() {
     setPaymentError(null);
 
     try {
-      // 1. Create Razorpay order
+      // 1. Create order (or detect legacy-migration short-circuit)
       const orderRes = await fetch("/api/v1/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -387,7 +397,39 @@ export default function Onboarding() {
         );
       }
 
-      const { orderId, amount, currency, key } = (await orderRes.json()) as {
+      const orderData = (await orderRes.json()) as
+        | { alreadyPaid: true }
+        | { orderId: string; amount: number; currency: string; key: string };
+
+      // ── Legacy-migration path ──────────────────────────────────────
+      // create-order returns { alreadyPaid: true } for users who already
+      // paid in the old system. Call activate-legacy to complete setup.
+      if ("alreadyPaid" in orderData && orderData.alreadyPaid) {
+        const activateRes = await fetch("/api/v1/payments/activate-legacy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: formData.plan }),
+        });
+
+        if (!activateRes.ok) {
+          const d = await activateRes.json().catch(() => ({}));
+          throw new Error(
+            (d as { error?: string }).error ?? "Account activation failed"
+          );
+        }
+
+        // Refresh Clerk session so JWT carries updated onboardingCompleted
+        await user.reload();
+        await session?.reload();
+
+        // Hard redirect so the proxy sees the fresh JWT
+        window.location.href = `/u/${user.username}`;
+        return;
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // ── Normal Razorpay path ───────────────────────────────────────
+      const { orderId, amount, currency, key } = orderData as {
         orderId: string;
         amount: number;
         currency: string;
@@ -603,7 +645,7 @@ export default function Onboarding() {
                   }
                 />
               </Step>
-              {/* ── STEP 3: Payment ───────────────────────────────────── */}
+              {/* ── STEP 3: Payment / Activate ─────────────────────────── */}
               <Step>
                 <PaymentStep
                   plan={formData.plan}
@@ -611,6 +653,7 @@ export default function Onboarding() {
                   paymentError={paymentError}
                   onPay={handlePayment}
                   isSavingDetails={isSaving || isSavingOnboarding}
+                  isLegacyMigrated={isLegacyMigrated}
                 />
               </Step>
             </Stepper>
