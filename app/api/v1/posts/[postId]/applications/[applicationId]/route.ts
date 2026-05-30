@@ -13,6 +13,7 @@ import {
   updateApplicationStatus,
   deleteApplicationsByIds,
 } from "@/lib/services/application.service";
+import { upsertPostLedger } from "@/lib/services/postLedger.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
@@ -163,6 +164,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       dcMeta: updatedApplication.dcMeta,
       gcMeta: updatedApplication.gcMeta,
     });
+
+    // Trigger the ledger & sheet sync immediately upon application status change
+    await upsertPostLedger(resolvedParams.postId);
 
     return NextResponse.json({
       message: "Application status updated successfully",

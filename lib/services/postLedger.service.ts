@@ -1,8 +1,12 @@
+import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import { InternalError, NotFoundError } from "@/lib/errors";
 import Post, { type IPost } from "@/lib/models/Post";
 import User from "@/lib/models/User";
 import Profile from "@/lib/models/Profile";
+import Application from "@/lib/models/Application";
+import Admin from "@/lib/models/Admin";
+import Invoice from "@/lib/models/Invoice";
 import PostLedger, {
   type IPostLedger,
   type IPostLedgerStatusHistoryEntry,
@@ -10,9 +14,45 @@ import PostLedger, {
   type PostLedgerStatus,
   type PaymentStatus,
 } from "@/lib/models/PostLedger";
-import { getGoogleSheetsClient } from "@/lib/googleSheets";
+import { getGoogleSheetsClient, ensureTabExists } from "@/lib/googleSheets";
 
-// Note: we use explicit interfaces for lean snapshots.
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+export const TUITIONS_TAB = "Tuitions";
+
+export const TUITIONS_HEADERS = [
+  "Serial No",          // A
+  "Date",               // B
+  "Tuition Serial No",  // C — same as Serial No (kept for legacy compat)
+  "Tuition ID",         // D
+  "Cancelled?",         // E
+  "Guardian Name",      // F
+  "Guardian Phone",     // G
+  "Source",             // H
+  "Requirement",        // I
+  "Notes",              // J
+  "Paid?",              // K
+  "Payment Date",       // L
+  "Teacher Assigned?",  // M
+  "Teacher Name",       // N
+  "Teacher Phone",      // O
+  "Teacher Gender",     // P
+  "Assigned Teacher Status", // Q
+  "Teacher Demo Date",  // R
+  "Starting Date",      // S
+  "Teacher Paid?",      // T
+  "Teacher Payment Date", // U
+  "Invoice?",           // V
+  "Invoice ID",         // W
+  "Class Type",         // X
+  "Location",           // Y
+  "Monthly Budget",     // Z
+  "Post Status",        // AA
+  "Last Updated At",    // AB
+  "Processed By Admin", // AC
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 interface IUserSnapshot {
   clerkId: string;
@@ -23,6 +63,7 @@ interface IProfileSnapshot {
   clerkId: string;
   displayName?: string | null;
   phone?: string | null;
+  gender?: string | null;
 }
 
 interface IPostLedgerUpsertData {
@@ -39,10 +80,25 @@ interface IPostLedgerUpsertData {
   notes: string | null;
   postStatus: PostLedgerStatus;
   assignedTeacherId: string | null;
+  assignedTeacherUsername: string | null;
   assignedTeacherName: string | null;
   assignedTeacherPhone: string | null;
   assignedAt: Date | null;
   processedByAdminClerkId: string | null;
+  processedByAdminName: string | null;
+  // New fields
+  assignedTeacherStatus: string | null;
+  source: string | null;
+  cancelledOrNot: boolean;
+  requirement: string | null;
+  teacherGender: string | null;
+  teacherDemoDate: Date | null;
+  startingDate: Date | null;
+  teacherHasBeenPaid: boolean;
+  teacherPaymentDate: Date | null;
+  invoiceGenerated: boolean;
+  invoiceId: string | null;
+  // Guardian payment
   paymentStatus: PaymentStatus;
   paymentDate: Date | null;
   paymentAmount: number | null;
@@ -70,10 +126,9 @@ function getProcessedByAdminClerkId(post: IPost): string | null {
   return post.updatedByAdminClerkId ?? post.createdByAdminClerkId ?? null;
 }
 
-function formatDateIST(date: Date | null | undefined): string {
+export function formatDateIST(date: Date | null | undefined): string {
   if (!date) return "";
 
-  // Enforce IST and output `DD/MM/YYYY HH:mm`.
   const dtf = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Kolkata",
     day: "2-digit",
@@ -96,6 +151,15 @@ function formatDateIST(date: Date | null | undefined): string {
   return `${day}/${month}/${year} ${hour}:${minute}`;
 }
 
+/** Build a human-readable requirement summary from PostLedger students */
+function buildRequirementSummary(students: IPostLedgerStudent[]): string {
+  return students
+    .map((s) => `${s.className} (${s.board}) — ${s.subjects.join(", ")}`)
+    .join(" | ");
+}
+
+// ─── Sheet row mapper (27 columns A–AA) ──────────────────────────────────────
+
 export function postLedgerToSheetRowValues(
   ledger: IPostLedger,
 ): (string | number)[] {
@@ -103,77 +167,104 @@ export function postLedgerToSheetRowValues(
     // A: Serial No
     ledger.serialNumber ?? "",
 
-    // B: Post ID
-    ledger.postId,
-
-    // C: Post Created At
+    // B: Date (post created at)
     formatDateIST(ledger.postCreatedAt),
 
-    // D: Enquiry ID
-    ledger.enquiryId ?? "",
+    // C: Tuition Serial No (same as A — kept for sheet readability)
+    ledger.serialNumber ?? "",
 
-    // E: Guardian Name
+    // D: Tuition ID
+    ledger.postId,
+
+    // E: Cancelled?
+    ledger.cancelledOrNot ? "YES" : "NO",
+
+    // F: Guardian Name
     ledger.guardianName,
 
-    // F: Guardian Phone
+    // G: Guardian Phone
     ledger.guardianPhone,
 
-    // G: Class Type
-    ledger.classType,
+    // H: Source
+    ledger.source ?? "",
 
-    // H: Location
-    ledger.location,
+    // I: Requirement
+    ledger.requirement ?? "",
 
-    // I: Monthly Budget
-    ledger.monthlyBudget,
-
-    // J: Post Status
-    ledger.postStatus,
-
-    // K: Assigned Teacher Name
-    ledger.assignedTeacherName ?? "",
-
-    // L: Assigned Teacher Phone
-    ledger.assignedTeacherPhone ?? "",
-
-    // M: Assigned At
-    formatDateIST(ledger.assignedAt),
-
-    // N: Processed By (Admin ID)
-    ledger.processedByAdminClerkId ?? "",
-
-    // O: Payment Status
-    ledger.paymentStatus,
-
-    // P: Payment Date
-    formatDateIST(ledger.paymentDate),
-
-    // Q: Payment Amount
-    ledger.paymentAmount ?? "",
-
-    // R: Notes
+    // J: Notes
     ledger.notes ?? "",
 
-    // S: Teacher Change Count
-    ledger.teacherChangeCount,
+    // K: Paid?
+    ledger.paymentStatus,
 
-    // T: Last Updated At
+    // L: Payment Date
+    formatDateIST(ledger.paymentDate),
+
+    // M: Teacher Assigned?
+    ledger.assignedTeacherId ? "YES" : "NO",
+
+    // N: Teacher Name
+    ledger.assignedTeacherName ?? "",
+
+    // O: Teacher Phone
+    ledger.assignedTeacherPhone ?? "",
+
+    // P: Teacher Gender
+    ledger.teacherGender ?? "",
+
+    // Q: Assigned Teacher Status
+    ledger.assignedTeacherStatus ?? "",
+
+    // R: Teacher Demo Date
+    formatDateIST(ledger.teacherDemoDate),
+
+    // S: Starting Date
+    formatDateIST(ledger.startingDate),
+
+    // T: Teacher Paid?
+    ledger.teacherHasBeenPaid ? "YES" : "NO",
+
+    // U: Teacher Payment Date
+    formatDateIST(ledger.teacherPaymentDate),
+
+    // V: Invoice?
+    ledger.invoiceGenerated ? "YES" : "NO",
+
+    // W: Invoice ID
+    ledger.invoiceId ?? "",
+
+    // X: Class Type
+    ledger.classType,
+
+    // Y: Location
+    ledger.location,
+
+    // Z: Monthly Budget
+    ledger.monthlyBudget,
+
+    // AA: Post Status
+    ledger.postStatus,
+
+    // AB: Last Updated At
     formatDateIST(ledger.lastUpdatedAt),
+
+    // AC: Processed By Admin (fallback to clerk id if name is missing)
+    ledger.processedByAdminName || ledger.processedByAdminClerkId || "",
   ];
 }
 
+// ─── Sheet row index parser ───────────────────────────────────────────────────
+
 function parseRowNumberFromA1Range(updatedRange: string | undefined): number | null {
   if (!updatedRange) return null;
-
-  // Expected examples:
-  // - `PostLedger!A5:T5`
-  // - `PostLedger!A5:A5` (rare)
   const tail = updatedRange.split(":").at(-1);
   const match = tail?.match(/(\d+)\s*$/);
   if (!match) return null;
   const parsed = Number(match[1]);
   return Number.isFinite(parsed) ? parsed : null;
 }
+
+// ─── Sheet sync ───────────────────────────────────────────────────────────────
 
 export async function syncPostLedgerRowToSheet(ledger: IPostLedger): Promise<void> {
   try {
@@ -184,70 +275,46 @@ export async function syncPostLedgerRowToSheet(ledger: IPostLedger): Promise<voi
     }
 
     const sheets = await getGoogleSheetsClient();
+    await ensureTabExists(sheets, spreadsheetId, TUITIONS_TAB, TUITIONS_HEADERS);
     const rowValues = postLedgerToSheetRowValues(ledger);
+    const lastCol = "AC";
 
-    const isAppend = ledger.sheetRowIndex === null || ledger.sheetRowIndex === undefined;
-
-    if (isAppend) {
-      const appendResponse = await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: "PostLedger!A:T",
-        valueInputOption: "USER_ENTERED",
-        requestBody: {
-          values: [rowValues],
-        },
-        insertDataOption: "INSERT_ROWS",
-      });
-
-      const updatedRange = appendResponse.data.updates?.updatedRange;
-
-      if (!updatedRange) {
-        console.error("Missing updatedRange");
-        return;
-      }
-
-      const newRowIndex = parseRowNumberFromA1Range(updatedRange);
-
-      if (!newRowIndex) {
-        console.error(
-          "[syncPostLedgerRowToSheet] Could not parse updatedRange for append:",
-          updatedRange,
-        );
-        return;
-      }
-
-      await PostLedger.updateOne(
-        { postId: ledger.postId },
-        { $set: { sheetRowIndex: newRowIndex } },
-      ).exec();
-
+    // For Tuitions, the row index is always serialNumber + 1 (to preserve header at row 1).
+    // If serialNumber is somehow missing, fallback to sheetRowIndex, but this should be rare.
+    const rowIndex = ledger.serialNumber ? ledger.serialNumber + 1 : ledger.sheetRowIndex;
+    
+    if (!rowIndex) {
+      console.error("[syncPostLedgerRowToSheet] Missing serialNumber and sheetRowIndex for ledger:", ledger.postId);
       return;
     }
 
-    const rowIndex = ledger.sheetRowIndex;
-    const range = `PostLedger!A${rowIndex}:T${rowIndex}`;
+    const range = `${TUITIONS_TAB}!A${rowIndex}:${lastCol}${rowIndex}`;
 
-    // Update exactly that row in place.
-    await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.update({
       spreadsheetId,
-      requestBody: {
-        valueInputOption: "USER_ENTERED",
-        data: [
-          {
-            range,
-            values: [rowValues],
-          },
-        ],
-      },
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [rowValues] },
     });
+    
+    // Ensure sheetRowIndex in DB is correct (in case it wasn't already)
+    if (ledger.sheetRowIndex !== rowIndex) {
+      await PostLedger.updateOne(
+        { postId: ledger.postId },
+        { $set: { sheetRowIndex: rowIndex } },
+      ).exec();
+    }
+
   } catch (err) {
     console.error(
-      "[syncPostLedgerRowToSheet] Error syncing to Google Sheet for postId:",
+      "[syncPostLedgerRowToSheet] Error syncing for postId:",
       ledger.postId,
       err,
     );
   }
 }
+
+// ─── Upsert PostLedger ────────────────────────────────────────────────────────
 
 export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
   await dbConnect();
@@ -257,9 +324,48 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
     throw new NotFoundError("Post");
   }
 
-  const assignedTeacherId: string | null = post.matchedTeacherClerkId ?? null;
   const postLedgerStatus = mapPostStatus(post.status);
   const processedByAdminClerkId = getProcessedByAdminClerkId(post);
+
+  // ─── Resolve processedByAdminName ─────────────────────────────────────────
+  let processedByAdminName: string | null = null;
+  if (processedByAdminClerkId) {
+    const admin = await Admin.findOne({ clerkId: processedByAdminClerkId }).lean<{ name: string }>();
+    if (admin) {
+      processedByAdminName = admin.name ?? null;
+    }
+  }
+
+  // ─── Resolve assignedTeacherId ────────────────────────────────────────────
+  // Priority: 1. approved, 2. GC, 3. DC. If none of these, fallback to post.matchedTeacherClerkId
+  let assignedTeacherId: string | null = null;
+  let assignedTeacherStatus: string | null = null;
+  
+  const activeApplications = await Application.find({
+    postId,
+    status: mongoose.trusted({ $in: ["approved", "GC", "DC"] }),
+  })
+    .select("status applicantId")
+    .lean<{ status: string; applicantId: any }[]>();
+
+  if (activeApplications.length > 0) {
+    // Sort by priority
+    const priority = { approved: 1, GC: 2, DC: 3 };
+    activeApplications.sort((a, b) => (priority[a.status as keyof typeof priority] || 99) - (priority[b.status as keyof typeof priority] || 99));
+    
+    const chosenApp = activeApplications[0];
+    assignedTeacherStatus = chosenApp.status;
+    const teacherUser = await User.findById(chosenApp.applicantId).select("clerkId").lean<{ clerkId: string }>();
+    if (teacherUser) {
+      assignedTeacherId = teacherUser.clerkId;
+    }
+  }
+
+  if (!assignedTeacherId) {
+    assignedTeacherId = post.matchedTeacherClerkId ?? null;
+  }
+  
+  const source: string | null = post.source ?? null;
 
   const existingLedger = await PostLedger.findOne({ postId }).lean<IPostLedger>();
 
@@ -272,17 +378,10 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
       ? teacherChangeCountBase + 1
       : teacherChangeCountBase;
 
-  // Preserve payment fields if a ledger already exists.
-  const paymentStatus: PaymentStatus =
-    existingLedger?.paymentStatus ?? "unpaid";
-  const paymentDate: Date | null = existingLedger?.paymentDate ?? null;
-  const paymentAmount: number | null = existingLedger?.paymentAmount ?? null;
-
   const sheetRowIndex: number | null = existingLedger?.sheetRowIndex ?? null;
 
   const statusHistoryBase: IPostLedgerStatusHistoryEntry[] =
     existingLedger?.statusHistory ?? [];
-
   const lastStatusEntry = statusHistoryBase.at(-1) ?? null;
   const shouldAppendStatus =
     !lastStatusEntry || lastStatusEntry.status !== postLedgerStatus;
@@ -298,9 +397,12 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
       ]
     : statusHistoryBase;
 
-  // Denormalized teacher snapshot at assignment time.
+  // ─── Teacher snapshot ──────────────────────────────────────────────────────
   let assignedTeacherName: string | null = existingLedger?.assignedTeacherName ?? null;
+  let assignedTeacherUsername: string | null = existingLedger?.assignedTeacherUsername ?? null;
   let assignedTeacherPhone: string | null = existingLedger?.assignedTeacherPhone ?? null;
+  let teacherGender: string | null = existingLedger?.teacherGender ?? null;
+
   if (assignedTeacherId) {
     const isSameTeacherAsExisting =
       existingLedger?.assignedTeacherId === assignedTeacherId;
@@ -316,27 +418,83 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
         teacherUser?.username?.trim() ||
         null;
 
+    assignedTeacherUsername = isSameTeacherAsExisting
+      ? existingLedger?.assignedTeacherUsername ?? null
+      : teacherUser?.username?.trim() || null;
+
     assignedTeacherPhone = isSameTeacherAsExisting
       ? existingLedger?.assignedTeacherPhone ?? null
       : teacherProfile?.phone?.trim() || null;
+
+    teacherGender = isSameTeacherAsExisting
+      ? existingLedger?.teacherGender ?? null
+      : teacherProfile?.gender ?? null;
   }
 
-  // assignedAt semantics: keep the first assignedAt once we have one.
-  let assignedAt: Date | null =
-    existingLedger?.assignedAt ?? null;
-  if (assignedTeacherId) {
-    assignedAt = existingLedger?.assignedAt ?? new Date();
-  } else {
-    assignedAt = existingLedger?.assignedAt ?? null;
+  // assignedAt: keep the first value once set
+  let assignedAt: Date | null = existingLedger?.assignedAt ?? null;
+  if (assignedTeacherId && !assignedAt) {
+    assignedAt = new Date();
   }
 
-  // Serial number assignment only when missing.
-  const serialNumber: number | null =
-    existingLedger?.serialNumber ?? null;
+  // Serial number: assign once, never change
+  const serialNumber: number | null = existingLedger?.serialNumber ?? null;
   const serialNumberFinal: number | null =
     serialNumber === null || serialNumber === undefined
       ? (await PostLedger.countDocuments()) + 1
       : serialNumber;
+
+  // ─── New computed fields ───────────────────────────────────────────────────
+
+  const cancelledOrNot = post.status === "cancelled";
+  const requirement = buildRequirementSummary(post.students as IPostLedgerStudent[]);
+
+  // Teacher demo date: from the approved application's dcDate
+  let teacherDemoDate: Date | null = existingLedger?.teacherDemoDate ?? null;
+  if (assignedTeacherId && !teacherDemoDate) {
+    const approvedApp = await Application.findOne({
+      postId: post.postId,   // postId is stored as String on Application
+      status: "approved",
+    })
+      .select("dcDate")
+      .lean<{ dcDate?: Date }>();
+    teacherDemoDate = approvedApp?.dcDate ?? null;
+  }
+
+
+  // startingDate: preserve from existing ledger (admin-entered via UI)
+  const startingDate: Date | null = existingLedger?.startingDate ?? null;
+
+  // Teacher payment: preserve from existing ledger (admin-entered via UI)
+  const teacherHasBeenPaid: boolean = existingLedger?.teacherHasBeenPaid ?? false;
+  const teacherPaymentDate: Date | null = existingLedger?.teacherPaymentDate ?? null;
+
+  // Invoice: look up latest invoice linked to this postId
+  let invoiceGenerated = false;
+  let invoiceId: string | null = null;
+  let paymentStatus: PaymentStatus = "unpaid";
+  let paymentDate: Date | null = null;
+  let paymentAmount: number | null = null;
+
+  const latestInvoice = await Invoice.findOne({ postId: post.postId, isLatest: true })
+    .select("invoiceId paymentStatus paymentDate amount.total")
+    .lean<{ invoiceId: string; paymentStatus: string; paymentDate?: Date; amount?: { total?: number } }>();
+
+  if (latestInvoice) {
+    invoiceGenerated = true;
+    invoiceId = latestInvoice.invoiceId;
+    
+    // Fallbacks per user request: Invoice -> Post (monthlyBudget)
+    paymentStatus = (latestInvoice.paymentStatus as PaymentStatus) || "unpaid";
+    paymentDate = latestInvoice.paymentDate ?? null;
+    paymentAmount = latestInvoice.amount?.total ?? post.monthlyBudget;
+  } else {
+    paymentStatus = post.paymentstatus === "done" ? "paid" : "unpaid";
+    paymentDate = post.paymentDate ?? null;
+    paymentAmount = post.monthlyBudget;
+  }
+
+  // ─── Assemble & upsert ────────────────────────────────────────────────────
 
   const ledgerData: IPostLedgerUpsertData = {
     serialNumber: serialNumberFinal,
@@ -351,21 +509,29 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
     monthlyBudget: post.monthlyBudget,
     notes: post.notes ?? null,
     postStatus: postLedgerStatus,
-
     assignedTeacherId,
+    assignedTeacherUsername,
     assignedTeacherName,
     assignedTeacherPhone,
     assignedAt,
-
     processedByAdminClerkId,
-
+    processedByAdminName,
+    assignedTeacherStatus,
+    source,
+    cancelledOrNot,
+    requirement,
+    teacherGender,
+    teacherDemoDate,
+    startingDate,
+    teacherHasBeenPaid,
+    teacherPaymentDate,
+    invoiceGenerated,
+    invoiceId,
     paymentStatus,
     paymentDate,
     paymentAmount,
-
     lastUpdatedAt: new Date(),
     sheetRowIndex,
-
     statusHistory,
     teacherChangeCount,
   };
@@ -386,9 +552,8 @@ export async function upsertPostLedger(postId: string): Promise<IPostLedger> {
 
   // Fire-and-forget: keep the API response snappy.
   syncPostLedgerRowToSheet(upserted).catch((err) =>
-    console.error("Sheet sync failed:", err),
+    console.error("[upsertPostLedger] Sheet sync failed:", err),
   );
 
   return upserted;
 }
-

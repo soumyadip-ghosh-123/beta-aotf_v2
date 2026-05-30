@@ -192,6 +192,28 @@ if (process.env.NODE_ENV !== "production") {
   delete (mongoose.models as Record<string, unknown>).Admin;
 }
 
+// ─── Google Sheets write-through hooks ───────────────────────────────────────
+// Import lazily to avoid circular dependency issues at module init time.
+
+adminSchema.post("save", function (doc) {
+  void import("@/lib/services/adminLedger.service").then(({ upsertAdminLedger }) =>
+    upsertAdminLedger(doc.clerkId).catch((err) =>
+      console.error("[Admin hook] Sheet sync failed:", err),
+    ),
+  );
+});
+
+adminSchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const clerkId = (doc as unknown as { clerkId: string }).clerkId;
+  if (!clerkId) return;
+  void import("@/lib/services/adminLedger.service").then(({ upsertAdminLedger }) =>
+    upsertAdminLedger(clerkId).catch((err) =>
+      console.error("[Admin hook] Sheet sync failed:", err),
+    ),
+  );
+});
+
 const Admin =
   (mongoose.models.Admin as IAdminModel) ??
   mongoose.model<IAdmin, IAdminModel>("Admin", adminSchema);

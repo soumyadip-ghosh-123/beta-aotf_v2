@@ -39,3 +39,70 @@ export async function getGoogleSheetsClient(): Promise<sheets_v4.Sheets> {
   return sheetsClientPromise;
 }
 
+/**
+ * In-process cache of sheet tabs that have been confirmed to exist.
+ * Prevents redundant API calls and race conditions when multiple concurrent
+ * sync operations run against the same tab.
+ * Key: `${spreadsheetId}::${tabTitle}`
+ */
+const confirmedTabs = new Set<string>();
+
+/**
+ * Ensures a sheet tab with the given title exists in the spreadsheet.
+ * If it doesn't exist, it is created and the optional `headers` array is
+ * written to row 1 immediately so column names are always present.
+ *
+ * Uses an in-memory cache so concurrent sync calls don't race to create
+ * the same tab simultaneously.
+ */
+export async function ensureTabExists(
+  sheets: sheets_v4.Sheets,
+  spreadsheetId: string,
+  tabTitle: string,
+  headers?: string[],
+): Promise<void> {
+  const cacheKey = `${spreadsheetId}::${tabTitle}`;
+
+  // Fast path: already confirmed in this process session
+  if (confirmedTabs.has(cacheKey)) return;
+
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const exists = (meta.data.sheets ?? []).some(
+    (s) => s.properties?.title === tabTitle,
+  );
+
+  if (exists) {
+    confirmedTabs.add(cacheKey);
+    return;
+  }
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          addSheet: {
+            properties: { title: tabTitle },
+          },
+        },
+      ],
+    },
+  });
+
+  console.log(`[googleSheets] Created new tab: "${tabTitle}"`);
+
+  // Write header row immediately after tab creation
+  if (headers && headers.length > 0) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabTitle}!A1`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [headers] },
+    });
+    console.log(`[googleSheets] Wrote ${headers.length} header columns to "${tabTitle}"`);
+  }
+
+  confirmedTabs.add(cacheKey);
+}
+
+

@@ -49,6 +49,11 @@ const profileSchema = new Schema(
       default: null,
       enum: ["CBSE", "ICSE", "WB", null],
     },
+    gender: {
+      type: String,
+      default: null,
+      enum: ["male", "female", "other", null],
+    },
   },
   { timestamps: true },
 );

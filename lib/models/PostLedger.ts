@@ -5,7 +5,7 @@ import mongoose, { Schema, type Document, type Model, models } from "mongoose";
 export const POST_LEDGER_STATUSES = ["open", "assigned", "closed"] as const;
 export type PostLedgerStatus = (typeof POST_LEDGER_STATUSES)[number];
 
-export const PAYMENT_STATUSES = ["unpaid", "paid"] as const;
+export const PAYMENT_STATUSES = ["unpaid", "paid", "partial"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 // ─── Sub-documents ──────────────────────────────────────────────────────
@@ -64,13 +64,40 @@ export interface IPostLedger extends Document {
 
   postStatus: PostLedgerStatus;
 
+  // ─── Teacher fields ──────────────────────────────────────────────────────
   assignedTeacherId: string | null;
+  assignedTeacherUsername: string | null;
   assignedTeacherName: string | null;
   assignedTeacherPhone: string | null;
   assignedAt: Date | null;
 
   processedByAdminClerkId: string | null;
+  processedByAdminName: string | null;
 
+  assignedTeacherStatus: string | null;
+  source: string | null;
+
+  // ─── New Tuitions-sheet fields ────────────────────────────────────────────
+  /** Whether the post has been cancelled (Post.status === 'cancelled') */
+  cancelledOrNot: boolean;
+  /** Human-readable summary of student requirements (class / board / subjects) */
+  requirement: string | null;
+  /** Teacher's gender — resolved from Profile.gender at assignment time */
+  teacherGender: string | null;
+  /** Demo call scheduled date — from Application.dcDate on the approved application */
+  teacherDemoDate: Date | null;
+  /** Tuition start date — admin-entered after approval */
+  startingDate: Date | null;
+  /** Whether AOTF has paid the teacher */
+  teacherHasBeenPaid: boolean;
+  /** Date AOTF paid the teacher */
+  teacherPaymentDate: Date | null;
+  /** Whether an invoice has been generated for this post */
+  invoiceGenerated: boolean;
+  /** The invoice ID (string) for the latest invoice linked to this post */
+  invoiceId: string | null;
+
+  // ─── Guardian payment ─────────────────────────────────────────────────────
   paymentStatus: PaymentStatus;
   paymentDate: Date | null;
   paymentAmount: number | null;
@@ -108,12 +135,29 @@ const PostLedgerSchema = new Schema<IPostLedger>(
     },
 
     assignedTeacherId: { type: String, default: null, index: true },
+    assignedTeacherUsername: { type: String, default: null },
     assignedTeacherName: { type: String, default: null },
     assignedTeacherPhone: { type: String, default: null },
     assignedAt: { type: Date, default: null },
 
     processedByAdminClerkId: { type: String, default: null },
+    processedByAdminName: { type: String, default: null },
 
+    assignedTeacherStatus: { type: String, default: null },
+    source: { type: String, default: null },
+
+    // ─── New Tuitions-sheet fields ──────────────────────────────────────────
+    cancelledOrNot: { type: Boolean, default: false },
+    requirement: { type: String, default: null },
+    teacherGender: { type: String, default: null },
+    teacherDemoDate: { type: Date, default: null },
+    startingDate: { type: Date, default: null },
+    teacherHasBeenPaid: { type: Boolean, default: false },
+    teacherPaymentDate: { type: Date, default: null },
+    invoiceGenerated: { type: Boolean, default: false },
+    invoiceId: { type: String, default: null },
+
+    // ─── Guardian payment ────────────────────────────────────────────────────
     paymentStatus: {
       type: String,
       enum: PAYMENT_STATUSES,

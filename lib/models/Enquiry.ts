@@ -86,6 +86,29 @@ EnquirySchema.post("findOneAndDelete", function (doc) {
   void deleteCalendarEvent(enquiryEventKey(raw._id?.toString?.() ?? ""));
 });
 
+// ─── Google Sheets write-through hooks ───────────────────────────────────────
+
+EnquirySchema.post("save", function (doc) {
+  void import("@/lib/services/enquiryLedger.service").then(
+    ({ upsertEnquiryLedger }) =>
+      upsertEnquiryLedger(doc.enquiryId).catch((err) =>
+        console.error("[Enquiry hook] Sheet sync failed:", err),
+      ),
+  );
+});
+
+EnquirySchema.post("findOneAndUpdate", function (doc) {
+  if (!doc) return;
+  const raw = typeof doc.toObject === "function" ? doc.toObject() : (doc as unknown as Record<string, any>);
+  if (!raw.enquiryId) return;
+  void import("@/lib/services/enquiryLedger.service").then(
+    ({ upsertEnquiryLedger }) =>
+      upsertEnquiryLedger(raw.enquiryId as string).catch((err) =>
+        console.error("[Enquiry hook] Sheet sync failed:", err),
+      ),
+  );
+});
+
 const Enquiry: Model<IEnquiry> =
   models.Enquiry || mongoose.model<IEnquiry>("Enquiry", EnquirySchema);
 

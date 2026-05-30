@@ -99,6 +99,10 @@ export default function CandidateDetailPage({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Starting date (approved tuitions)
+  const [startingDate, setStartingDate] = useState<string>("");
+  const [isSavingStartingDate, setIsSavingStartingDate] = useState(false);
+
   // Fetch application data
   useEffect(() => {
     const fetchApplication = async () => {
@@ -146,6 +150,20 @@ export default function CandidateDetailPage({
           setPaymentStatus(invoice?.paymentStatus === "paid" ? "paid" : "unpaid");
         } else {
           setPaymentStatus("unpaid");
+        }
+
+        // Fetch ledger startingDate for approved tuitions
+        const ledgerRes = await fetch(
+          `/api/admin/tuitions/${postId}/ledger`,
+          { credentials: "include" }
+        );
+        if (ledgerRes.ok) {
+          const ledgerData = await ledgerRes.json();
+          if (ledgerData.startingDate) {
+            setStartingDate(
+              new Date(ledgerData.startingDate).toISOString().slice(0, 10)
+            );
+          }
         }
       } catch (err) {
         setFetchError(
@@ -325,6 +343,33 @@ export default function CandidateDetailPage({
 
   const handleUpdateStatus = async () => {
     await performStatusUpdate();
+  };
+
+  // Save starting date
+  const handleSaveStartingDate = async () => {
+    setIsSavingStartingDate(true);
+    try {
+      const res = await fetch(`/api/admin/tuitions/${postId}/starting-date`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startingDate: startingDate ? new Date(startingDate).toISOString() : null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save starting date");
+      }
+      addToast({ description: "Starting date saved!", color: "success" });
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error ? error.message : "Failed to save starting date",
+        color: "danger",
+      });
+    } finally {
+      setIsSavingStartingDate(false);
+    }
   };
 
   // Helper functions
@@ -790,6 +835,58 @@ export default function CandidateDetailPage({
               This application is in a terminal state (
               {getStatusLabel(application.status)}) and cannot be updated.
             </p>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Starting Date — shown only for approved applications */}
+      {application.status === "approved" && (
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Calendar size={20} />
+              Starting Date
+            </h2>
+          </CardHeader>
+          <Divider />
+          <CardBody className="gap-4">
+            <p className="text-sm text-default-500">
+              Set the date this tuition will begin. This will be synced to the
+              Tuitions sheet automatically.
+            </p>
+            <div className="flex items-end gap-3">
+              <Input
+                id="starting-date-input"
+                type="date"
+                label="Starting Date"
+                placeholder="Select starting date"
+                value={startingDate}
+                onChange={(e) => setStartingDate(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button
+                id="save-starting-date-btn"
+                color="primary"
+                onPress={handleSaveStartingDate}
+                isLoading={isSavingStartingDate}
+                isDisabled={!startingDate}
+              >
+                Save
+              </Button>
+              {startingDate && (
+                <Button
+                  variant="light"
+                  color="danger"
+                  onPress={() => {
+                    setStartingDate("");
+                    handleSaveStartingDate();
+                  }}
+                  isDisabled={isSavingStartingDate}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </CardBody>
         </Card>
       )}
