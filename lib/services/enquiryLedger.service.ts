@@ -90,50 +90,25 @@ export async function syncEnquiryLedgerRowToSheet(
     const rowValues = enquiryLedgerToSheetRowValues(ledger);
     const lastCol = "F";
 
-    const isAppend =
-      ledger.sheetRowIndex === null || ledger.sheetRowIndex === undefined;
+    // For Enquiries, the row index is always serialNumber + 1 (to preserve header at row 1).
+    // If serialNumber is somehow missing, fallback to sheetRowIndex, but this should be rare.
+    let rowIndex = ledger.sheetRowIndex;
+    if (ledger.serialNumber) {
+      rowIndex = ledger.serialNumber + 1;
+    }
 
-    if (isAppend) {
-      const appendResponse = await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: `${ENQUIRIES_TAB}!A:${lastCol}`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: [rowValues] },
-        insertDataOption: "INSERT_ROWS",
-      });
-
-      const updatedRange = appendResponse.data.updates?.updatedRange;
-      if (!updatedRange) {
-        console.error("[syncEnquiryLedgerRowToSheet] Missing updatedRange");
-        return;
-      }
-
-      const newRowIndex = parseRowNumberFromA1Range(updatedRange);
-      if (!newRowIndex) {
-        console.error(
-          "[syncEnquiryLedgerRowToSheet] Could not parse updatedRange:",
-          updatedRange,
-        );
-        return;
-      }
-
-      await EnquiryLedger.updateOne(
-        { enquiryId: ledger.enquiryId },
-        { $set: { sheetRowIndex: newRowIndex } },
-      ).exec();
-
+    if (!rowIndex) {
+      console.error("[syncEnquiryLedgerRowToSheet] No valid rowIndex available", ledger);
       return;
     }
 
-    const rowIndex = ledger.sheetRowIndex;
     const range = `${ENQUIRIES_TAB}!A${rowIndex}:${lastCol}${rowIndex}`;
 
-    await sheets.spreadsheets.values.batchUpdate({
+    await sheets.spreadsheets.values.update({
       spreadsheetId,
-      requestBody: {
-        valueInputOption: "USER_ENTERED",
-        data: [{ range, values: [rowValues] }],
-      },
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [rowValues] },
     });
   } catch (err) {
     console.error(
