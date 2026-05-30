@@ -5,29 +5,63 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 
-import { navConfig } from "@/config/site";
+import { navConfig, siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
 import FloatingButton from "@/components/FloatingButton";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
 import BottomNav from "@/components/reactbits/bottomNav";
 
-export const metadata: Metadata = {
-  title: {
-    default: navConfig.name,
-    template: `%s - ${navConfig.name}`,
-  },
-  description: navConfig.description,
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
-
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
   ],
+};
+export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.name,
+    template: siteConfig.seo.titleTemplate,
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.seo.keywords,
+  authors: [
+    {
+      name: siteConfig.seo.author,
+      url: siteConfig.url,
+    },
+  ],
+  creator: siteConfig.seo.author,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.url,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: siteConfig.seo.ogImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.name,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.seo.ogImage],
+    creator: siteConfig.seo.twitterHandle,
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: `${siteConfig.url}/site.webmanifest`,
 };
 
 export default function RootLayout({

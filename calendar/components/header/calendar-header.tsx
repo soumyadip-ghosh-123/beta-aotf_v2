@@ -97,62 +97,62 @@ export function CalendarHeader({ view, events }: IProps) {
             <UserSelect />
             <RefreshButton />
           </div>
-
-          <AddEventDialog>
-            <Button
-              isIconOnly
-              className="w-full sm:w-auto"
-              color="primary"
-              size="sm"
-            >
-              +
-            </Button>
-          </AddEventDialog>
         </div>
       </div>
 
       {/* ── Status legend ─────────────────────────────────────────────── */}
-      <Accordion variant="bordered">
-        <AccordionItem key="1" aria-label="Status Legend" title="Status Legend">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
-            <p className="col-span-2 text-[11px] font-semibold text-default-400 uppercase tracking-wide sm:hidden mb-0.5">
-              Legend
-            </p>
+      <div className="flex gap-4">
+        <Accordion isCompact variant="bordered" className="w-full">
+          <AccordionItem
+            key="1"
+            aria-label="Status Legend"
+            title="Status Legend"
+          >
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
+              <p className="col-span-2 text-[11px] font-semibold text-default-400 uppercase tracking-wide sm:hidden mb-0.5">
+                Legend
+              </p>
 
-            {/* Tuition */}
-            <Dot color="blue" label="📚 Applied" />
-            <Dot color="yellow" label="📚 Demo Confirmation" />
-            <Dot color="orange" label="📚 Guardian Confirmed" />
-            <Dot color="green" label="📚 Completed" />
+              {/* Tuition */}
+              <Dot color="blue" label="📚 Applied" />
+              <Dot color="yellow" label="📚 Demo Confirmation" />
+              <Dot color="orange" label="📚 Guardian Confirmed" />
+              <Dot color="green" label="📚 Completed" />
 
-            {/* Divider for sm+ */}
-            <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              {/* Divider for sm+ */}
+              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
 
-            {/* Enquiry */}
-            <Dot color="orange" label="📋 Pending" />
-            <Dot color="green" label="📋 Resolved" />
+              {/* Enquiry */}
+              <Dot color="orange" label="📋 Pending" />
+              <Dot color="green" label="📋 Resolved" />
 
-            <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
 
-            {/* Job */}
-            <Dot color="orange" label="💼 Job Pending" />
-            <Dot color="blue" label="💼 Sent to Company" />
+              {/* Job */}
+              <Dot color="orange" label="💼 Job Pending" />
+              <Dot color="blue" label="💼 Sent to Company" />
 
-            <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
 
-            {/* Feedback */}
-            <Dot color="red" label="💬 Needs Review" />
-            <Dot color="yellow" label="💬 Under Review" />
-            <Dot color="green" label="💬 Resolved" />
+              {/* Feedback */}
+              <Dot color="red" label="💬 Needs Review" />
+              <Dot color="yellow" label="💬 Under Review" />
+              <Dot color="green" label="💬 Resolved" />
 
-            <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
 
-            {/* Misc */}
-            <Dot color="gray" label="Closed / Done" />
-            <Dot color="red" label="Declined" />
-          </div>
-        </AccordionItem>
-      </Accordion>
+              {/* Misc */}
+              <Dot color="gray" label="Closed / Done" />
+              <Dot color="red" label="Declined" />
+            </div>
+          </AccordionItem>
+        </Accordion>
+        <AddEventDialog>
+          <Button isIconOnly className="sm:w-auto" color="primary" size="md">
+            +
+          </Button>
+        </AddEventDialog>
+      </div>
     </div>
   );
 }

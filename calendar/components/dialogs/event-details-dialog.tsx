@@ -200,7 +200,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
                         f.key ? (
                           <div key={i} className="flex gap-1 text-sm flex-wrap">
                             <span className="font-medium text-default-600 shrink-0">{f.key}:</span>
-                            <span className="text-default-800 break-words">{f.value}</span>
+                            <span className="text-default-800 wrap-break-word">{f.value}</span>
                           </div>
                         ) : (
                           <p key={i} className="text-sm text-default-600">{f.value}</p>

@@ -3,187 +3,170 @@ import { Timeline } from "./ui/timeline";
 export function TimelineDemo() {
   const data = [
     {
-      title: "One to One Guidance",
+      title: "One-to-One Tutoring",
       content: (
         <div>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            Built and launched Aceternity UI and Aceternity UI Pro from scratch
+            Personalized 1:1 tutoring that matches students with verified
+            educators for subject-focused learning, exam preparation, and
+            steady progress tracking.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <img
-              src="https://assets.aceternity.com/templates/startup-1.webp"
-              alt="startup template"
+              src="./connect.png"
+              alt="connect"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
             <img
-              src="https://assets.aceternity.com/templates/startup-2.webp"
-              alt="startup template"
+              src="./our_services.png"
+              alt="services"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
           </div>
         </div>
       ),
     },
     {
-      title: "Batch & Coaching center",
+      title: "Batch Tuition & Coaching",
       content: (
         <div>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            I usually run out of copy, but when I see content this big, I try to
-            integrate lorem ipsum.
+            Structured batch classes and coaching — online or in-person — with
+            curriculum-aligned lessons, practice material, and performance
+            insights.
           </p>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            Lorem ipsum is for people who are too lazy to write copy. But we are
-            not. Here are some more example of beautiful designs I built.
+            Flexible schedules and group learning help students build depth
+            while keeping costs accessible.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <img
-              src="https://assets.aceternity.com/pro/bento-grids.png"
-              alt="bento template"
+              src="./our_services.png"
+              alt="batch"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
             <img
-              src="https://assets.aceternity.com/cards.png"
-              alt="cards template"
+              src="./connect.png"
+              alt="batch-2"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
           </div>
         </div>
       ),
     },
     {
-      title: "Doorstep service",
+      title: "Home Tutoring (Doorstep Service)",
       content: (
         <div>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            Deployed 5 new components on Aceternity today
+            Qualified tutors who travel to students' homes, offering safe,
+            background-verified, and flexible instruction tailored to each
+            learner's needs.
           </p>
           <div className="mb-8">
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Card grid component
+              ✅ Verified tutors with background checks
             </div>
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Startup template Aceternity
+              ✅ Flexible timing and one-off sessions available
             </div>
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Random file upload lol
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Himesh Reshammiya Music CD
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Salman Bhai Fan Club registrations open
+              ✅ Progress reports and parent communication
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-
             <img
-              src="https://assets.aceternity.com/pro/bento-grids.png"
-              alt="bento template"
+              src="./connect.png"
+              alt="doorstep"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
             <img
-              src="https://assets.aceternity.com/cards.png"
-              alt="cards template"
+              src="./our_services.png"
+              alt="doorstep-2"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
           </div>
         </div>
       ),
     },
     {
-      title: "Ranging accross Every Class, Subjects & Boards",
+      title: "Coverage Across Classes, Subjects & Boards",
       content: (
         <div>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            Deployed 5 new components on Aceternity today
+            Courses and tutors across grades, subjects, and examination boards
+            — from foundational early learning to competitive exam
+            preparation.
           </p>
           <div className="mb-8">
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Card grid component
+              ✅ CBSE, ICSE, State boards, and competitive syllabuses
             </div>
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Startup template Aceternity
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Random file upload lol
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Himesh Reshammiya Music CD
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Salman Bhai Fan Club registrations open
+              ✅ Curriculum-mapped lesson plans and assessments
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <img
-              src="https://assets.aceternity.com/pro/hero-sections.png"
-              alt="hero template"
+              src="./our_services.png"
+              alt="coverage"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
             <img
-              src="https://assets.aceternity.com/cards.png"
-              alt="cards template"
+              src="./connect.png"
+              alt="coverage-2"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
           </div>
         </div>
       ),
     },
     {
-      title: "Extra Curricular Activities",
+      title: "Extracurricular & Skill Development",
       content: (
         <div>
           <p className="mb-4 text-md font-normal text-neutral-800 md:text-sm dark:text-neutral-200">
-            Deployed 5 new components on Aceternity today
+            Clubs, hobby classes, and vocational upskilling — from arts and
+            sports to coding and soft skills — to build well-rounded students.
           </p>
           <div className="mb-8">
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Card grid component
+              ✅ Hobby classes and clubs
             </div>
             <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Startup template Aceternity
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Random file upload lol
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Himesh Reshammiya Music CD
-            </div>
-            <div className="flex items-center gap-2 text-xs text-neutral-700 md:text-sm dark:text-neutral-300">
-              ✅ Salman Bhai Fan Club registrations open
+              ✅ Practical skill-building workshops
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <img
-              src="https://assets.aceternity.com/pro/hero-sections.png"
-              alt="hero template"
+              src="./our_services.png"
+              alt="extracurricular"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
             <img
-              src="https://assets.aceternity.com/features-section.png"
-              alt="feature template"
+              src="./connect.png"
+              alt="extracurricular-2"
               width={500}
               height={500}
-              className="h-20 w-full rounded-lg object-cover shadow-[0_0_24px_rgba(34,_42,_53,_0.06),_0_1px_1px_rgba(0,_0,_0,_0.05),_0_0_0_1px_rgba(34,_42,_53,_0.04),_0_0_4px_rgba(34,_42,_53,_0.08),_0_16px_68px_rgba(47,_48,_55,_0.05),_0_1px_0_rgba(255,_255,_255,_0.1)_inset] md:h-44 lg:h-60"
+              className="h-20 w-full rounded-lg object-cover md:h-44 lg:h-60"
             />
           </div>
         </div>

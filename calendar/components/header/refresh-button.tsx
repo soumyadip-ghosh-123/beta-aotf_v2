@@ -17,7 +17,7 @@ export function RefreshButton() {
     <Button
       isIconOnly
       variant="flat"
-      size="sm"
+      size="md"
       isLoading={isRefreshing}
       onPress={() => void handleRefresh()}
       aria-label="Refresh calendar"

@@ -3,10 +3,11 @@ import OurServices from "@/components/OurServices";
 import Testimonials from "@/components/Testimonials";
 import ImageSlider from "@/components/ImageSlider";
 import HeroDescription from "@/components/HeroDescription";
-import Counter from "@/components/counter";
+import Counter from "@/components/Counter";
 import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
 import Footer from "@/components/Footer";
 import LeadershipCard from "@/components/home/LeadershipCard";
+import { Card } from "@heroui/card";
 
 export default function Home() {
   return (
@@ -17,7 +18,7 @@ export default function Home() {
         <ImageSlider
           slides={[
             {
-              src: "./image1.png",
+              src: "https://res.cloudinary.com/dzko1daqg/image/upload/v1780142208/img1_wiaiwl.jpg",
               title: "Find a Tutor",
               // description in 5 -6 words
               description: "Discover personalized learning with trusted tutors",
@@ -25,7 +26,7 @@ export default function Home() {
               link: "/posts",
             },
             {
-              src: "./scatch_image.png",
+              src: "https://res.cloudinary.com/dzko1daqg/image/upload/v1780142208/img2_lxwpcc.jpg",
               title: "Hire a Freelancer",
               description:
                 "Connect with verified freelancers for your projects",
@@ -33,7 +34,7 @@ export default function Home() {
               link: "/jobs",
             },
             {
-              src: "https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/gallery/slide3.png",
+              src: "https://res.cloudinary.com/dzko1daqg/image/upload/v1780142208/img3_hsphm0.jpg",
               title: "Join as Educator",
               description: "Share your knowledge and earn by teaching students",
               buttonText: "Join Now",
@@ -50,20 +51,24 @@ export default function Home() {
           <Counter label="Freelancers" start={842} />
           <Counter label="Success Rate" start={89} suffix="%" float />
         </div>
-        <div className="grid grid-cols-1 gap-6 ">
+        <Card
+          isBlurred
+          className="grid grid-cols-1 gap-3 p-2 border-none bg-background/60 dark:bg-default-100/50 max-w-152.5 mt-10"
+          shadow="sm"
+        >
           <LeadershipCard
-            name="John Doe"
-            role="CEO"
-            image="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlciUyMHByb2ZpbGV8ZW58MHx8MHx8fDA%3D"
+            name="Tutu Rani Ghosh"
+            role="Founder"
+            image="./founder.jpeg"
             quote="Vision drives everything."
           />
           <LeadershipCard
-            name="John Doe"
+            name="Soumyadip Ghosh"
             role="CEO"
-            image="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlciUyMHByb2ZpbGV8ZW58MHx8MHx8fDA%3D"
-            quote="Vision drives everything."
+            image="./ceo.jpeg"
+            quote="Execution is key to success."
           />
-        </div>
+        </Card>
         <OurServices />
         <ReknownedSection />
         <TimelineDemo />

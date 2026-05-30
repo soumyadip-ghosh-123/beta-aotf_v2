@@ -377,7 +377,7 @@ export default function SuperAdminDashboard({ data }: { data: SuperAdminPayload 
           ) : (
             recentAuditLog.map((log) => (
               <div key={log._id} className="flex items-center gap-3 py-2 border-b border-zinc-50 dark:border-zinc-800 last:border-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-0.5" />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-zinc-700 dark:text-zinc-300">
                     <span className="font-medium">{log.adminUsername}</span>
@@ -388,7 +388,7 @@ export default function SuperAdminDashboard({ data }: { data: SuperAdminPayload 
                     )}
                   </p>
                 </div>
-                <span className="text-[10px] text-zinc-400 flex-shrink-0 flex items-center gap-1">
+                <span className="text-[10px] text-zinc-400 shrink-0 flex items-center gap-1">
                   <Clock size={10} /> {relativeTime(log.createdAt)}
                 </span>
               </div>

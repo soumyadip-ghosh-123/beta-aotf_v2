@@ -14,7 +14,7 @@ const HeroSection = () => {
                 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAhR3UaYA40G_N-S9223pOZODWEAzNXVKNxz9TMC-p4AsPQZBQWJogU7zdStOe1CQ8hBA7UlNKCpJ9GusVuzJ8KOf8zZfLuXyJDKwL5gmrpLaCNsVbaeWmsi6ix1uGGbnrkh55uA2O9uLj13cox3gKYsX8quGzhg4P2bwXu28hDlzjquC9MnrwNFUEtearqP86cs2vPpt80wuRdwDtjfa29h8O6so32t1sX26PoYUz2wqp79ESF1Einy4E5FKn3lApb5qYsg6WOXWc")',
             }}
           ></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-slate-900/90 via-slate-900/40 to-transparent"></div>
         </div>
         <div className="relative z-10 flex flex-col items-start gap-4 p-6 pt-24">
           <span className="inline-flex items-center rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-medium text-blue-200 ring-1 ring-inset ring-blue-400/20 backdrop-blur-sm">

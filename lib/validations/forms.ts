@@ -216,10 +216,6 @@ export const sourceLists = [
   { key: "sulekha", label: "Sulekha" },
   { key: "urban_pro", label: "Urban Pro" },
   { key: "facebook", label: "Facebook" },
-  { key: "instagram", label: "Instagram" },
-  { key: "twitter", label: "Twitter" },
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "google", label: "Google" },
   { key: "referral", label: "Referral" },
   { key: "other", label: "Other" },
 ] as const;
@@ -449,7 +445,7 @@ export function yearOptions(count = 5): { key: string; label: string }[] {
 export const tuitionNotesSuggestions = [
   "Only Female Teacher Required",
   "Only Male Teacher Required",
-  "Must Speak English",
+  "English Communication Required",
   "Aged & Experienced teacher required",
   "English and Hindi communication required",
 ] as const;
@@ -573,6 +569,3 @@ export const adListFilterConfigs = [
   adPlacementFilterConfig,
   ...dateFilterConfigs,
 ] as const;
-
-
-

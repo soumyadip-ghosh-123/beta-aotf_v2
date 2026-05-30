@@ -17,41 +17,41 @@ const fallbackCards: ReviewCard[] = [
   {
     id: "fallback-1",
     image:
-      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200",
-    name: "Briar Martin",
-    handle: "@neilstellar",
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
+    name: "Anjali Rao",
+    handle: "@anjalirao",
     message:
-      "Radiant made undercutting all of our competitors an absolute breeze.",
+      "My son's Maths scores jumped from 58% to 82% in three months. The tutor prepared focused practice tests and communicated progress clearly — very grateful.",
     rating: 5,
   },
   {
     id: "fallback-2",
     image:
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200",
-    name: "Avery Johnson",
-    handle: "@averywrites",
+      "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200",
+    name: "Rohit Gupta",
+    handle: "@rohitgupta",
     message:
-      "Radiant made undercutting all of our competitors an absolute breeze.",
+      "Hired a freelancer through AOTF for a digital poster and the work was delivered before deadline. Good communication and professional quality.",
     rating: 5,
   },
   {
     id: "fallback-3",
     image:
       "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60",
-    name: "Jordan Lee",
-    handle: "@jordantalks",
+    name: "Meera Iyer",
+    handle: "@meera_iyer",
     message:
-      "Radiant made undercutting all of our competitors an absolute breeze.",
+      "The batch class my daughter joined made a real difference — structured lessons, regular tests and helpful doubt sessions. Great value for money.",
     rating: 5,
   },
   {
     id: "fallback-4",
     image:
       "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60",
-    name: "Avery Johnson",
-    handle: "@averywrites",
+    name: "Siddharth Menon",
+    handle: "@sidmenon",
     message:
-      "Radiant made undercutting all of our competitors an absolute breeze.",
+      "Booked a home-tutoring session for my niece. The tutor was punctual, patient and tailored the lesson to her pace. We'll continue with weekly sessions.",
     rating: 5,
   },
 ];
