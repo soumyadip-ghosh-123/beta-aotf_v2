@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "motion/react";
 import {
   LayoutDashboard,
@@ -21,7 +21,11 @@ import {
   X,
   ChevronRight,
   CreditCard,
+  LogOut,
+  User,
 } from "lucide-react";
+import { Avatar } from "@heroui/avatar";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import type { AdminPermissionKey } from "@/lib/admin/admin-permissions";
 
 // ─── Nav items ─────────────────────────────────────────────────────────────
@@ -79,6 +83,7 @@ export default function AdminSidebar() {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
 
   // Resolve permissions from Clerk publicMetadata
   const permissions = (user?.publicMetadata?.permissions ?? {}) as Record<string, boolean>;
@@ -209,10 +214,32 @@ export default function AdminSidebar() {
             )}
 
             {/* Footer */}
-            <div className="px-5 py-4 border-t border-zinc-200 dark:border-zinc-700">
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                AOTF Admin · v2
-              </p>
+            <div className="p-3 border-t border-zinc-200 dark:border-zinc-700">
+              {isLoaded && user ? (
+                <Dropdown placement="top-start">
+                  <DropdownTrigger>
+                    <div className="flex items-center gap-3 cursor-pointer p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                      <Avatar src={user.imageUrl} name={user.fullName || "Admin"} className="w-8 h-8 text-tiny" />
+                      <div className="flex flex-col flex-1 overflow-hidden">
+                        <span className="text-sm font-medium truncate text-zinc-800 dark:text-zinc-100">{user.fullName || "Admin"}</span>
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{user.primaryEmailAddress?.emailAddress}</span>
+                      </div>
+                    </div>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Admin Profile Actions" className="w-full">
+                    <DropdownItem key="profile" startContent={<User size={16} />} href="/admin/profile">
+                      My Profile
+                    </DropdownItem>
+                    <DropdownItem key="logout" className="text-danger" color="danger" startContent={<LogOut size={16} />} onPress={() => signOut({ redirectUrl: '/admin/login' })}>
+                      Sign Out
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              ) : (
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center py-2">
+                  AOTF Admin · v2
+                </p>
+              )}
             </div>
           </motion.div>
         )}

@@ -9,6 +9,7 @@ import {
   ExperienceField,
   QualificationField,
   BoardField,
+  GenderField,
   PlanSelection,
   PaymentStep,
   PLANS,
@@ -59,6 +60,7 @@ export default function Onboarding() {
     jobExp: "",
     qualification: "",
     board: "",
+    gender: "",
     plan: "",
   });
 
@@ -111,6 +113,7 @@ export default function Onboarding() {
                 jobExp: d.jobExp ?? prev.jobExp,
                 qualification: d.qualification ?? prev.qualification,
                 board: d.board ?? prev.board,
+                gender: d.gender ?? prev.gender,
                 plan: (d.plan as PlanValue) ?? prev.plan,
               };
             });
@@ -201,6 +204,7 @@ export default function Onboarding() {
       "jobExp",
       "qualification",
       "board",
+      "gender",
     ];
     if (step1Fields.includes(key)) {
       setProfileSaved(false);
@@ -241,6 +245,7 @@ export default function Onboarding() {
           ...(formData.jobExp ? { jobExp: formData.jobExp } : {}),
           qualification: formData.qualification,
           board: formData.board,
+          gender: formData.gender,
         }),
       });
 
@@ -295,6 +300,7 @@ export default function Onboarding() {
           ...(formData.jobExp ? { jobExp: formData.jobExp } : {}),
           qualification: formData.qualification,
           board: formData.board,
+          gender: formData.gender,
           ...(planValue ? { plan: planValue } : {}),
         }),
       });
@@ -348,6 +354,7 @@ export default function Onboarding() {
         jobExp: formData.jobExp || undefined,
         qualification: formData.qualification,
         board: formData.board,
+        gender: formData.gender,
       });
       return result.success;
     }
@@ -627,6 +634,11 @@ export default function Onboarding() {
                   <BoardField
                     value={formData.board}
                     onChange={(v) => handleChange("board", v)}
+                  />
+                  
+                  <GenderField
+                    value={formData.gender}
+                    onChange={(v) => handleChange("gender", v)}
                   />
                 </div>
               </Step>

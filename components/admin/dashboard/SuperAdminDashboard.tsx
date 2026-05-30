@@ -265,7 +265,7 @@ export default function SuperAdminDashboard({ data }: { data: SuperAdminPayload 
         <StatCard
           icon={IndianRupee}
           label="Total Revenue"
-          value={fmtCurrency(stats.revenue)}
+          value={fmtCurrency(stats.revenue / 100)}
           accent="bg-emerald-500"
           href="/admin/payments"
         />
@@ -338,7 +338,7 @@ export default function SuperAdminDashboard({ data }: { data: SuperAdminPayload 
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{fmtCurrency(p.amount)}</p>
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{fmtCurrency(p.amount / 100)}</p>
                     <StatusBadge status={p.status} />
                   </div>
                 </div>

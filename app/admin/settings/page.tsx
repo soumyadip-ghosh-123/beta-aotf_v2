@@ -82,6 +82,7 @@ interface AdminAccount {
   createdAt: string;
   lastLogin?: string;
   permissions?: Record<string, boolean>;
+  avatarUrl?: string;
 }
 
 type SettingsTab = "accounts" | "notifications" | "terms";
@@ -306,6 +307,7 @@ function AdminAccountsSection() {
               typeof row.permissions === "object" && row.permissions !== null
                 ? (row.permissions as Record<string, boolean>)
                 : undefined,
+            avatarUrl: typeof row.avatarUrl === "string" ? row.avatarUrl : undefined,
           })),
         );
       } catch (e) {
@@ -500,6 +502,7 @@ function AdminAccountsSection() {
         role: normalizeAdminRole(json?.admin?.role ?? newAdmin.role),
         status: json?.admin?.isActive === false ? "inactive" : "active",
         createdAt: String(json?.admin?.createdAt ?? new Date().toISOString()),
+        avatarUrl: typeof json?.admin?.avatarUrl === "string" ? json.admin.avatarUrl : undefined,
       };
 
       setAdmins((prev) => [createdAdmin, ...prev]);
@@ -1097,6 +1100,7 @@ function AdminAccountsSection() {
                 <CardBody className="gap-1">
                   <div className="flex items-center gap-3">
                     <Avatar
+                      src={deleteTarget.avatarUrl}
                       name={getInitials(deleteTarget.name)}
                       size="sm"
                       classNames={{
@@ -1172,6 +1176,7 @@ function AdminAccountsSection() {
             {pwdTarget && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-default-50">
                 <Avatar
+                  src={pwdTarget.avatarUrl}
                   name={getInitials(pwdTarget.name)}
                   size="sm"
                   classNames={{
@@ -1305,6 +1310,7 @@ function AdminAccountsSection() {
             {permTarget ? (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-default-50">
                 <Avatar
+                  src={permTarget.avatarUrl}
                   name={getInitials(permTarget.name)}
                   size="sm"
                   classNames={{
@@ -1383,6 +1389,7 @@ function AdminCard({
       <CardHeader className="pb-1">
         <div className="flex items-center gap-3 w-full">
           <Avatar
+            src={admin.avatarUrl}
             name={getInitials(admin.name)}
             size="md"
             classNames={{

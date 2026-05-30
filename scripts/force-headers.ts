@@ -16,6 +16,7 @@ async function run() {
   const sheets = await getGoogleSheetsClient();
 
   const { ENQUIRIES_TAB, ENQUIRIES_HEADERS } = await import("../lib/services/enquiryLedger.service.js");
+  const { TUITIONS_TAB, TUITIONS_HEADERS } = await import("../lib/services/postLedger.service.js");
 
   // Write Enquiries headers
   await sheets.spreadsheets.values.update({
@@ -25,6 +26,15 @@ async function run() {
     requestBody: { values: [ENQUIRIES_HEADERS] },
   });
   console.log("Enquiries headers written.");
+
+  // Write Tuitions headers
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${TUITIONS_TAB}!A1`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [TUITIONS_HEADERS] },
+  });
+  console.log("Tuitions headers written.");
 }
 
 run().catch(console.error);

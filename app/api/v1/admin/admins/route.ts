@@ -180,6 +180,30 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Fetch avatars from Clerk
+    if (result.admins && result.admins.length > 0) {
+      try {
+        const client = await clerkClient();
+        const clerkIds = result.admins.map((a: any) => a.clerkId).filter(Boolean);
+        if (clerkIds.length > 0) {
+          const clerkUsers = await client.users.getUserList({
+            userId: clerkIds,
+            limit: 100, // Safe limit for typical admin lists
+          });
+          const avatarMap = new Map<string, string>();
+          clerkUsers.data.forEach((u) => {
+            avatarMap.set(u.id, u.imageUrl);
+          });
+          result.admins = result.admins.map((a: any) => ({
+            ...a,
+            avatarUrl: a.clerkId ? avatarMap.get(a.clerkId) : undefined,
+          }));
+        }
+      } catch (err) {
+        console.warn("[GET /api/v1/admin/admins] Error fetching avatars:", err);
+      }
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("[GET /api/v1/admin/admins] Error:", error);
