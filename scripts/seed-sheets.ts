@@ -5,9 +5,8 @@
  * (Tuitions, Admins, Enquiries) from existing MongoDB data.
  *
  * Usage:
- *   npx tsx scripts/seed-sheets.ts                  ← all 3 tabs
+ *   npx tsx scripts/seed-sheets.ts                  ← all tabs
  *   npx tsx scripts/seed-sheets.ts --tab tuitions   ← only Tuitions
- *   npx tsx scripts/seed-sheets.ts --tab admins     ← only Admins
  *   npx tsx scripts/seed-sheets.ts --tab enquiries  ← only Enquiries
  *
  * Prerequisites: MONGODB_URI must be set in .env.local
@@ -31,7 +30,6 @@ const tabArgIdx = process.argv.indexOf("--tab");
 const tabArg = tabArgIdx !== -1 ? process.argv[tabArgIdx + 1] : "all";
 
 const seedTuitions = tabArg === "all" || tabArg === "tuitions";
-const seedAdmins   = tabArg === "all" || tabArg === "admins";
 const seedEnquiries = tabArg === "all" || tabArg === "enquiries";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -74,34 +72,6 @@ async function seedTuitionsTab() {
   }
 
   console.log(`\n  ✅ Tuitions: ${ok} seeded, ${failed} failed`);
-}
-
-async function seedAdminsTab() {
-  console.log("\n👤 Seeding Admins tab...");
-
-  const { default: Admin } = await import("../lib/models/Admin.js");
-  const { upsertAdminLedger } = await import("../lib/services/adminLedger.service.js");
-
-  const admins = await Admin.find({}).select("clerkId").lean<{ clerkId: string }[]>();
-  console.log(`  Found ${admins.length} admins`);
-
-  let ok = 0;
-  let failed = 0;
-
-  for (let i = 0; i < admins.length; i++) {
-    const { clerkId } = admins[i];
-    progress("Admins", i + 1, admins.length);
-    try {
-      await upsertAdminLedger(clerkId);
-      ok++;
-    } catch (err) {
-      console.error(`\n  ❌ Failed for clerkId=${clerkId}:`, err);
-      failed++;
-    }
-    await sleep(1100);
-  }
-
-  console.log(`\n  ✅ Admins: ${ok} seeded, ${failed} failed`);
 }
 
 async function seedEnquiriesTab() {
@@ -154,7 +124,6 @@ async function main() {
   console.log("   ✅ Connected");
 
   if (seedTuitions) await seedTuitionsTab();
-  if (seedAdmins)   await seedAdminsTab();
   if (seedEnquiries) await seedEnquiriesTab();
 
   console.log("\n🎉 Seeding complete!\n");
