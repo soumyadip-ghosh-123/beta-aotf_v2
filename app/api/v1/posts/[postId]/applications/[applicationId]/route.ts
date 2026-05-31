@@ -13,6 +13,7 @@ import {
   updateApplicationStatus,
   deleteApplicationsByIds,
 } from "@/lib/services/application.service";
+import { getPostByPostId, updatePost } from "@/lib/services/post.service";
 import { upsertPostLedger } from "@/lib/services/postLedger.service";
 import { logActivity } from "@/lib/admin/logActivity";
 import { createRateLimiter } from "@/lib/rate-limit";
@@ -168,6 +169,33 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Trigger the ledger & sheet sync immediately upon application status change
     await upsertPostLedger(resolvedParams.postId);
+
+    // If an application was APPROVED and is now changed to a non-approved status,
+    // ensure the parent post is reopened if it was closed.
+    try {
+      if (existingApplication.status === "approved" && updatedApplication.status !== "approved") {
+        const post = await getPostByPostId(resolvedParams.postId).catch(() => null);
+        if (post && (post.status === "closed")) {
+          try {
+            await updatePost(resolvedParams.postId, { status: "open", updatedByAdminClerkId: clerkId });
+            await logActivity({
+              admin: adminUser as any,
+              action: "REOPEN_POST_ON_APPLICATION_UNAPPROVE",
+              module: "CRM",
+              targetType: "Post",
+              targetId: (post as any)._id as any,
+              targetRefId: resolvedParams.postId,
+              metadata: { reason: "Approved application changed to non-approved" },
+            });
+          } catch (err) {
+            console.warn("Failed to reopen post after application status change:", err);
+          }
+        }
+      }
+    } catch (err) {
+      // Swallow errors here to avoid blocking the main response
+      console.warn("Error checking/reopening post after application update:", err);
+    }
 
     await logActivity({
       admin: adminUser as any, // Cast to any to bypass strict type since we have _id and role

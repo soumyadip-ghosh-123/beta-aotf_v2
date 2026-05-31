@@ -143,7 +143,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-300 ">
+    <Card id={`tuition-post-${post.id}`} className="w-full max-w-md hover:shadow-lg transition-shadow duration-300 ">
       <CardHeader className="flex flex-col gap-3 pb-3">
         <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1 flex-1">

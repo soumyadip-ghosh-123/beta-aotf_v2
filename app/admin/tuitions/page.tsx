@@ -858,6 +858,27 @@ const Page = () => {
     day: selectedDay,
   };
 
+  // If user navigated back from a post view, scroll that post into view.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id = window.sessionStorage.getItem("admin_tuitions_last_view");
+    if (!id) return;
+
+    const t = setTimeout(() => {
+      const el = document.getElementById(`tuition-post-${id}`);
+      if (el) {
+        try {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        } catch {
+          el.scrollIntoView();
+        }
+        window.sessionStorage.removeItem("admin_tuitions_last_view");
+      }
+    }, 50);
+
+    return () => clearTimeout(t);
+  }, [posts, filteredPosts, isLoading]);
+
   const handleFilterChange = (key: string, value: string) => {
     if (key === "status") setFilterStatus(value);
     else if (key === "year") setSelectedYear(value);
@@ -919,7 +940,15 @@ const Page = () => {
   };
 
   const handleView = (post: TuitionPost) =>
-    router.push(`/admin/tuitions/${post.id}`);
+    ((): void => {
+      try {
+        if (typeof window !== "undefined")
+          window.sessionStorage.setItem("admin_tuitions_last_view", post.id);
+      } catch {
+        /* ignore */
+      }
+      router.push(`/admin/tuitions/${post.id}`);
+    })();
   const handleEdit = (post: TuitionPost) =>
     router.push(`/admin/tuitions/${post.id}/edit`);
 
