@@ -1,11 +1,24 @@
-import { useMemo } from "react";
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  endOfMonth,
+  format,
+  isSameDay,
+  parseISO,
+  startOfMonth,
+} from "date-fns";
 import { CalendarX2 } from "lucide-react";
-import { parseISO, format, endOfDay, startOfDay, isSameMonth } from "date-fns";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
-
+import { AgendaEventCard } from "@/calendar/components/agenda-view/agenda-event-card";
 import { ScrollArea } from "@/components/ui/(calender)/scroll-area";
-import { AgendaDayGroup } from "@/calendar/components/agenda-view/agenda-day-group";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/(calender)/accordion";
 
 import type { IEvent } from "@/calendar/interfaces";
 
@@ -14,63 +27,253 @@ interface IProps {
   multiDayEvents: IEvent[];
 }
 
+type DayFetchState = {
+  events: IEvent[];
+  loading: boolean;
+  error: string | null;
+  loaded: boolean;
+};
+
+function splitEventsForDay(events: IEvent[], day: Date) {
+  const singleDayEvents: IEvent[] = [];
+  const multiDayEvents: IEvent[] = [];
+
+  for (const event of events) {
+    const startDate = parseISO(event.startDate);
+    const endDate = parseISO(event.endDate);
+
+    if (isSameDay(startDate, endDate)) {
+      singleDayEvents.push(event);
+      continue;
+    }
+
+    if (day >= startOfDay(startDate) && day <= endOfDay(endDate)) {
+      multiDayEvents.push(event);
+    }
+  }
+
+  return { singleDayEvents, multiDayEvents };
+}
+
+function startOfDay(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function endOfDay(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
 export function CalendarAgendaView({ singleDayEvents, multiDayEvents }: IProps) {
-  const { selectedDate } = useCalendar();
+  const { selectedDate, selectedUserId } = useCalendar();
+  const monthStart = useMemo(() => startOfMonth(selectedDate), [selectedDate]);
+  const monthEnd = useMemo(() => endOfMonth(selectedDate), [selectedDate]);
 
-  const eventsByDay = useMemo(() => {
-    const allDates = new Map<string, { date: Date; events: IEvent[]; multiDayEvents: IEvent[] }>();
+  const eventDays = useMemo(() => {
+    const dayMap = new Map<string, Date>();
 
-    singleDayEvents.forEach(event => {
-      const eventDate = parseISO(event.startDate);
-      if (!isSameMonth(eventDate, selectedDate)) return;
+    const registerDate = (date: Date) => {
+      if (date < monthStart || date > monthEnd) return;
+      const key = format(date, "yyyy-MM-dd");
+      if (!dayMap.has(key)) dayMap.set(key, startOfDay(date));
+    };
 
-      const dateKey = format(eventDate, "yyyy-MM-dd");
+    for (const event of singleDayEvents) {
+      registerDate(parseISO(event.startDate));
+    }
 
-      if (!allDates.has(dateKey)) {
-        allDates.set(dateKey, { date: startOfDay(eventDate), events: [], multiDayEvents: [] });
+    for (const event of multiDayEvents) {
+      const startDate = startOfDay(parseISO(event.startDate));
+      const endDate = endOfDay(parseISO(event.endDate));
+
+      let cursor = new Date(startDate);
+      while (cursor <= endDate) {
+        registerDate(new Date(cursor));
+        cursor = new Date(cursor.setDate(cursor.getDate() + 1));
+      }
+    }
+
+    return Array.from(dayMap.values()).sort((a, b) => b.getTime() - a.getTime());
+  }, [monthStart, monthEnd, multiDayEvents, singleDayEvents]);
+
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [dayCache, setDayCache] = useState<Record<string, DayFetchState>>({});
+
+  useEffect(() => {
+    setOpenKeys([]);
+    setDayCache({});
+  }, [monthStart.getTime(), selectedUserId]);
+
+  useEffect(() => {
+    if (eventDays.length === 0) return;
+
+    setOpenKeys((current) => {
+      if (current.length > 0) return current;
+      return [format(eventDays[0], "yyyy-MM-dd")];
+    });
+  }, [eventDays]);
+
+  const fetchDayEvents = useCallback(async (date: Date) => {
+    const key = format(date, "yyyy-MM-dd");
+    setDayCache((prev) => ({
+      ...prev,
+      [key]: {
+        events: prev[key]?.events ?? [],
+        loading: true,
+        error: null,
+        loaded: prev[key]?.loaded ?? false,
+      },
+    }));
+
+    try {
+      const params = new URLSearchParams({ date: key });
+      const res = await fetch(`/api/admin/calendar-events?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to load events for ${key}`);
       }
 
-      allDates.get(dateKey)?.events.push(event);
+      const data = await res.json();
+      const fetchedEvents: IEvent[] = (data.events ?? []).filter((event: IEvent) => {
+        if (selectedUserId === "all") return true;
+        return event.user.id === selectedUserId;
+      });
+
+      setDayCache((prev) => ({
+        ...prev,
+        [key]: {
+          events: fetchedEvents,
+          loading: false,
+          error: null,
+          loaded: true,
+        },
+      }));
+    } catch (error) {
+      setDayCache((prev) => ({
+        ...prev,
+        [key]: {
+          events: prev[key]?.events ?? [],
+          loading: false,
+          error: error instanceof Error ? error.message : "Failed to load events",
+          loaded: false,
+        },
+      }));
+    }
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    openKeys.forEach((key) => {
+      const existing = dayCache[key];
+      if (existing?.loaded || existing?.loading) return;
+      const date = new Date(`${key}T00:00:00`);
+      void fetchDayEvents(date);
     });
+  }, [openKeys, dayCache, fetchDayEvents]);
 
-    multiDayEvents.forEach(event => {
-      const eventStart = parseISO(event.startDate);
-      const eventEnd = parseISO(event.endDate);
+  const handleOpenChange = (value: string | string[]) => {
+    const next = Array.isArray(value) ? value : value ? [value] : [];
+    setOpenKeys(next);
+  };
 
-      let currentDate = startOfDay(eventStart);
-      const lastDate = endOfDay(eventEnd);
-
-      while (currentDate <= lastDate) {
-        if (isSameMonth(currentDate, selectedDate)) {
-          const dateKey = format(currentDate, "yyyy-MM-dd");
-
-          if (!allDates.has(dateKey)) {
-            allDates.set(dateKey, { date: new Date(currentDate), events: [], multiDayEvents: [] });
-          }
-
-          allDates.get(dateKey)?.multiDayEvents.push(event);
-        }
-        currentDate = new Date(currentDate.setDate(currentDate.getDate() + 1));
-      }
-    });
-
-    return Array.from(allDates.values()).sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [singleDayEvents, multiDayEvents, selectedDate]);
-
-  const hasAnyEvents = singleDayEvents.length > 0 || multiDayEvents.length > 0;
+  const hasLoadedAnyEvents = Object.values(dayCache).some((item) => item.loaded && item.events.length > 0);
 
   return (
     <div className="h-200">
       <ScrollArea className="h-full" type="always">
-        <div className="space-y-6 p-4">
-          {eventsByDay.map(dayGroup => (
-            <AgendaDayGroup key={format(dayGroup.date, "yyyy-MM-dd")} date={dayGroup.date} events={dayGroup.events} multiDayEvents={dayGroup.multiDayEvents} />
-          ))}
+        <div className="space-y-4 p-4">
 
-          {!hasAnyEvents && (
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+          <Accordion type="multiple" className="w-full space-y-1" onValueChange={handleOpenChange} value={openKeys}>
+            {eventDays.map((day) => {
+              const key = format(day, "yyyy-MM-dd");
+              const dayState = dayCache[key];
+              const loadedEvents = dayState?.events ?? [];
+              const { singleDayEvents, multiDayEvents } = splitEventsForDay(loadedEvents, day);
+              const isLoaded = dayState?.loaded ?? false;
+              const isLoading = dayState?.loading ?? false;
+
+              return (
+                <AccordionItem key={key} value={key} className="rounded-xl border px-4">
+                  <AccordionTrigger className="py-4 no-underline hover:no-underline">
+                    <div className="flex w-full items-center justify-between gap-3 pr-2 text-left">
+                      <div>
+                        <p className="text-sm font-semibold">{format(day, "EEEE, MMMM d, yyyy")}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isLoading
+                            ? "Loading from database..."
+                            : isLoaded
+                              ? `${singleDayEvents.length + multiDayEvents.length} event(s) loaded`
+                              : "Click to load events from database"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {isLoaded && (
+                          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                            {singleDayEvents.length + multiDayEvents.length}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+
+                  <AccordionContent className="pt-0">
+                    <div className="space-y-2 pb-1">
+                      {isLoading && (
+                        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+                          <CalendarX2 className="size-4" />
+                          Loading events for this date...
+                        </div>
+                      )}
+
+                      {dayState?.error && (
+                        <div className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-3 text-sm text-danger">
+                          {dayState.error}
+                        </div>
+                      )}
+
+                      {isLoaded && singleDayEvents.length === 0 && multiDayEvents.length === 0 && !isLoading && (
+                        <div className="rounded-lg border bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
+                          No events scheduled for this date.
+                        </div>
+                      )}
+
+                      {multiDayEvents.length > 0 &&
+                        multiDayEvents.map((event) => {
+                          const eventStart = parseISO(event.startDate);
+                          const eventEnd = parseISO(event.endDate);
+                          const eventCurrentDay = Math.max(1, Math.floor((startOfDay(day).getTime() - startOfDay(eventStart).getTime()) / 86400000) + 1);
+                          const eventTotalDays = Math.max(1, Math.floor((startOfDay(eventEnd).getTime() - startOfDay(eventStart).getTime()) / 86400000) + 1);
+
+                          return (
+                            <AgendaEventCard
+                              key={`${key}-${event.id}`}
+                              event={event}
+                              eventCurrentDay={eventCurrentDay}
+                              eventTotalDays={eventTotalDays}
+                            />
+                          );
+                        })}
+
+                      {singleDayEvents.map((event) => (
+                        <AgendaEventCard key={`${key}-${event.id}`} event={event} />
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+
+          {!hasLoadedAnyEvents && eventDays.length > 0 && (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
               <CalendarX2 className="size-10" />
-              <p className="text-sm md:text-base">No events scheduled for the selected month</p>
+              <p className="text-sm md:text-base">Select a date above to load its events.</p>
             </div>
           )}
         </div>

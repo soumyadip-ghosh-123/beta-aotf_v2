@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import dbConnect from "@/lib/db";
 import CalendarEvent from "@/lib/models/CalendarEvent";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TEventColor } from "@/calendar/types";
 import mongoose from "mongoose";
 
-async function getNewEvents(monthStart: Date, monthEnd: Date): Promise<IEvent[]> {
+async function getEventsInRange(startDate: Date, endDate: Date): Promise<IEvent[]> {
   const docs = await CalendarEvent.find({
-    startAt: mongoose.trusted({ $gte: monthStart, $lte: monthEnd }),
+    startAt: mongoose.trusted({ $lte: endDate }),
+    endAt: mongoose.trusted({ $gte: startDate }),
   })
     .sort({ startAt: 1 })
     .lean();
@@ -35,12 +36,18 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
+    const dateParam = searchParams.get("date");
     const monthParam = searchParams.get("month");
-    const refDate = monthParam ? new Date(`${monthParam}-01`) : new Date();
-    const monthStart = startOfMonth(refDate);
-    const monthEnd = endOfMonth(refDate);
+    const refDate = dateParam
+      ? new Date(dateParam)
+      : monthParam
+        ? new Date(`${monthParam}-01`)
+        : new Date();
 
-    const events = await getNewEvents(monthStart, monthEnd);
+    const startDate = dateParam ? startOfDay(refDate) : startOfMonth(refDate);
+    const endDate = dateParam ? endOfDay(refDate) : endOfMonth(refDate);
+
+    const events = await getEventsInRange(startDate, endDate);
     return NextResponse.json({ events });
   } catch (err) {
     console.error("[calendar-events] Error:", err);
