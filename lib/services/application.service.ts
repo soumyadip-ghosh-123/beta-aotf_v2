@@ -815,9 +815,22 @@ export async function updateApplicationStatus(
       { postId: application.postId },
       {
         $set: {
+          status: "closed",
           paymentstatus: paymentDone ? "done" : "pending",
           paymentDate,
           tentativeDate,
+        },
+      },
+      { runValidators: true },
+    );
+  }
+
+  if (status === "approved" && application.postId && typeof paymentDone !== "boolean") {
+    await Post.updateOne(
+      { postId: application.postId },
+      {
+        $set: {
+          status: "closed",
         },
       },
       { runValidators: true },

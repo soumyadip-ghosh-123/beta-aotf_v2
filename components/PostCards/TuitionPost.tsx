@@ -91,6 +91,26 @@ const getClassTypeText = (type: string): string => {
   return types[type] || type;
 };
 
+const getStatusLabel = (status: string) =>
+  ({
+    open: "Open",
+    matched: "Matched",
+    closed: "Closed",
+    cancelled: "Close",
+    hold: "Hold",
+  })[status] ?? status;
+
+const getStatusColor = (
+  status: string,
+): "success" | "default" | "warning" | "danger" =>
+  ({
+    open: "success" as const,
+    matched: "warning" as const,
+    closed: "default" as const,
+    cancelled: "danger" as const,
+    hold: "warning" as const,
+  })[status] ?? "default";
+
 const getTimeAgo = (date: Date): string => {
   const now = new Date();
   const diffMs = now.getTime() - new Date(date).getTime();
@@ -325,6 +345,9 @@ const TuitionPost = ({
           name={createdByUserId.name || "Admin"}
         />
         <div className="flex items-center gap-2">
+          <Chip radius="sm" size="sm" color={getStatusColor(status)}>
+            {getStatusLabel(status)}
+          </Chip>
           {isEdited ? (
             <Chip
               radius="sm"
