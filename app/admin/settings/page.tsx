@@ -195,12 +195,12 @@ export default function SettingsPage() {
         className="w-full"
       >
         <Tab key="accounts" title="Accounts" />
-        <Tab key="notifications" title="Notifications" />
+        {/* <Tab key="notifications" title="Notifications" /> */}
         <Tab key="terms" title="Policies" />
       </Tabs>
 
       {activeTab === "accounts" ? <AdminAccountsSection /> : null}
-      {activeTab === "notifications" ? <NotificationSettingsSection /> : null}
+      {/* {activeTab === "notifications" ? <NotificationSettingsSection /> : null} */}
       {activeTab === "terms" ? <TermsSettingsSection /> : null}
     </div>
   );
@@ -212,8 +212,11 @@ export default function SettingsPage() {
 
 function AdminAccountsSection() {
   const { user } = useUser();
-  const meta = (user as any)?.publicMetadata as Record<string, unknown> | undefined;
-  const isSuperAdmin = meta?.role === "super_admin" || meta?.aotfRole === "SUPER_ADMIN";
+  const meta = (user as any)?.publicMetadata as
+    | Record<string, unknown>
+    | undefined;
+  const isSuperAdmin =
+    meta?.role === "super_admin" || meta?.aotfRole === "SUPER_ADMIN";
   const [myAdmin, setMyAdmin] = useState<{
     role: string;
     permissions: Record<string, boolean>;
@@ -266,11 +269,31 @@ function AdminAccountsSection() {
         );
       } catch (err) {
         if (!mounted) return;
-        setRoleError(err instanceof Error ? err.message : "Failed to load roles");
+        setRoleError(
+          err instanceof Error ? err.message : "Failed to load roles",
+        );
         setRoles([
-          { name: "super_admin", displayName: "Super Admin", permissions: [], isSystemRole: true, level: 100 },
-          { name: "admin", displayName: "Admin", permissions: [], isSystemRole: true, level: 50 },
-          { name: "support_admin", displayName: "Support Admin", permissions: [], isSystemRole: true, level: 10 },
+          {
+            name: "super_admin",
+            displayName: "Super Admin",
+            permissions: [],
+            isSystemRole: true,
+            level: 100,
+          },
+          {
+            name: "admin",
+            displayName: "Admin",
+            permissions: [],
+            isSystemRole: true,
+            level: 50,
+          },
+          {
+            name: "support_admin",
+            displayName: "Support Admin",
+            permissions: [],
+            isSystemRole: true,
+            level: 10,
+          },
         ]);
       } finally {
         if (mounted) setIsLoadingRoles(false);
@@ -307,7 +330,8 @@ function AdminAccountsSection() {
               typeof row.permissions === "object" && row.permissions !== null
                 ? (row.permissions as Record<string, boolean>)
                 : undefined,
-            avatarUrl: typeof row.avatarUrl === "string" ? row.avatarUrl : undefined,
+            avatarUrl:
+              typeof row.avatarUrl === "string" ? row.avatarUrl : undefined,
           })),
         );
       } catch (e) {
@@ -417,18 +441,16 @@ function AdminAccountsSection() {
         a.name.toLowerCase().includes(q) ||
         a.username.toLowerCase().includes(q) ||
         a.email.toLowerCase().includes(q) ||
-        a.id.includes(q)
+        a.id.includes(q),
     );
   }, [admins, searchTerm]);
 
   const superAdminCount = admins.filter((a) => a.role === "super_admin").length;
   const supportAdminCount = admins.filter(
-    (a) => a.role === "support_admin"
+    (a) => a.role === "support_admin",
   ).length;
 
-  const availableRoles = isSuperAdmin
-    ? roles
-    : [];
+  const availableRoles = isSuperAdmin ? roles : [];
 
   // ── Add Admin ──────────────────────────────────────────────────────────
 
@@ -443,7 +465,8 @@ function AdminAccountsSection() {
         "Username must be 3-32 chars and only letters, numbers, dot, underscore, or hyphen";
     else if (
       admins.some(
-        (a) => a.username.toLowerCase() === newAdmin.username.trim().toLowerCase()
+        (a) =>
+          a.username.toLowerCase() === newAdmin.username.trim().toLowerCase(),
       )
     )
       errors.username = "An admin with this username already exists";
@@ -452,7 +475,7 @@ function AdminAccountsSection() {
       errors.email = "Enter a valid email";
     else if (
       admins.some(
-        (a) => a.email.toLowerCase() === newAdmin.email.trim().toLowerCase()
+        (a) => a.email.toLowerCase() === newAdmin.email.trim().toLowerCase(),
       )
     )
       errors.email = "An admin with this email already exists";
@@ -495,14 +518,25 @@ function AdminAccountsSection() {
       }
 
       const createdAdmin: AdminAccount = {
-        id: String(json?.admin?.id ?? json.adminId ?? `adm-${String(admins.length + 1).padStart(3, "0")}`),
+        id: String(
+          json?.admin?.id ??
+            json.adminId ??
+            `adm-${String(admins.length + 1).padStart(3, "0")}`,
+        ),
         name: String(json?.admin?.name ?? newAdmin.name.trim()),
-        username: String(json?.admin?.username ?? newAdmin.username.trim().toLowerCase()),
-        email: String(json?.admin?.email ?? newAdmin.email.trim().toLowerCase()),
+        username: String(
+          json?.admin?.username ?? newAdmin.username.trim().toLowerCase(),
+        ),
+        email: String(
+          json?.admin?.email ?? newAdmin.email.trim().toLowerCase(),
+        ),
         role: normalizeAdminRole(json?.admin?.role ?? newAdmin.role),
         status: json?.admin?.isActive === false ? "inactive" : "active",
         createdAt: String(json?.admin?.createdAt ?? new Date().toISOString()),
-        avatarUrl: typeof json?.admin?.avatarUrl === "string" ? json.admin.avatarUrl : undefined,
+        avatarUrl:
+          typeof json?.admin?.avatarUrl === "string"
+            ? json.admin.avatarUrl
+            : undefined,
       };
 
       setAdmins((prev) => [createdAdmin, ...prev]);
@@ -536,7 +570,10 @@ function AdminAccountsSection() {
 
   const handleCreateRole = async () => {
     if (!newRole.name.trim() || !newRole.displayName.trim()) {
-      addToast({ description: "Role name and display name are required", color: "danger" });
+      addToast({
+        description: "Role name and display name are required",
+        color: "danger",
+      });
       return;
     }
 
@@ -554,7 +591,10 @@ function AdminAccountsSection() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        addToast({ description: json?.error || "Failed to create role", color: "danger" });
+        addToast({
+          description: json?.error || "Failed to create role",
+          color: "danger",
+        });
         return;
       }
 
@@ -569,7 +609,8 @@ function AdminAccountsSection() {
               ? created.permissions.map((p) => String(p))
               : [],
             isSystemRole: Boolean(created.isSystemRole),
-            level: typeof created.level === "number" ? created.level : undefined,
+            level:
+              typeof created.level === "number" ? created.level : undefined,
           },
         ]);
         setNewAdmin((prev) => ({ ...prev, role: created.name }));
@@ -593,7 +634,8 @@ function AdminAccountsSection() {
       closeRole();
     } catch (err) {
       addToast({
-        description: err instanceof Error ? err.message : "Failed to create role",
+        description:
+          err instanceof Error ? err.message : "Failed to create role",
         color: "danger",
       });
     } finally {
@@ -748,7 +790,10 @@ function AdminAccountsSection() {
       closePerm();
       setPermTarget(null);
     } catch {
-      addToast({ description: "Failed to update permissions", color: "danger" });
+      addToast({
+        description: "Failed to update permissions",
+        color: "danger",
+      });
     } finally {
       setIsSavingPerms(false);
     }
@@ -761,8 +806,8 @@ function AdminAccountsSection() {
       prev.map((a) =>
         a.id === admin.id
           ? { ...a, status: a.status === "active" ? "inactive" : "active" }
-          : a
-      )
+          : a,
+      ),
     );
     addToast({
       description: `${admin.name} ${admin.status === "active" ? "deactivated" : "activated"}`,
@@ -780,7 +825,7 @@ function AdminAccountsSection() {
   return (
     <div className="space-y-4">
       {/* Floating Add Admin Button (visible to super admins only) */}
-      {(isSuperAdmin && (
+      {isSuperAdmin && (
         <div className="fixed bottom-6 right-6 z-50">
           <Tooltip content="Add Admin" placement="left" color="primary">
             <Button
@@ -795,13 +840,7 @@ function AdminAccountsSection() {
             </Button>
           </Tooltip>
         </div>
-      ))}
-
-      {isLoadingAdmins ? (
-        <div className="py-10 flex justify-center">
-          <Spinner size="lg" color="primary" />
-        </div>
-      ) : null}
+      )}
       {/* Search */}
       <Input
         placeholder="Search by name, username, email or ID…"
@@ -827,6 +866,7 @@ function AdminAccountsSection() {
           {supportAdminCount !== 1 ? "s" : ""}
         </Chip>
       </div>
+
       {/* Admin Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filteredAdmins.map((admin) => (
@@ -848,12 +888,20 @@ function AdminAccountsSection() {
       {filteredAdmins.length === 0 && (
         <Card>
           <CardBody className="py-12 text-center">
-            <Users size={48} className="mx-auto text-default-300 mb-3" />
-            <p className="text-default-500">
-              {searchTerm
-                ? "No admins match your search"
-                : "No admin accounts found"}
-            </p>
+            {isLoadingAdmins ? (
+              <div className="py-10 flex justify-center">
+                <Spinner size="lg" color="primary" />
+              </div>
+            ) : (
+              <>
+                <Users size={48} className="mx-auto text-default-300 mb-3" />
+                <p className="text-default-500">
+                  {searchTerm
+                    ? "No admins match your search"
+                    : "No admin accounts found"}
+                </p>
+              </>
+            )}
           </CardBody>
         </Card>
       )}
@@ -919,22 +967,14 @@ function AdminAccountsSection() {
                 }
                 variant="bordered"
                 isRequired
-                startContent={
-                  getRoleIcon(newAdmin.role)
-                }
+                startContent={getRoleIcon(newAdmin.role)}
               >
                 {availableRoles.map((role) => (
-                  <SelectItem key={role.name}>
-                    {role.displayName}
-                  </SelectItem>
+                  <SelectItem key={role.name}>{role.displayName}</SelectItem>
                 ))}
               </Select>
               {isSuperAdmin ? (
-                <Button
-                  variant="flat"
-                  color="secondary"
-                  onPress={openRole}
-                >
+                <Button variant="flat" color="secondary" onPress={openRole}>
                   New Role
                 </Button>
               ) : null}
@@ -1043,7 +1083,12 @@ function AdminAccountsSection() {
       </Modal>
 
       {/* ────────── Create Role Modal ────────── */}
-      <Modal isOpen={isRoleOpen} onClose={closeRole} size="lg" scrollBehavior="inside">
+      <Modal
+        isOpen={isRoleOpen}
+        onClose={closeRole}
+        size="lg"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Shield size={20} className="text-primary" />
@@ -1062,7 +1107,9 @@ function AdminAccountsSection() {
               label="Display Name"
               placeholder="Customer Relationship Manager"
               value={newRole.displayName}
-              onValueChange={(v) => setNewRole((p) => ({ ...p, displayName: v }))}
+              onValueChange={(v) =>
+                setNewRole((p) => ({ ...p, displayName: v }))
+              }
               variant="bordered"
               isRequired
             />
@@ -1072,10 +1119,18 @@ function AdminAccountsSection() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={closeRole} isDisabled={isCreatingRole}>
+            <Button
+              variant="flat"
+              onPress={closeRole}
+              isDisabled={isCreatingRole}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleCreateRole} isLoading={isCreatingRole}>
+            <Button
+              color="primary"
+              onPress={handleCreateRole}
+              isLoading={isCreatingRole}
+            >
               Create Role
             </Button>
           </ModalFooter>
@@ -1300,7 +1355,12 @@ function AdminAccountsSection() {
       </Modal>
 
       {/* ────────── Permissions Modal ────────── */}
-      <Modal isOpen={isPermOpen} onClose={closePerm} size="lg" scrollBehavior="inside">
+      <Modal
+        isOpen={isPermOpen}
+        onClose={closePerm}
+        size="lg"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Shield size={20} className="text-primary" />
@@ -1338,7 +1398,11 @@ function AdminAccountsSection() {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={closePerm} isDisabled={isSavingPerms}>
+            <Button
+              variant="flat"
+              onPress={closePerm}
+              isDisabled={isSavingPerms}
+            >
               Cancel
             </Button>
             <Button
@@ -1801,7 +1865,8 @@ function TermsSettingsSection() {
   const policies = [
     {
       label: "Terms of Service",
-      description: "Review the platform terms used across onboarding and contracts.",
+      description:
+        "Review the platform terms used across onboarding and contracts.",
       href: "/terms",
       icon: <FileText size={18} className="text-primary" />,
     },
@@ -1813,7 +1878,8 @@ function TermsSettingsSection() {
     },
     {
       label: "Refund Policy",
-      description: "Check refund rules applied to paid registrations and disputes.",
+      description:
+        "Check refund rules applied to paid registrations and disputes.",
       href: "/refund-policy",
       icon: <RotateCcw size={18} className="text-warning" />,
     },
@@ -1831,7 +1897,10 @@ function TermsSettingsSection() {
         <Divider />
         <CardBody className="gap-3">
           {policies.map((policy) => (
-            <div key={policy.label} className="flex items-center justify-between gap-3">
+            <div
+              key={policy.label}
+              className="flex items-center justify-between gap-3"
+            >
               <div className="flex items-start gap-3">
                 <div className="mt-1 rounded-lg bg-default-100 p-2">
                   {policy.icon}
@@ -1849,7 +1918,9 @@ function TermsSettingsSection() {
                 variant="flat"
                 color="primary"
                 size="sm"
-                onPress={() => window.open(policy.href, "_blank", "noopener,noreferrer")}
+                onPress={() =>
+                  window.open(policy.href, "_blank", "noopener,noreferrer")
+                }
               >
                 View
               </Button>

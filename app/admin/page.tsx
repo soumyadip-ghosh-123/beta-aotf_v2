@@ -31,7 +31,7 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
       {/* Stat cards skeleton */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 h-32">
             <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 mb-3" />

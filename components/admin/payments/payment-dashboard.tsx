@@ -940,9 +940,9 @@ export default function PaymentDashboard() {
         </div>
 
         <div className="mt-4 grid gap-2 grid-cols-4 sm:grid-cols-4">
-          <Card className="border border-slate-200/70 bg-slate-950 text-white shadow-none">
+          <Card className="border border-slate-200/70 bg-teal-500  shadow-none">
             <CardBody className="gap-1.5 p-3">
-              <div className="flex items-center gap-1.5 text-[11px] text-white/70">
+              <div className="flex items-center gap-1.5 text-[11px]">
                 <Users size={14} />
                 Admins
               </div>

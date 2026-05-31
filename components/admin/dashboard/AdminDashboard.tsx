@@ -136,7 +136,7 @@ export default function AdminDashboard({ data }: { data: AdminPayload }) {
     <div className="space-y-8">
 
       {/* ── Stat Cards ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
         <StatCard
           icon={BookOpen}
           label="Active Posts"

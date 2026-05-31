@@ -248,3 +248,8 @@ modal
 4. admin accounts --> add employee code, track activity etc
 5. implement things for jobs
 6. store admin name for invoices
+
+
+fix the users management it shoes the admins as a user and all users are not showing use paggignation
+
+implement infinite scrolling, pagination, 10 posts per page. after 5 ad

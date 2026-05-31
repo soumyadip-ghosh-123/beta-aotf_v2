@@ -120,7 +120,9 @@ export default function UsersPage() {
     params.set("limit", "250");
 
     const res = await fetch(`/api/admin/app-users?${params.toString()}`);
-    const data = (await res.json().catch(() => ({}))) as UsersResponse & { error?: string };
+    const data = (await res.json().catch(() => ({}))) as UsersResponse & {
+      error?: string;
+    };
 
     if (!res.ok) {
       throw new Error(data.error || "Failed to load users");
@@ -184,7 +186,10 @@ export default function UsersPage() {
     });
   }, [users, searchQuery]);
 
-  const handleStatusChange = async (userId: string, nextStatus: "active" | "blocked" | "deleted") => {
+  const handleStatusChange = async (
+    userId: string,
+    nextStatus: "active" | "blocked" | "deleted",
+  ) => {
     setActioningId(userId);
     try {
       const res = await fetch(`/api/admin/app-users/${userId}/status`, {
@@ -216,7 +221,8 @@ export default function UsersPage() {
       void reloadUsers(true);
     } catch (err) {
       addToast({
-        description: err instanceof Error ? err.message : "Failed to update user",
+        description:
+          err instanceof Error ? err.message : "Failed to update user",
         color: "danger",
       });
     } finally {
@@ -225,7 +231,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="w-full space-y-6 px-4">
+    <div className="w-full space-y-2 px-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Users Management</h1>
@@ -233,15 +239,6 @@ export default function UsersPage() {
             Manage real teacher and candidate accounts
           </p>
         </div>
-        <Button
-          variant="flat"
-          color="primary"
-          startContent={<RefreshCw size={16} />}
-          isLoading={isRefreshing}
-          onPress={() => void reloadUsers(true)}
-        >
-          Refresh
-        </Button>
       </div>
       <Tabs
         selectedKey={selectedTab}
@@ -262,6 +259,15 @@ export default function UsersPage() {
           title={`Candidates (${summary?.candidates ?? filteredUsers.filter((u) => u.role === "candidate").length})`}
         />
       </Tabs>
+      <AdminSearchBar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        placeholder="Search by name, username, email or phone…"
+        onClearAll={() => {
+          setSearchQuery("");
+          setStatusFilter("all");
+        }}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <Select
@@ -281,25 +287,31 @@ export default function UsersPage() {
           <SelectItem key="blocked">Blocked</SelectItem>
           <SelectItem key="deleted">Deleted</SelectItem>
         </Select>
-        <div className="flex flex-wrap gap-2 text-xs text-default-500">
-          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.total ?? filteredUsers.length} users</span>
-          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.active ?? 0} active</span>
-          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.blocked ?? 0} blocked</span>
-          <span className="rounded-full bg-default-100 px-3 py-1">{summary?.deleted ?? 0} deleted</span>
-        </div>
+        <Button 
+          isIconOnly
+          size="md"
+          variant="flat"
+          color="primary"
+          startContent={<RefreshCw size={16} />}
+          isLoading={isRefreshing}
+          onPress={() => void reloadUsers(true)}
+        ></Button>
       </div>
 
-      <AdminSearchBar
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        placeholder="Search by name, username, email or phone…"
-        resultCount={filteredUsers.length}
-        resultLabel="user"
-        onClearAll={() => {
-          setSearchQuery("");
-          setStatusFilter("all");
-        }}
-      />
+      <div className="flex flex-wrap gap-2 text-xs text-default-500">
+        <span className="rounded-full bg-default-100 px-3 py-1">
+          {summary?.total ?? filteredUsers.length} users
+        </span>
+        <span className="rounded-full bg-default-100 px-3 py-1">
+          {summary?.active ?? 0} active
+        </span>
+        <span className="rounded-full bg-default-100 px-3 py-1">
+          {summary?.blocked ?? 0} blocked
+        </span>
+        <span className="rounded-full bg-default-100 px-3 py-1">
+          {summary?.deleted ?? 0} deleted
+        </span>
+      </div>
 
       {error && (
         <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-danger-700 text-sm">
@@ -323,7 +335,9 @@ export default function UsersPage() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  getInitials(user.name) || <User className="text-primary" size={24} />
+                  getInitials(user.name) || (
+                    <User className="text-primary" size={24} />
+                  )
                 )}
               </div>
               <div className="flex flex-col">
@@ -352,7 +366,9 @@ export default function UsersPage() {
               <div className="flex items-center gap-2 text-sm">
                 <Globe size={16} className="text-default-400" />
                 <span className="text-default-600">
-                  {user.onboardingCompleted ? "Onboarding complete" : "Onboarding pending"}
+                  {user.onboardingCompleted
+                    ? "Onboarding complete"
+                    : "Onboarding pending"}
                 </span>
               </div>
             </CardBody>
@@ -372,7 +388,13 @@ export default function UsersPage() {
               <Button
                 size="sm"
                 variant="flat"
-                color={user.statusValue === "active" ? "success" : user.statusValue === "blocked" ? "warning" : "default"}
+                color={
+                  user.statusValue === "active"
+                    ? "success"
+                    : user.statusValue === "blocked"
+                      ? "warning"
+                      : "default"
+                }
               >
                 {statusLabels[user.statusValue]}
               </Button>
@@ -416,7 +438,11 @@ export default function UsersPage() {
                   startContent={<Trash2 size={16} />}
                   isLoading={actioningId === user.id}
                   onPress={() => {
-                    if (window.confirm(`Delete ${user.name}? This will mark the account as deleted.`)) {
+                    if (
+                      window.confirm(
+                        `Delete ${user.name}? This will mark the account as deleted.`,
+                      )
+                    ) {
                       void handleStatusChange(user.id, "deleted");
                     }
                   }}
@@ -431,7 +457,9 @@ export default function UsersPage() {
       {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <User size={48} className="mx-auto text-default-300 mb-4" />
-          <p className="text-default-500">No {selectedTab}s found for the current filters.</p>
+          <p className="text-default-500">
+            No {selectedTab}s found for the current filters.
+          </p>
         </div>
       )}
     </div>
