@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -14,6 +15,7 @@ import { createPostSchema, listPostsSchema } from "@/lib/validations/post";
 import { sourceLists } from "@/lib/validations/forms";
 import { createPost, listPosts } from "@/lib/services/post.service";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { logActivity } from "@/lib/admin/logActivity";
 
 /** 10 post creations per IP per minute */
 const createLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
@@ -78,6 +80,19 @@ export async function POST(request: NextRequest) {
     const post = await createPost({
       ...input,
       createdByAdminClerkId: currentAdmin.clerkId,
+    });
+
+    await logActivity({
+      admin: currentAdmin,
+      action: "CREATE_POST",
+      module: "CRM",
+      targetType: "Post",
+      targetId: post._id as mongoose.Types.ObjectId,
+      targetRefId: post.postId,
+      metadata: {
+        postId: post.postId,
+        ...(input.enquiryId ? { enquiryId: input.enquiryId } : {}),
+      },
     });
 
     return NextResponse.json(
