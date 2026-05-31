@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Invoice from "@/lib/models/Invoice";
+import { auth } from "@clerk/nextjs/server";
+import Admin from "@/lib/models/Admin";
+import { logActivity } from "@/lib/admin/logActivity";
 
 // ─── GET /api/admin/invoices/[invoiceId] ──────────────────────────────────────
 
@@ -166,6 +169,30 @@ export async function PUT(
     if (revisionReason) existing.revisionReason = revisionReason;
 
     await existing.save();
+
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        const adminUser = await Admin.findOne({ clerkId: userId }).lean();
+        if (adminUser) {
+          await logActivity({
+            admin: adminUser,
+            action: "UPDATE_INVOICE_STATUS",
+            module: "LEDGER",
+            targetType: "Invoice",
+            targetId: existing._id as any,
+            targetRefId: existing.postId || existing.invoiceId,
+            metadata: {
+              invoiceId: existing.invoiceId,
+              postId: existing.postId || undefined,
+              status: existing.paymentStatus,
+            },
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to log UPDATE_INVOICE_STATUS", e);
+    }
 
     return NextResponse.json({ success: true, invoice: existing });
   } catch (error) {

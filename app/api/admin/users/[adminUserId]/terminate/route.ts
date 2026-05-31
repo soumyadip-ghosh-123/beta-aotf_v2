@@ -8,6 +8,7 @@ import { PERMISSIONS } from "@/lib/admin/permissions";
 import { requirePermission } from "@/lib/admin/requirePermission";
 import AdminInvite from "@/lib/models/admin/AdminInvite";
 import AdminUser from "@/lib/models/admin/AdminUser";
+import Admin from "@/lib/models/Admin";
 
 export async function POST(
   req: Request,
@@ -76,9 +77,11 @@ export async function POST(
   );
 
   // ACTIVITY LOG
-  await logActivity({
-    admin: actor,
-    action: PERMISSIONS.ADMIN_TERMINATE,
+  const adminActor = await Admin.findOne({ clerkId: actor.clerkUserId }).lean();
+  if (adminActor) {
+    await logActivity({
+      admin: adminActor as any,
+      action: PERMISSIONS.ADMIN_TERMINATE,
     module: "ADMIN_MGMT",
     targetType: "AdminUser",
     targetId: target._id as mongoose.Types.ObjectId,
@@ -93,7 +96,8 @@ export async function POST(
       ipAddress: req.headers.get("x-forwarded-for") ?? undefined,
       userAgent: req.headers.get("user-agent") ?? undefined,
     },
-  });
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

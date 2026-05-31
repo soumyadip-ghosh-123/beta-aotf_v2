@@ -810,8 +810,7 @@ export default function JobPostForm({
                     errorMessage={errors.source}
                     variant="bordered"
                   >
-                    <SelectItem key={ADD_NEW_VALUE}>Add new option</SelectItem>
-                    {combinedSources.map((source) => (
+                    {[{ key: ADD_NEW_VALUE, label: "Add new option" }, ...combinedSources].map((source) => (
                       <SelectItem key={source.key}>{source.label}</SelectItem>
                     ))}
                   </Select>

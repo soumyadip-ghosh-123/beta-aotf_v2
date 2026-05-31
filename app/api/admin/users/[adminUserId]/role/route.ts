@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/admin/logActivity";
 import { PERMISSIONS } from "@/lib/admin/permissions";
 import { requirePermission } from "@/lib/admin/requirePermission";
 import AdminUser from "@/lib/models/admin/AdminUser";
+import Admin from "@/lib/models/Admin";
 
 export async function PATCH(
   req: Request,
@@ -67,9 +68,11 @@ export async function PATCH(
   });
 
   // ACTIVITY LOG
-  await logActivity({
-    admin: actor,
-    action: PERMISSIONS.ADMIN_ROLE_CHANGE,
+  const adminActor = await Admin.findOne({ clerkId: actor.clerkUserId }).lean();
+  if (adminActor) {
+    await logActivity({
+      admin: adminActor as any,
+      action: PERMISSIONS.ADMIN_ROLE_CHANGE,
     module: "ADMIN_MGMT",
     targetType: "AdminUser",
     targetId: target._id as mongoose.Types.ObjectId,
@@ -80,7 +83,8 @@ export async function PATCH(
       ipAddress: req.headers.get("x-forwarded-for") ?? undefined,
       userAgent: req.headers.get("user-agent") ?? undefined,
     },
-  });
+    });
+  }
 
   return NextResponse.json({ success: true, adminUserId, newRole: target.role });
 }

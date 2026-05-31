@@ -15,6 +15,7 @@ import {
   GraduationCap,
   Megaphone,
   FileText,
+  Activity,
   Settings,
   CalendarDays,
   Menu,
@@ -51,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/ads",          label: "Ads",               icon: Megaphone                                                 },
   { href: "/admin/invoices",     label: "Invoices",          icon: FileText                                                  },
   { href: "/admin/payments",     label: "Payments",          icon: CreditCard,      permission: "canViewPayments"            },
+  { href: "/admin/activity",     label: "Activity",          icon: Activity,        permission: "canViewAuditLogs"           },
   { href: "/admin/settings",     label: "Settings",          icon: Settings,        permission: "canManageAdmins"            },
 ];
 

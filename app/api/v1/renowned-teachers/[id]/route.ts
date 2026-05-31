@@ -12,6 +12,9 @@ import {
   updateRenownedTeacher,
   deleteRenownedTeacher,
 } from "@/lib/services/renowned-teacher.service";
+import { logActivity } from "@/lib/admin/logActivity";
+import { auth } from "@clerk/nextjs/server";
+import Admin from "@/lib/models/Admin";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
@@ -56,6 +59,24 @@ export async function PATCH(
     const input = updateRenownedTeacherSchema.parse(body);
     const teacher = await updateRenownedTeacher(id, input);
 
+    const { userId } = await auth();
+    if (userId) {
+      const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+      if (currentAdmin) {
+        await logActivity({
+          admin: currentAdmin as any,
+          action: "UPDATE_RENOWNED_TEACHER",
+          module: "CRM",
+          targetType: "RenownedTeacher",
+          targetId: teacher._id as any,
+          targetSnapshot: {
+            name: teacher.name,
+            designation: teacher.designation,
+          },
+        });
+      }
+    }
+
     return NextResponse.json({ message: "Updated successfully", teacher });
   } catch (error) {
     return handleApiError(error, `PATCH /api/v1/renowned-teachers/${(await params).id}`);
@@ -76,7 +97,23 @@ export async function DELETE(
     if (rateLimitBlock) return rateLimitBlock;
 
     const { id } = await params;
+    const teacher = await getRenownedTeacherById(id);
     await deleteRenownedTeacher(id);
+
+    const { userId } = await auth();
+    if (userId && teacher) {
+      const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+      if (currentAdmin) {
+        await logActivity({
+          admin: currentAdmin as any,
+          action: "DELETE_RENOWNED_TEACHER",
+          module: "CRM",
+          targetType: "RenownedTeacher",
+          targetId: teacher._id as any,
+          targetSnapshot: { name: teacher.name },
+        });
+      }
+    }
 
     return NextResponse.json({ message: "Deleted successfully" });
   } catch (error) {

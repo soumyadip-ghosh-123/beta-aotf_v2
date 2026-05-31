@@ -34,7 +34,7 @@ export default function GenderField({ value, onChange }: GenderFieldProps) {
       onClose={() => setTouched(true)}
     >
       {GENDER_OPTIONS.map((opt) => (
-        <SelectItem key={opt.value} value={opt.value}>
+        <SelectItem key={opt.value}>
           {opt.label}
         </SelectItem>
       ))}

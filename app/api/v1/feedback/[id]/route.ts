@@ -15,6 +15,7 @@ import {
   updateFeedbackSchema,
 } from "@/lib/validations/feedback";
 import { updateFeedback } from "@/lib/services/feedback.service";
+import { logActivity } from "@/lib/admin/logActivity";
 
 const mutateLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 
@@ -72,6 +73,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       input,
       currentAdmin._id.toString(),
     );
+
+    await logActivity({
+      admin: currentAdmin,
+      action: "UPDATE_FEEDBACK",
+      module: "COMMS",
+      targetType: "Feedback",
+      targetId: feedback._id as any,
+      metadata: { status: feedback.status },
+    });
 
     return NextResponse.json({
       message: "Feedback updated successfully",

@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 import PostLedger from "@/lib/models/PostLedger";
 import { upsertPostLedger } from "@/lib/services/postLedger.service";
+import { logActivity } from "@/lib/admin/logActivity";
 
 /**
  * PATCH /api/admin/tuitions/[id]/starting-date
@@ -69,6 +70,22 @@ export async function PATCH(
 
     // Trigger a full ledger upsert to re-resolve all fields and sync the sheet.
     await upsertPostLedger(postId);
+
+    try {
+      await logActivity({
+        admin: currentAdmin,
+        action: "UPDATE_STARTING_DATE",
+        module: "CRM",
+        targetType: "PostLedger",
+        targetId: ledger._id as any,
+        targetRefId: postId,
+        metadata: {
+          startingDate: parsedDate ? parsedDate.toISOString() : null,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to log UPDATE_STARTING_DATE", e);
+    }
 
     return NextResponse.json({ success: true, startingDate: parsedDate });
   } catch (err) {

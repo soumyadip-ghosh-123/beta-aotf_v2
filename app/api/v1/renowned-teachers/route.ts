@@ -11,6 +11,9 @@ import {
   listRenownedTeachers,
   createRenownedTeacher,
 } from "@/lib/services/renowned-teacher.service";
+import { logActivity } from "@/lib/admin/logActivity";
+import { auth } from "@clerk/nextjs/server";
+import Admin from "@/lib/models/Admin";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 const readLimiter = createRateLimiter({ windowMs: 60_000, max: 120 });
@@ -58,6 +61,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const input = createRenownedTeacherSchema.parse(body);
     const teacher = await createRenownedTeacher(input);
+
+    const { userId } = await auth();
+    if (userId) {
+      const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+      if (currentAdmin) {
+        await logActivity({
+          admin: currentAdmin as any,
+          action: "CREATE_RENOWNED_TEACHER",
+          module: "CRM",
+          targetType: "RenownedTeacher",
+          targetId: teacher._id as any,
+          targetSnapshot: {
+            name: teacher.name,
+            designation: teacher.designation,
+          },
+        });
+      }
+    }
 
     return NextResponse.json(
       { message: "Renowned teacher created successfully", teacher },

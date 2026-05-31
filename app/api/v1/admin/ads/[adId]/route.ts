@@ -15,6 +15,7 @@ import {
   recordImpression,
   recordClick,
 } from "@/lib/services/ad.service";
+import { logActivity } from "@/lib/admin/logActivity";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { adIdParamSchema } from "@/lib/validations/api-route";
 import dbConnect from "@/lib/db";
@@ -127,6 +128,16 @@ export async function PATCH(
       updatedByAdminId: authResult.admin?._id.toString(),
     });
 
+    await logActivity({
+      admin: authResult.admin as any,
+      action: "UPDATE_AD",
+      module: "FRM",
+      targetType: "Ad",
+      targetId: ad._id as any,
+      targetRefId: ad.adId,
+      metadata: { placement: ad.placement, targetUrl: ad.targetUrl },
+    });
+
     return NextResponse.json({
       message: "Ad updated successfully",
       ad,
@@ -156,7 +167,20 @@ export async function DELETE(
     if (rateLimitBlock) return rateLimitBlock;
 
     const { adId } = adIdParamSchema.parse(await params);
+    const ad = await getAdByAdId(adId); // Fetch to get ObjectId for log
     await deleteAd(adId);
+
+    if (ad) {
+      await logActivity({
+        admin: authResult.admin as any,
+        action: "DELETE_AD",
+        module: "FRM",
+        targetType: "Ad",
+        targetId: ad._id as any,
+        targetRefId: adId,
+        metadata: { placement: ad.placement },
+      });
+    }
 
     return NextResponse.json({ message: "Ad deleted successfully" });
   } catch (error) {

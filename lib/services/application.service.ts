@@ -886,15 +886,14 @@ export async function updateApplicationStatus(
 
   if (
     application.status === "approved" &&
-    status !== "approved" &&
-    status !== "decline" &&
-    status !== "withdrawn"
+    status !== "approved"
   ) {
     if (application.postId) {
       await Post.updateOne(
         { postId: application.postId },
         {
           $set: {
+            status: "open",
             paymentstatus: null,
             paymentDate: null,
             tentativeDate: null,

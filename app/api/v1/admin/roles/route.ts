@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 import AdminRole from "@/lib/models/admin/AdminRole";
 import { ADMIN_PERMISSION_KEYS } from "@/lib/admin/admin-permissions";
+import { logActivity } from "@/lib/admin/logActivity";
 
 const SYSTEM_ROLES = ["super_admin", "admin", "support_admin"] as const;
 
@@ -150,6 +151,16 @@ export async function POST(req: Request) {
     level: Number.isFinite(body.level) ? Math.max(0, Number(body.level)) : 50,
     permissions,
     isSystemRole: false,
+  });
+
+  await logActivity({
+    admin: currentAdmin as any,
+    action: "CREATE_ADMIN_ROLE",
+    module: "ADMIN_MGMT",
+    targetType: "AdminRole",
+    targetId: role._id as any,
+    targetRefId: role.name,
+    metadata: { displayName, level: role.level, permissionsCount: permissions.length },
   });
 
   return NextResponse.json({ role }, { status: 201 });

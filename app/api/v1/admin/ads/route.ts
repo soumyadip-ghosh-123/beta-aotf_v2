@@ -14,6 +14,7 @@ import {
   getAdAnalytics,
   syncAdStatuses,
 } from "@/lib/services/ad.service";
+import { logActivity } from "@/lib/admin/logActivity";
 import { createRateLimiter } from "@/lib/rate-limit";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
@@ -77,6 +78,16 @@ export async function POST(request: NextRequest) {
     const ad = await createAd({
       ...input,
       createdByAdminId: authResult.admin?._id.toString(),
+    });
+
+    await logActivity({
+      admin: authResult.admin as any,
+      action: "CREATE_AD",
+      module: "FRM",
+      targetType: "Ad",
+      targetId: ad._id as any,
+      targetRefId: ad.adId,
+      metadata: { placement: ad.placement, targetUrl: ad.targetUrl },
     });
 
     return NextResponse.json(

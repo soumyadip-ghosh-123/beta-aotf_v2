@@ -4,6 +4,9 @@ import Invoice from "@/lib/models/Invoice";
 import Application from "@/lib/models/Application";
 import Post from "@/lib/models/Post";
 import { siteConfig } from "@/config/site";
+import { auth } from "@clerk/nextjs/server";
+import Admin from "@/lib/models/Admin";
+import { logActivity } from "@/lib/admin/logActivity";
 
 // ─── GET /api/admin/invoices ──────────────────────────────────────────────────
 // Returns paginated list of invoices ordered by createdAt desc.
@@ -293,6 +296,29 @@ export async function POST(request: NextRequest) {
 
     if (postId) {
       await Post.updateOne({ postId }, { $set: { invoiceGenerated: true } });
+    }
+
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        const adminUser = await Admin.findOne({ clerkId: userId }).lean();
+        if (adminUser) {
+          await logActivity({
+            admin: adminUser,
+            action: "GENERATE_INVOICE",
+            module: "LEDGER",
+            targetType: "Invoice",
+            targetId: invoice._id as any,
+            targetRefId: postId || invoice.invoiceId,
+            metadata: {
+              invoiceId: invoice.invoiceId,
+              postId: postId || undefined,
+            },
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to log GENERATE_INVOICE", e);
     }
 
     return NextResponse.json(

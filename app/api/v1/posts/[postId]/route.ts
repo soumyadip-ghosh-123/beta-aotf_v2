@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -16,6 +17,7 @@ import {
   deletePost,
 } from "@/lib/services/post.service";
 import { upsertPostLedger } from "@/lib/services/postLedger.service";
+import { logActivity } from "@/lib/admin/logActivity";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { postIdParamSchema } from "@/lib/validations/api-route";
 
@@ -102,6 +104,19 @@ export async function PATCH(
 
     await upsertPostLedger(postId);
 
+    await logActivity({
+      admin: currentAdmin,
+      action: "UPDATE_POST",
+      module: "CRM",
+      targetType: "Post",
+      targetId: post._id as mongoose.Types.ObjectId,
+      targetRefId: post.postId,
+      metadata: {
+        postId: post.postId,
+        ...(post.enquiryId ? { enquiryId: post.enquiryId.toString() } : {}),
+      },
+    });
+
     return NextResponse.json({
       message: "Post updated successfully",
       post,
@@ -150,6 +165,16 @@ export async function DELETE(
 
     const { postId } = postIdParamSchema.parse(await params);
     await deletePost(postId);
+
+    await logActivity({
+      admin: currentAdmin,
+      action: "DELETE_POST",
+      module: "CRM",
+      targetType: "Post",
+      targetId: new mongoose.Types.ObjectId(postId),
+      targetRefId: postId,
+      metadata: { postId },
+    });
 
     return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error) {

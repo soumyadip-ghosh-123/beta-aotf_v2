@@ -12,6 +12,11 @@ import {
 } from "@/lib/validations/enquiry";
 import { createEnquiry, listEnquiries } from "@/lib/services/enquiry.service";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { auth } from "@clerk/nextjs/server";
+import Admin from "@/lib/models/Admin";
+import Enquiry from "@/lib/models/Enquiry";
+import { logActivity } from "@/lib/admin/logActivity";
+import mongoose from "mongoose";
 
 /** 5 enquiry submissions per IP per minute */
 const submitLimiter = createRateLimiter({ windowMs: 60_000, max: 5 });
@@ -47,6 +52,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const input = createEnquirySchema.parse(body);
     const enquiryId = await createEnquiry(input);
+
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        const currentAdmin = await Admin.findOne({ clerkId: userId }).lean();
+        if (currentAdmin) {
+          const enquiryDoc = await Enquiry.findOne({ enquiryId }).select('_id').lean();
+          if (enquiryDoc) {
+            await logActivity({
+              admin: currentAdmin,
+              action: "CREATE_ENQUIRY",
+              module: "CRM",
+              targetType: "Enquiry",
+              targetId: enquiryDoc._id as mongoose.Types.ObjectId,
+              targetRefId: enquiryId,
+              metadata: { enquiryId },
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to log CREATE_ENQUIRY", e);
+    }
 
     return NextResponse.json(
       { message: "Enquiry submitted successfully", enquiryId },

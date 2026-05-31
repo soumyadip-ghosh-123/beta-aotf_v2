@@ -895,8 +895,7 @@ export default function TuitionPostForm({
                     errorMessage={errors.source}
                     variant="bordered"
                   >
-                    <SelectItem key={ADD_NEW_VALUE}>Add new option</SelectItem>
-                    {combinedSources.map((source) => (
+                    {[{ key: ADD_NEW_VALUE, label: "Add new option" }, ...combinedSources].map((source) => (
                       <SelectItem key={source.key}>{source.label}</SelectItem>
                     ))}
                   </Select>
@@ -996,10 +995,7 @@ export default function TuitionPostForm({
                           errorMessage={errors[`students.${index}.subject`]}
                           variant="bordered"
                         >
-                          <AutocompleteItem key={ADD_NEW_VALUE}>
-                            Add new option
-                          </AutocompleteItem>
-                          {combinedSubjects.map((sub) => (
+                          {[{ key: ADD_NEW_VALUE, label: "Add new option" }, ...combinedSubjects].map((sub) => (
                             <AutocompleteItem key={sub.key}>
                               {sub.label}
                             </AutocompleteItem>

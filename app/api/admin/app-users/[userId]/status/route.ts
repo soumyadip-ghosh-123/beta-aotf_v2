@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 import User from "@/lib/models/User";
+import { logActivity } from "@/lib/admin/logActivity";
 
 const allowedStatuses = new Set(["active", "blocked", "deleted"]);
 
@@ -80,6 +81,21 @@ export async function PATCH(
     });
   } catch {
     // Non-fatal: DB status is the source of truth.
+  }
+
+  try {
+    const actionName = body.status === "active" ? "UNBLOCK_USER" : "BLOCK_USER";
+    await logActivity({
+      admin: currentAdmin,
+      action: actionName,
+      module: "USER_MGMT",
+      targetType: "User",
+      targetId: target._id as any,
+      targetRefId: target.clerkId,
+      metadata: { status: body.status },
+    });
+  } catch (e) {
+    console.error(`Failed to log ${body.status} user`, e);
   }
 
   return NextResponse.json({

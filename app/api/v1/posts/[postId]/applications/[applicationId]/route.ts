@@ -14,6 +14,7 @@ import {
   deleteApplicationsByIds,
 } from "@/lib/services/application.service";
 import { upsertPostLedger } from "@/lib/services/postLedger.service";
+import { logActivity } from "@/lib/admin/logActivity";
 import { createRateLimiter } from "@/lib/rate-limit";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
@@ -167,6 +168,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Trigger the ledger & sheet sync immediately upon application status change
     await upsertPostLedger(resolvedParams.postId);
+
+    await logActivity({
+      admin: adminUser as any, // Cast to any to bypass strict type since we have _id and role
+      action: "UPDATE_APPLICATION_STATUS",
+      module: "CRM",
+      targetType: "Application",
+      targetId: updatedApplication._id as mongoose.Types.ObjectId,
+      targetRefId: resolvedParams.postId, // Hyperlink back to post
+      metadata: {
+        applicationId,
+        postId: resolvedParams.postId,
+        status: updatedApplication.status,
+        reason,
+      },
+    });
 
     return NextResponse.json({
       message: "Application status updated successfully",
