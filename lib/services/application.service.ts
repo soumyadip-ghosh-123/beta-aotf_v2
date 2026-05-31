@@ -133,12 +133,9 @@ async function attachApplicantAvatars(
       ...application,
       applicantSnapshot: {
         ...application.applicantSnapshot,
-        avatarUrl:
-          (applicantClerkId
-            ? (avatarMap.get(applicantClerkId) ?? null)
-            : null) ??
-          application.applicantSnapshot?.avatarUrl ??
-          null,
+        avatarUrl: applicantClerkId
+          ? (avatarMap.get(applicantClerkId) ?? application.applicantSnapshot?.avatarUrl ?? null)
+          : (application.applicantSnapshot?.avatarUrl ?? null),
       },
     };
 

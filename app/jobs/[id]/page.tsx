@@ -1,5 +1,6 @@
 import { Button } from "@heroui/button";
 import { Card, CardHeader } from "@heroui/card";
+import { User } from "@heroui/user";
 import { LuNotebookText } from "react-icons/lu";
 import { SlShare } from "react-icons/sl";
 import {
@@ -109,10 +110,15 @@ export default async function JobDetailPage({
 
       {/* Job Header */}
       <div>
-        <div className="flex justify-between items-center mb-3">
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide">
-            Job ID: #{job.jobId}
-          </p>
+        <div className="mb-4 flex items-center justify-between rounded-xl border bg-background px-4 py-3 shadow-sm">
+          <User
+            avatarProps={{
+              src: job.author?.avatarUrl ?? "",
+              alt: "Admin Avatar",
+            }}
+            name={job.author?.name ?? "Admin"}
+            description="Posted by admin"
+          />
           <div
             className={`flex h-7 items-center justify-center px-3 rounded-full ${statusBadge.bg} border ${statusBadge.border}`}
           >
@@ -122,6 +128,12 @@ export default async function JobDetailPage({
               {job.status}
             </span>
           </div>
+        </div>
+
+        <div className="flex justify-between items-center mb-3">
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide">
+            Job ID: #{job.jobId}
+          </p>
         </div>
 
         <h1 className="text-gray-900 dark:text-white text-[28px] font-bold leading-[1.2] mb-1">

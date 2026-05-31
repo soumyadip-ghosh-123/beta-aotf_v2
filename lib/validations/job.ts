@@ -126,6 +126,7 @@ const createJobBaseSchema = z.object({
     .max(100, "Commission percentage cannot exceed 100"),
 
   enquiryId: z.string().optional(),
+  createdByAdminClerkId: z.string().optional(),
   createdByAdminId: z.string().optional(),
 });
 
@@ -150,6 +151,7 @@ export type CreateJobInput = z.infer<typeof createJobSchema>;
 export const updateJobSchema = createJobBaseSchema
   .partial()
   .extend({
+    updatedByAdminClerkId: z.string().optional(),
     updatedByAdminId: z.string().optional(),
   })
   .refine(

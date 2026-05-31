@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     }
     const job = await createJob({
       ...input,
+      createdByAdminClerkId: currentAdmin.clerkId,
       createdByAdminId: currentAdmin._id.toString(),
     });
 

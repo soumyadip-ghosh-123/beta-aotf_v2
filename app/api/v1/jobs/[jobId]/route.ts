@@ -90,7 +90,11 @@ export async function PATCH(
     const { jobId } = jobIdParamSchema.parse(await params);
     const body = await request.json();
     const input = updateJobSchema.parse(body);
-    const job = await updateJob(jobId, input);
+    const job = await updateJob(jobId, {
+      ...input,
+      updatedByAdminClerkId: currentAdmin.clerkId,
+      updatedByAdminId: currentAdmin._id.toString(),
+    });
 
     await logActivity({
       admin: currentAdmin,

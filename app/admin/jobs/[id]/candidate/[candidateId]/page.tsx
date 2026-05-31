@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import { RadioGroup, Radio } from "@heroui/radio";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
@@ -33,110 +34,169 @@ import {
   Trash2,
 } from "lucide-react";
 
-// Sample candidate data - replace with actual API call
-const getCandidateData = (candidateId: string) => {
-  const candidates: Record<string, any> = {
-    JC001: {
-      id: "JC001",
-      name: "Rahul Sharma",
-      email: "rahul.s@example.com",
-      phone: "9876543210",
-      avatar: undefined,
-      qualification: "B.Tech in Computer Science",
-      experience: "4 years",
-      location: "Salt Lake, Kolkata",
-      status: "approved",
-      appliedDate: "2026-02-06",
-      skills: ["React", "Node.js", "TypeScript", "MongoDB", "AWS", "Docker"],
-      currentCompany: "Infosys Limited",
-      currentRole: "Senior Software Developer",
-      noticePeriod: "30 days",
-      expectedSalary: "₹10-12 LPA",
-      bio: "Experienced software engineer with a strong background in full-stack development. Passionate about building scalable applications and working with modern technologies.",
-      statusHistory: [
-        {
-          status: "pending",
-          date: "2026-02-06",
-          notes: "Application received",
-        },
-        {
-          status: "approved",
-          date: "2026-02-09",
-          notes:
-            "Candidate approved after successful interview rounds. Offer letter sent.",
-        },
-      ],
-    },
-    JC002: {
-      id: "JC002",
-      name: "Priya Patel",
-      email: "priya.p@example.com",
-      phone: "9876543211",
-      avatar: undefined,
-      qualification: "M.Tech in Software Engineering",
-      experience: "5 years",
-      location: "Park Street, Kolkata",
-      status: "pending",
-      appliedDate: "2026-02-07",
-      skills: ["Java", "Spring Boot", "Microservices", "Docker", "Kubernetes"],
-      currentCompany: "TCS",
-      currentRole: "Tech Lead",
-      noticePeriod: "60 days",
-      expectedSalary: "₹15-18 LPA",
-      bio: "Seasoned software architect with expertise in designing and implementing enterprise-level applications using Java and Spring ecosystem.",
-      statusHistory: [
-        {
-          status: "pending",
-          date: "2026-02-07",
-          notes: "Application received. Resume screening in progress.",
-        },
-      ],
-    },
-    JC003: {
-      id: "JC003",
-      name: "Amit Kumar",
-      email: "amit.k@example.com",
-      phone: "9876543212",
-      avatar: undefined,
-      qualification: "B.Tech in IT",
-      experience: "3 years",
-      location: "New Town, Kolkata",
-      status: "pending",
-      appliedDate: "2026-02-08",
-      skills: ["Python", "Django", "PostgreSQL", "Redis", "AWS"],
-      currentCompany: "Wipro",
-      currentRole: "Software Engineer",
-      noticePeriod: "45 days",
-      expectedSalary: "₹8-10 LPA",
-      bio: "Backend developer specializing in Python and Django framework. Strong experience in building RESTful APIs and database optimization.",
-      statusHistory: [
-        {
-          status: "pending",
-          date: "2026-02-08",
-          notes: "Application received",
-        },
-      ],
-    },
-  };
+type ApplicationStatus =
+  | "applied"
+  | "DC"
+  | "GC"
+  | "approved"
+  | "decline"
+  | "auto_declined"
+  | "withdrawn";
 
-  return candidates[candidateId] || null;
+type Application = {
+  applicationId: string;
+  applicantType: "teacher" | "candidate";
+  applicantSnapshot: {
+    name: string;
+    email: string;
+    phone: string;
+    avatarUrl?: string | null;
+  };
+  status: ApplicationStatus;
+  appliedAt: string;
+  coverLetter?: string;
+  dcDate?: string;
+  dcMeta?: { scheduledDate: string; setAt: string };
+  gcMeta?: { scheduledDate: string; setAt: string };
+  declineMeta?: { reason?: string; declinedAt?: string };
+  approvalMeta?: { approvedAt?: string };
 };
+
+type Candidate = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar?: string;
+  status: ApplicationStatus;
+  appliedDate: string;
+  statusHistory: Array<{ status: string; date: string; notes?: string }>;
+};
+
+function buildCandidateFromApplication(app: Application): Candidate {
+  const history: Candidate["statusHistory"] = [
+    { status: "applied", date: app.appliedAt, notes: "Application received" },
+  ];
+
+  if (app.dcDate || app.dcMeta?.scheduledDate) {
+    history.push({
+      status: "DC",
+      date: app.dcDate || app.dcMeta?.scheduledDate || app.appliedAt,
+      notes: "Demo class scheduled",
+    });
+  }
+
+  if (app.gcMeta?.scheduledDate) {
+    history.push({
+      status: "GC",
+      date: app.gcMeta.scheduledDate,
+      notes: "Guardian confirmation scheduled",
+    });
+  }
+
+  if (app.approvalMeta?.approvedAt) {
+    history.push({
+      status: "approved",
+      date: app.approvalMeta.approvedAt,
+      notes: "Application approved",
+    });
+  }
+
+  if (app.declineMeta?.declinedAt) {
+    history.push({
+      status: "decline",
+      date: app.declineMeta.declinedAt,
+      notes: app.declineMeta.reason,
+    });
+  }
+
+  return {
+    id: app.applicationId,
+    name: app.applicantSnapshot.name,
+    email: app.applicantSnapshot.email,
+    phone: app.applicantSnapshot.phone,
+    avatar: app.applicantSnapshot.avatarUrl ?? undefined,
+    status: app.status,
+    appliedDate: app.appliedAt,
+    statusHistory: history,
+  };
+}
 
 export default function JobCandidateDetailPage() {
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
   const candidateId = params.candidateId as string;
-  const candidate = getCandidateData(candidateId);
-  const [selectedStatus, setSelectedStatus] = useState<string>(
-    candidate?.status || "pending"
-  );
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>("pending");
+  const [candidateNotFound, setCandidateNotFound] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [notes, setNotes] = useState<string>("");
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-  if (!candidate) {
+  useEffect(() => {
+    let active = true;
+
+    const fetchCandidate = async () => {
+      setIsLoading(true);
+      setCandidateNotFound(false);
+      try {
+        const res = await fetch(`/api/v1/jobs/${postId}/applications`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            data.error || `Failed to fetch candidates (${res.status})`,
+          );
+        }
+
+        const data = await res.json();
+        const apps: Application[] = data.applications ?? [];
+        const app = apps.find((item) => item.applicationId === candidateId);
+
+        if (!active) return;
+
+        if (!app) {
+          setCandidate(null);
+          setCandidateNotFound(true);
+          return;
+        }
+
+        const nextCandidate = buildCandidateFromApplication(app);
+        setCandidate(nextCandidate);
+        setSelectedStatus(nextCandidate.status);
+      } catch {
+        if (active) setCandidateNotFound(true);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    fetchCandidate();
+
+    return () => {
+      active = false;
+    };
+  }, [postId, candidateId]);
+
+  const currentCandidate = candidate;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Card>
+          <CardBody className="py-12 flex items-center justify-center">
+            <Spinner size="lg" />
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
+  if (candidateNotFound || !currentCandidate) {
     return (
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <Card>
@@ -155,11 +215,16 @@ export default function JobCandidateDetailPage() {
   const handleDeleteCandidate = async () => {
     setIsDeleting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await fetch(`/api/v1/jobs/${postId}/applications`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationIds: [candidateId] }),
+      });
 
-      // TODO: Replace with actual API call
-      // await deleteCandidate(postId, candidateId);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete candidate");
+      }
 
       addToast({
         description: "Candidate deleted successfully!",
@@ -182,19 +247,28 @@ export default function JobCandidateDetailPage() {
   const handleUpdateStatus = async () => {
     setIsUpdating(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // No single-candidate update endpoint exists for jobs yet.
+      // Keep the UI functional by updating the local view state.
 
       addToast({
-        description: "Status updated successfully!",
+        description: "Status updated locally.",
         color: "success",
       });
 
-      // Update the status history (in real app, this would come from API)
-      candidate.statusHistory.push({
-        status: selectedStatus,
-        date: new Date().toISOString().split("T")[0],
-        notes: notes,
+      setCandidate((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          status: selectedStatus as ApplicationStatus,
+          statusHistory: [
+            ...prev.statusHistory,
+            {
+              status: selectedStatus,
+              date: new Date().toISOString(),
+              notes,
+            },
+          ],
+        };
       });
 
       setNotes("");
@@ -246,7 +320,9 @@ export default function JobCandidateDetailPage() {
 
   const getCheckpointStatus = (checkpointStatus: string) => {
     const statusOrder = ["pending", "approved"];
-    const currentIndex = statusOrder.indexOf(candidate.status);
+    const currentIndex = statusOrder.indexOf(
+      currentCandidate.status === "approved" ? "approved" : "pending",
+    );
     const checkpointIndex = statusOrder.indexOf(checkpointStatus);
 
     if (checkpointIndex < currentIndex) return "completed";
@@ -282,18 +358,17 @@ export default function JobCandidateDetailPage() {
           <div className="flex items-start justify-between gap-4 w-full">
             <User
               avatarProps={{
-                src: candidate.avatar,
+                src: currentCandidate.avatar,
               }}
-              name={candidate.name}
-              description={`Email: ${candidate.email}`}
+              name={currentCandidate.name}
             />
             <Chip
               size="sm"
-              color={getStatusColor(candidate.status)}
+              color={getStatusColor(currentCandidate.status)}
               variant="flat"
               className="font-semibold"
             >
-              {getStatusLabel(candidate.status)}
+              {getStatusLabel(currentCandidate.status)}
             </Chip>
           </div>
         </CardHeader>
@@ -314,10 +389,10 @@ export default function JobCandidateDetailPage() {
                 <div>
                   <p className="text-xs text-default-500">Phone Number</p>
                   <a
-                    href={`tel:${candidate.phone}`}
+                    href={`tel:${currentCandidate.phone}`}
                     className="font-semibold text-primary-600 hover:underline text-lg"
                   >
-                    {candidate.phone}
+                    {currentCandidate.phone}
                   </a>
                 </div>
               </div>
@@ -328,10 +403,10 @@ export default function JobCandidateDetailPage() {
                 <div>
                   <p className="text-xs text-default-500">Email Address</p>
                   <a
-                    href={`mailto:${candidate.email}`}
+                    href={`mailto:${currentCandidate.email}`}
                     className="font-semibold text-secondary-600 hover:underline"
                   >
-                    {candidate.email}
+                    {currentCandidate.email}
                   </a>
                 </div>
               </div>
@@ -491,7 +566,7 @@ export default function JobCandidateDetailPage() {
                       </h3>
 
                       {/* Show history for this checkpoint if it exists */}
-                      {candidate.statusHistory
+                      {currentCandidate.statusHistory
                         .filter((h: any) => h.status === checkpoint.status)
                         .map((history: any, idx: number) => (
                           <p className="text-sm text-default-500">
@@ -524,14 +599,14 @@ export default function JobCandidateDetailPage() {
             <Radio value="declined">Declined</Radio>
             <Radio value="withdrawn">Withdrawn</Radio>
           </RadioGroup>
-
           <Textarea
             label="Notes"
             placeholder="Add notes about this status update..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             minRows={3}
-          />          <Button
+          />{" "}
+          <Button
             color="primary"
             onPress={handleUpdateStatus}
             isLoading={isUpdating}

@@ -49,6 +49,8 @@ export interface IJob extends Document {
   status: JobStatus;
   commissionBasis: CommissionBasis;
   academyCommissionPercentage: number;
+  createdByAdminClerkId?: string;
+  updatedByAdminClerkId?: string;
   createdByAdminId?: mongoose.Types.ObjectId;
   updatedByAdminId?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -114,12 +116,32 @@ const JobSchema = new Schema<IJob>(
       type: Number,
       required: true,
     },
+    createdByAdminClerkId: {
+      type: String,
+      default: null,
+    },
+    updatedByAdminClerkId: {
+      type: String,
+      default: null,
+    },
+    createdByAdminId: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
+    updatedByAdminId: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
   },
   {
     timestamps: true,
     collection: "jobs",
   },
 );
+
+JobSchema.index({ createdByAdminClerkId: 1, createdAt: -1 });
 
 const Job: Model<IJob> = models.Job || mongoose.model<IJob>("Job", JobSchema);
 
@@ -129,6 +151,44 @@ if (!Job.schema.path("source")) {
       type: String,
       enum: sourceLists.map((source) => source.key),
       required: true,
+    },
+  });
+}
+
+if (!Job.schema.path("createdByAdminClerkId")) {
+  Job.schema.add({
+    createdByAdminClerkId: {
+      type: String,
+      default: null,
+    },
+  });
+}
+
+if (!Job.schema.path("updatedByAdminClerkId")) {
+  Job.schema.add({
+    updatedByAdminClerkId: {
+      type: String,
+      default: null,
+    },
+  });
+}
+
+if (!Job.schema.path("createdByAdminId")) {
+  Job.schema.add({
+    createdByAdminId: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
+    },
+  });
+}
+
+if (!Job.schema.path("updatedByAdminId")) {
+  Job.schema.add({
+    updatedByAdminId: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      default: null,
     },
   });
 }

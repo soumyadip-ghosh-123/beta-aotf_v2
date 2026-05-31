@@ -124,10 +124,10 @@ const JobPost = ({
         <User
           avatarProps={{
             src: `${createdByUserId.avatar || ""}`,
-            alt: "Creator Avatar",
+            alt: "Admin Avatar",
           }}
           name={createdByUserId.name || "Admin"}
-          onClick={() => console.log(createdByUserId.name)}
+          description="Posted by admin"
         />
         <div className="flex items-center gap-2">
           <Chip radius="sm" size="sm" color={statusColor(status)}>

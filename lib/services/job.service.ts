@@ -5,6 +5,7 @@ import Enquiry from "@/lib/models/Enquiry";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { escapeRegex } from "@/lib/utils";
 import {
+  getAdminAuthorsByClerkIds,
   getAdminAuthorsByAdminIds,
   type AdminAuthorSummary,
 } from "@/lib/services/admin-author.service";
@@ -102,18 +103,31 @@ async function attachEnquiryReferences<
 }
 
 async function attachJobAuthors<
-  T extends { createdByAdminId?: mongoose.Types.ObjectId | string | null },
+  T extends {
+    createdByAdminClerkId?: string | null;
+    updatedByAdminClerkId?: string | null;
+    createdByAdminId?: mongoose.Types.ObjectId | string | null;
+    updatedByAdminId?: mongoose.Types.ObjectId | string | null;
+  },
 >(jobs: T[]): Promise<Array<T & { author: AdminAuthorSummary | null }>> {
-  const authorMap = await getAdminAuthorsByAdminIds(
-    jobs.map((job) => job.createdByAdminId),
+  const clerkAuthorMap = await getAdminAuthorsByClerkIds(
+    jobs
+      .map((job) => job.createdByAdminClerkId ?? job.updatedByAdminClerkId)
+      .filter((clerkId): clerkId is string => Boolean(clerkId)),
+  );
+  const adminAuthorMap = await getAdminAuthorsByAdminIds(
+    jobs.map((job) => job.createdByAdminId ?? job.updatedByAdminId),
   );
 
   return jobs.map((job) => {
-    const adminId = job.createdByAdminId?.toString();
+    const clerkId = job.createdByAdminClerkId ?? job.updatedByAdminClerkId;
+    const adminId = (job.createdByAdminId ?? job.updatedByAdminId)?.toString();
+    const clerkAuthor = clerkId ? (clerkAuthorMap.get(clerkId) ?? null) : null;
+    const adminAuthor = adminId ? (adminAuthorMap.get(adminId) ?? null) : null;
 
     return {
       ...job,
-      author: adminId ? (authorMap.get(adminId) ?? null) : null,
+      author: clerkAuthor ?? adminAuthor,
     };
   });
 }
@@ -154,6 +168,7 @@ export async function createJob(input: CreateJobInput): Promise<IJob> {
     enquiryId: input.enquiryId
       ? new mongoose.Types.ObjectId(input.enquiryId)
       : undefined,
+    createdByAdminClerkId: input.createdByAdminClerkId,
     createdByAdminId: input.createdByAdminId
       ? new mongoose.Types.ObjectId(input.createdByAdminId)
       : undefined,
@@ -263,6 +278,9 @@ export async function updateJob(
     updateData.updatedByAdminId = new mongoose.Types.ObjectId(
       input.updatedByAdminId,
     );
+  }
+  if (input.updatedByAdminClerkId) {
+    updateData.updatedByAdminClerkId = input.updatedByAdminClerkId;
   }
   if (input.enquiryId) {
     updateData.enquiryId = new mongoose.Types.ObjectId(input.enquiryId);
