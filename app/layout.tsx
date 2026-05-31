@@ -11,6 +11,7 @@ import { Navbar } from "@/components/navbar";
 import FloatingButton from "@/components/FloatingButton";
 import ClickSpark from "@/components/reactbits/ui/ClickSpark";
 import BottomNav from "@/components/reactbits/bottomNav";
+import AdPlacementSlot from "@/components/AdPlacementSlot";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -103,6 +104,7 @@ export default function RootLayout({
               <div className="relative flex flex-col">
                 <FloatingButton />
                 <Navbar />
+                <AdPlacementSlot placement="popup" />
                 <main className="container mx-auto grow px-2">{children}</main>
               </div>
             </Providers>

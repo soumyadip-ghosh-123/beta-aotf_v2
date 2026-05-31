@@ -1,3 +1,5 @@
+import AdPlacementSlot from "@/components/AdPlacementSlot";
+
 export default function DocsLayout({
   children,
 }: {

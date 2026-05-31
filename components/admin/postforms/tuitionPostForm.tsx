@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth, useUser } from "@clerk/nextjs";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -53,6 +53,216 @@ import { FaRupeeSign } from "react-icons/fa";
 import { CustomCheckbox } from "@/components/ui/CustomCheckbox";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 
+type OptionItem = {
+  _id: string;
+  key: string;
+  label: string;
+};
+
+const ADD_NEW_VALUE = "__add_new__";
+
+function singularizeTitle(title: string) {
+  return title.endsWith("s") ? title.slice(0, -1) : title;
+}
+
+function makeKeyFromLabel(label: string) {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+}
+
+function OptionManagerModal({
+  title,
+  endpoint,
+  items,
+  isOpen,
+  onClose,
+  onRefresh,
+}: {
+  title: string;
+  endpoint: string;
+  items: OptionItem[];
+  isOpen: boolean;
+  onClose: () => void;
+  onRefresh: () => Promise<void>;
+}) {
+  const [form, setForm] = useState({ key: "", label: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setForm({ key: "", label: "" });
+      setEditingId(null);
+    }
+  }, [isOpen]);
+
+  const saveItem = async () => {
+    if (!form.key.trim() || !form.label.trim()) {
+      addToast({ description: "Key and label are required", color: "danger" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const method = editingId ? "PATCH" : "POST";
+      const url = editingId ? `${endpoint}/${editingId}` : endpoint;
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: form.key.trim(),
+          label: form.label.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data.error || `Failed to ${editingId ? "update" : "create"} item`,
+        );
+      }
+
+      await onRefresh();
+      setForm({ key: "", label: "" });
+      setEditingId(null);
+      addToast({
+        description: `${singularizeTitle(title)} ${editingId ? "updated" : "added"}`,
+        color: "success",
+      });
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error
+            ? error.message
+            : `Failed to save ${title.toLowerCase()}`,
+        color: "danger",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    if (!confirm(`Delete this ${singularizeTitle(title).toLowerCase()}?`))
+      return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`${endpoint}/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data.error || `Failed to delete ${title.toLowerCase()}`,
+        );
+      }
+      await onRefresh();
+      addToast({
+        description: `${singularizeTitle(title)} deleted`,
+        color: "success",
+      });
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error
+            ? error.message
+            : `Failed to delete ${title.toLowerCase()}`,
+        color: "danger",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalContent>
+        <ModalHeader className="flex flex-col gap-1">
+          {editingId
+            ? `Edit ${singularizeTitle(title)}`
+            : `Add ${singularizeTitle(title)}`}
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Input
+                label=""
+                placeholder={editingId ? "e.g. Mathematics" : "e.g. Sulekha"}
+                value={form.label}
+                onChange={(e) => {
+                  const label = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    label,
+                    key: makeKeyFromLabel(label),
+                  }));
+                }}
+                variant="bordered"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-default-700">
+                Existing options
+              </p>
+              <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                {items.length === 0 ? (
+                  <p className="text-sm text-default-500">
+                    No options available.
+                  </p>
+                ) : (
+                  items.map((item) => (
+                    <div
+                      key={item._id}
+                      className="flex flex-col gap-3 rounded-lg border border-default-200 bg-default-50 p-3 md:flex-row md:items-center md:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-default-800">
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-default-400">{item.key}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={() => {
+                            setEditingId(item._id);
+                            setForm({ key: item.key, label: item.label });
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          onPress={() => deleteItem(item._id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="flat" onPress={onClose}>
+            Cancel
+          </Button>
+          <Button color="primary" onPress={saveItem} isLoading={isSaving}>
+            {editingId ? "Update" : "Add"}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}
+
 type ClassType = "in-person" | "online" | "both";
 
 const PREFERRED_TIME_SUGGESTIONS = [
@@ -93,6 +303,70 @@ export default function TuitionPostForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [extraSources, setExtraSources] = useState<
+    { _id: string; key: string; label: string }[]
+  >([]);
+  const [extraSubjects, setExtraSubjects] = useState<
+    { _id: string; key: string; label: string }[]
+  >([]);
+  const [isSourceManagerOpen, setIsSourceManagerOpen] = useState(false);
+  const [isSubjectManagerOpen, setIsSubjectManagerOpen] = useState(false);
+
+  const combinedSources = useMemo(() => {
+    const map = new Map<string, string>();
+    sourceLists.forEach((s) => map.set(s.key, s.label));
+    extraSources.forEach((s) => {
+      if (!map.has(s.key)) map.set(s.key, s.label);
+    });
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }, [extraSources]);
+
+  const combinedSubjects = useMemo(() => {
+    const map = new Map<string, string>();
+    subjects.forEach((s) => map.set(s.key, s.label));
+    extraSubjects.forEach((s) => {
+      if (!map.has(s.key)) map.set(s.key, s.label);
+    });
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }, [extraSubjects]);
+
+  const loadSources = async () => {
+    try {
+      const res = await fetch(`/api/v1/admin/sources`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.sources)) {
+        setExtraSources(
+          data.sources.map((s: any) => ({
+            _id: s._id,
+            key: s.key,
+            label: s.label,
+          })),
+        );
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadSubjects = async () => {
+    try {
+      const res = await fetch(`/api/v1/admin/subjects`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.subjects)) {
+        setExtraSubjects(
+          data.subjects.map((s: any) => ({
+            _id: s._id,
+            key: s.key,
+            label: s.label,
+          })),
+        );
+      }
+    } catch {
+      // ignore
+    }
+  };
   const normalizePhone = (value: string) =>
     value.replace(/\D/g, "").slice(0, 10);
   const formatPhone = (value: string) =>
@@ -139,6 +413,11 @@ export default function TuitionPostForm({
     };
     fetchPost();
   }, [isEditMode, postId]);
+
+  useEffect(() => {
+    loadSources();
+    loadSubjects();
+  }, []);
 
   // Pre-fill form data from enquiry if available (create mode only)
   useEffect(() => {
@@ -397,10 +676,6 @@ export default function TuitionPostForm({
       // Optional fields
       const notesParts: string[] = [];
       if (formData.notes?.trim()) notesParts.push(formData.notes.trim());
-      if (formData.missingSubjects.length > 0)
-        notesParts.push(
-          `Missing subjects: ${formData.missingSubjects.join(", ")}`,
-        );
       if (notesParts.length > 0) payload.notes = notesParts.join("\n");
 
       // Include enquiryId if available (create mode only)
@@ -568,7 +843,7 @@ export default function TuitionPostForm({
                 <h4 className="text-lg font-semibold text-default-700">
                   Guardian Details
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Guardian Name"
                     placeholder="Enter guardian name"
@@ -601,17 +876,27 @@ export default function TuitionPostForm({
                   <Select
                     label="Source"
                     placeholder="Select source"
-                    selectedKeys={formData.source ? new Set([formData.source]) : new Set<string>()}
+                    selectedKeys={
+                      formData.source
+                        ? new Set([formData.source])
+                        : new Set<string>()
+                    }
                     onSelectionChange={(keys) => {
                       const value = Array.from(keys)[0] as string | undefined;
-                      if (value) handleChange("source", value);
+                      if (!value) return;
+                      if (value === ADD_NEW_VALUE) {
+                        setIsSourceManagerOpen(true);
+                        return;
+                      }
+                      handleChange("source", value);
                     }}
                     isRequired
                     isInvalid={!!errors.source}
                     errorMessage={errors.source}
                     variant="bordered"
                   >
-                    {sourceLists.map((source) => (
+                    <SelectItem key={ADD_NEW_VALUE}>Add new option</SelectItem>
+                    {combinedSources.map((source) => (
                       <SelectItem key={source.key}>{source.label}</SelectItem>
                     ))}
                   </Select>
@@ -655,7 +940,7 @@ export default function TuitionPostForm({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Autocomplete
                           label="Class"
                           placeholder="Search class"
@@ -698,15 +983,23 @@ export default function TuitionPostForm({
                           label="Subject"
                           placeholder="Search subject"
                           selectedKey={student.subject}
-                          onSelectionChange={(key) =>
-                            handleStudentChange(index, "subject", key as string)
-                          }
+                          onSelectionChange={(key) => {
+                            const value = key as string;
+                            if (value === ADD_NEW_VALUE) {
+                              setIsSubjectManagerOpen(true);
+                              return;
+                            }
+                            handleStudentChange(index, "subject", value);
+                          }}
                           isRequired
                           isInvalid={!!errors[`students.${index}.subject`]}
                           errorMessage={errors[`students.${index}.subject`]}
                           variant="bordered"
                         >
-                          {subjects.map((sub) => (
+                          <AutocompleteItem key={ADD_NEW_VALUE}>
+                            Add new option
+                          </AutocompleteItem>
+                          {combinedSubjects.map((sub) => (
                             <AutocompleteItem key={sub.key}>
                               {sub.label}
                             </AutocompleteItem>
@@ -716,54 +1009,6 @@ export default function TuitionPostForm({
                     </div>
                   </Card>
                 ))}
-                {/* Missing Subjects Section */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-default-700">
-                    Missing Subjects (if any)
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter missing subject name"
-                      value={missingSubjectInput}
-                      onChange={(e) => setMissingSubjectInput(e.target.value)}
-                      variant="bordered"
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addMissingSubject();
-                        }
-                      }}
-                    />
-                    <Button
-                      color="primary"
-                      variant="flat"
-                      onPress={addMissingSubject}
-                      isDisabled={!missingSubjectInput.trim()}
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {formData.missingSubjects.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.missingSubjects.map((subject, index) => (
-                        <div
-                          key={index}
-                          className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-2"
-                        >
-                          {subject}
-                          <button
-                            type="button"
-                            onClick={() => removeMissingSubject(index)}
-                            className="hover:text-danger"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>{" "}
                 <Input
                   label="Remuneration (/month)"
                   placeholder="e.g. 5000"
@@ -1069,25 +1314,6 @@ export default function TuitionPostForm({
                             </Card>
                           ))}
                         </div>
-                        {formData.missingSubjects.length > 0 && (
-                          <div className="mt-2">
-                            <span className="text-default-500 text-sm">
-                              Missing Subjects:
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {formData.missingSubjects.map((subject, idx) => (
-                                <Chip
-                                  key={idx}
-                                  size="sm"
-                                  variant="flat"
-                                  color="warning"
-                                >
-                                  {subject}
-                                </Chip>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
                       <div className="border-t border-divider" />
@@ -1200,6 +1426,24 @@ export default function TuitionPostForm({
           </Stepper>
         </div>
       )}
+
+      <OptionManagerModal
+        title="Sources"
+        endpoint="/api/v1/admin/sources"
+        items={extraSources}
+        isOpen={isSourceManagerOpen}
+        onClose={() => setIsSourceManagerOpen(false)}
+        onRefresh={loadSources}
+      />
+
+      <OptionManagerModal
+        title="Subjects"
+        endpoint="/api/v1/admin/subjects"
+        items={extraSubjects}
+        isOpen={isSubjectManagerOpen}
+        onClose={() => setIsSubjectManagerOpen(false)}
+        onRefresh={loadSubjects}
+      />
 
       {/* Add Student Modal */}
       <Modal isOpen={isAddStudentOpen} onClose={closeAddStudent} size="sm">

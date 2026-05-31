@@ -1,9 +1,10 @@
 import Search from "@/components/Search";
-import TuitionPost from "@/components/PostCards/TuitionPost";
 import { FilterSidebarProvider } from "@/components/filter-sidebar-context";
+import PostInfiniteFeed from "@/components/PostInfiniteFeed";
+import { listPublicAds } from "@/lib/services/ad.service";
 import { listPosts } from "@/lib/services/post.service";
 
-const EDITED_THRESHOLD_MS = 1000;
+const PAGE_SIZE = 10;
 
 export default async function DocsPage({
   searchParams,
@@ -31,7 +32,7 @@ export default async function DocsPage({
 
   const { posts, pagination } = await listPosts({
     page,
-    limit: 20,
+    limit: PAGE_SIZE,
     search,
     status,
     subjects,
@@ -40,49 +41,33 @@ export default async function DocsPage({
     minBudget,
     maxBudget,
   });
+  const [featuredAd] = await listPublicAds({
+    placement: "feed_inline",
+    limit: 1,
+  });
+
+  const initialPosts = JSON.parse(JSON.stringify(posts));
+  const initialPagination = JSON.parse(JSON.stringify(pagination));
+  const initialFeaturedAd = featuredAd ? JSON.parse(JSON.stringify(featuredAd)) : null;
 
   return (
     <FilterSidebarProvider>
       <div className="flex flex-col items-center justify-center w-full px-2 mb-16">
         <Search />
-
-        {posts.length === 0 ? (
-          <p className="text-default-500 mt-10">No posts found</p>
-        ) : (
-          <div className="w-full max-w-md mt-6 space-y-4">
-            {posts.map((post) => (
-              <TuitionPost
-                key={post.postId}
-                postId={post.postId}
-                enquiryId={post.enquiryId?.toString()}
-                guardianName={post.guardianName}
-                guardianPhone={post.guardianPhone}
-                students={post.students}
-                preferredTime={post.preferredTime}
-                preferredDays={post.preferredDays}
-                frequencyPerWeek={post.frequencyPerWeek}
-                classType={post.classType}
-                location={post.location}
-                monthlyBudget={post.monthlyBudget}
-                notes={post.notes}
-                status={post.status}
-                createdAt={post.createdAt}
-                updatedAt={post.updatedAt}
-                createdByUserId={{
-                  name: post.author?.name,
-                  avatar: post.author?.avatarUrl,
-                }}
-                initialApplied={false}
-                isEdited={
-                  Boolean(post.updatedByAdminClerkId) ||
-                  new Date(post.updatedAt).getTime() -
-                    new Date(post.createdAt).getTime() >
-                    EDITED_THRESHOLD_MS
-                }
-              />
-            ))}
-          </div>
-        )}
+        <PostInfiniteFeed
+          initialPosts={initialPosts}
+          initialPagination={initialPagination}
+          featuredAd={initialFeaturedAd}
+          filters={{
+            search,
+            status,
+            subjects,
+            boards,
+            classType,
+            minBudget: minBudget?.toString(),
+            maxBudget: maxBudget?.toString(),
+          }}
+        />
       </div>
     </FilterSidebarProvider>
   );

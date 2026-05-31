@@ -36,6 +36,12 @@ export interface ListPublicAdsInput {
   limit?: number;
 }
 
+function isPublicAdVisible(ad: IAd, now: Date): boolean {
+  const startOk = !ad.startDate || ad.startDate <= now;
+  const endOk = !ad.endDate || ad.endDate >= now;
+  return ad.status === "active" && startOk && endOk;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -175,27 +181,18 @@ export async function listPublicAds(
   const now = new Date();
   const limit = Math.min(Math.max(input.limit ?? 10, 1), 50);
 
-  const filter: Record<string, unknown> = mongoose.trusted({
-    status: "active",
-    $and: [
-      {
-        $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }],
-      },
-      {
-        $or: [{ endDate: { $exists: false } }, { endDate: { $gte: now } }],
-      },
-    ],
-  });
+  const filter: Record<string, unknown> = { status: "active" };
 
   if (input.placement && input.placement !== "all") {
     filter.placement = input.placement;
   }
 
-  return Ad.find(filter)
+  const ads = await Ad.find(filter)
     .sort({ priority: -1, createdAt: -1 })
     .setOptions({ sanitizeFilter: false })
-    .limit(limit)
     .lean<IAd[]>();
+
+  return ads.filter((ad) => isPublicAdVisible(ad, now)).slice(0, limit);
 }
 
 /**
@@ -205,24 +202,11 @@ export async function getPublicAdByAdId(adId: string): Promise<IAd> {
   await dbConnect();
 
   const now = new Date();
-  const ad = await Ad.findOne(
-    mongoose.trusted({
-    adId,
-    status: "active",
-    $and: [
-      {
-        $or: [{ startDate: { $exists: false } }, { startDate: { $lte: now } }],
-      },
-      {
-        $or: [{ endDate: { $exists: false } }, { endDate: { $gte: now } }],
-      },
-    ],
-    }),
-  )
+  const ad = await Ad.findOne({ adId, status: "active" })
     .setOptions({ sanitizeFilter: false })
     .lean<IAd>();
 
-  if (!ad) {
+  if (!ad || !isPublicAdVisible(ad, now)) {
     throw new NotFoundError("Ad");
   }
 

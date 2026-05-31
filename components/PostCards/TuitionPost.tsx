@@ -371,7 +371,7 @@ const TuitionPost = ({
           {subjectDisplay.toUpperCase() || "SUBJECTS NOT SPECIFIED"}
         </h1>
         {/* 3 chips with map function */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {chips.map((chip) => (
             <Chip
               key={chip}

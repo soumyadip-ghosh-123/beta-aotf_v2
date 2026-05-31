@@ -8,8 +8,10 @@ import {
   checkJsonContentType,
 } from "@/lib/api-utils";
 import Admin from "@/lib/models/Admin";
+import Source from "@/lib/models/Source";
 import dbConnect from "@/lib/db";
 import { createPostSchema, listPostsSchema } from "@/lib/validations/post";
+import { sourceLists } from "@/lib/validations/forms";
 import { createPost, listPosts } from "@/lib/services/post.service";
 import { createRateLimiter } from "@/lib/rate-limit";
 
@@ -62,6 +64,17 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const input = createPostSchema.parse(body);
+    const dbSources = await Source.find().lean();
+    const allowedSourceKeys = new Set([
+      ...sourceLists.map((source) => source.key),
+      ...dbSources.map((source) => source.key),
+    ]);
+    if (!allowedSourceKeys.has(input.source)) {
+      return NextResponse.json(
+        { error: `Invalid source: ${input.source}` },
+        { status: 400 },
+      );
+    }
     const post = await createPost({
       ...input,
       createdByAdminClerkId: currentAdmin.clerkId,
@@ -83,7 +96,7 @@ export async function POST(request: NextRequest) {
  * Query params:
  *   status? — one of the post statuses or "all" (default "all")
  *   page?   — 1-based page number (default 1)
- *   limit?  — items per page, max 100 (default 20)
+ *   limit?  — items per page, max 100 (default 10)
  *   search? — search term
  *
  * Success 200:
@@ -100,7 +113,7 @@ export async function GET(request: NextRequest) {
     const input = listPostsSchema.parse({
       status: searchParams.get("status") ?? undefined,
       page: searchParams.get("page") ?? undefined,
-      limit: searchParams.get("limit") ?? 20,
+      limit: searchParams.get("limit") ?? 10,
       search: searchParams.get("search") ?? undefined,
       subjects: searchParams.get("subjects") ?? undefined,
       boards: searchParams.get("boards") ?? undefined,

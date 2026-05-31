@@ -222,11 +222,6 @@ export const sourceLists = [
 
 export type SourceKey = (typeof sourceLists)[number]["key"];
 
-const sourceKeys = sourceLists.map((source) => source.key) as [
-  SourceKey,
-  ...SourceKey[],
-];
-
 // ─────────────────────────────────────────────────────────────────────────────
 // DEFAULT FORM VALUES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -328,7 +323,7 @@ export const tuitionFormSchema = z.object({
     .max(50, "Guardian name must be at most 50 characters")
     .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
   guardianPhone: z.string().min(1, "Phone number is required"),
-  source: z.enum(sourceKeys),
+  source: z.string().trim().min(1, "Source is required"),
   students: z
     .array(studentFormSchema)
     .min(1, "At least one student is required"),
@@ -357,7 +352,7 @@ export const jobFormSchema = z.object({
     .max(50, "Client name must be at most 50 characters")
     .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
   clientPhone: z.string().min(1, "Phone number is required"),
-  source: z.enum(sourceKeys),
+  source: z.string().trim().min(1, "Source is required"),
   companyName: z.string().optional(),
   companyType: z.enum(["individual", "company"]).optional(),
   designation: z.string().min(2, "Designation is required"),
@@ -531,7 +526,6 @@ export const adStatuses = [
 
 export const adPlacements = [
   { key: "home_banner", label: "Home Banner" },
-  { key: "sidebar", label: "Sidebar" },
   { key: "feed_inline", label: "Feed Inline" },
   { key: "popup", label: "Popup" },
   { key: "footer", label: "Footer" },

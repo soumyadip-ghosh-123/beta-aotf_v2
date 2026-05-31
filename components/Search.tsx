@@ -14,7 +14,7 @@ import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Chip } from "@heroui/chip";
 import { Filter } from "lucide-react";
 import { useFilterSidebar } from "./filter-sidebar-context";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const suggestions = ["Subject", "Board", "Class Type", "Budget","Location","Frequency"];
@@ -27,6 +27,7 @@ const Search = () => {
   const isShowChip = false; // You can replace this with actual logic based on screen size
   const { open } = useFilterSidebar();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialSearch = useMemo(
     () => searchParams.get("search") ?? "",
@@ -82,7 +83,7 @@ const Search = () => {
     }
 
     const next = params.toString();
-    router.push(next ? `/posts?${next}` : "/posts");
+    router.push(next ? `${pathname}?${next}` : pathname);
   };
   return (
     <div className="max-w-md w-full flex flex-col justify-center sticky top-17 z-10 mx-auto p-1 r backdrop-blur-xs">

@@ -12,7 +12,6 @@ export type AdStatus = (typeof AD_STATUSES)[number];
 
 export const AD_PLACEMENTS = [
   "home_banner",
-  "sidebar",
   "feed_inline",
   "popup",
   "footer",

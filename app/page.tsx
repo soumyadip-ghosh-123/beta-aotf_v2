@@ -8,6 +8,7 @@ import { TimelineDemo } from "@/components/aceternity/TimelineDemo";
 import Footer from "@/components/Footer";
 import LeadershipCard from "@/components/home/LeadershipCard";
 import { Card } from "@heroui/card";
+import AdPlacementSlot from "@/components/AdPlacementSlot";
 
 export default function Home() {
   return (
@@ -70,11 +71,13 @@ export default function Home() {
           />
         </Card>
         <OurServices />
+        <AdPlacementSlot placement="home_banner" />
         <ReknownedSection />
         <TimelineDemo />
         <Testimonials />
         {/* <Stats /> */}
         {/* <ScrollBanner /> */}
+        <AdPlacementSlot placement="footer" />
       </section>
       <Footer />
     </>

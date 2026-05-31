@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
@@ -23,6 +23,13 @@ import {
 import { z } from "zod";
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { FaRupeeSign } from "react-icons/fa";
+  import {
+    Modal,
+    ModalContent,
+    ModalHeader,
+    ModalBody,
+    ModalFooter,
+  } from "@heroui/modal";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 import {
   jobFormSchema,
@@ -44,6 +51,199 @@ import {
 
 type WorkType = "job" | "project";
 type LocationType = "on-site" | "remote" | "hybrid";
+  type OptionItem = {
+    _id: string;
+    key: string;
+    label: string;
+  };
+
+  const ADD_NEW_VALUE = "__add_new__";
+
+  function singularizeTitle(title: string) {
+    return title.endsWith("s") ? title.slice(0, -1) : title;
+  }
+
+  function makeKeyFromLabel(label: string) {
+    return label
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .replace(/_+/g, "_");
+  }
+
+  function OptionManagerModal({
+    title,
+    endpoint,
+    items,
+    isOpen,
+    onClose,
+    onRefresh,
+  }: {
+    title: string;
+    endpoint: string;
+    items: OptionItem[];
+    isOpen: boolean;
+    onClose: () => void;
+    onRefresh: () => Promise<void>;
+  }) {
+    const [form, setForm] = useState({ key: "", label: "" });
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+      if (!isOpen) {
+        setForm({ key: "", label: "" });
+        setEditingId(null);
+      }
+    }, [isOpen]);
+
+    const openCreate = () => {
+      setEditingId(null);
+      setForm({ key: "", label: "" });
+    };
+
+    const openEdit = (item: OptionItem) => {
+      setEditingId(item._id);
+      setForm({ key: item.key, label: item.label });
+    };
+
+    const saveItem = async () => {
+      if (!form.key.trim() || !form.label.trim()) {
+        addToast({ description: "Key and label are required", color: "danger" });
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        const method = editingId ? "PATCH" : "POST";
+        const url = editingId ? `${endpoint}/${editingId}` : endpoint;
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: form.key.trim(), label: form.label.trim() }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Failed to ${editingId ? "update" : "create"} item`);
+        }
+
+        await onRefresh();
+        setForm({ key: "", label: "" });
+        setEditingId(null);
+        addToast({
+          description: `${singularizeTitle(title)} ${editingId ? "updated" : "added"}`,
+          color: "success",
+        });
+      } catch (error) {
+        addToast({
+          description: error instanceof Error ? error.message : `Failed to save ${title.toLowerCase()}`,
+          color: "danger",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    const deleteItem = async (id: string) => {
+      if (!confirm(`Delete this ${singularizeTitle(title).toLowerCase()}?`)) return;
+      setIsSaving(true);
+      try {
+        const res = await fetch(`${endpoint}/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Failed to delete ${title.toLowerCase()}`);
+        }
+        await onRefresh();
+        if (editingId === id) {
+          setForm({ key: "", label: "" });
+          setEditingId(null);
+        }
+        addToast({
+          description: `${singularizeTitle(title)} deleted`,
+          color: "success",
+        });
+      } catch (error) {
+        addToast({
+          description: error instanceof Error ? error.message : `Failed to delete ${title.toLowerCase()}`,
+          color: "danger",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            {editingId ? `Edit ${singularizeTitle(title)}` : `Add ${singularizeTitle(title)}`}
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Input
+                  label="Key"
+                  placeholder="e.g. mathematics"
+                  value={form.key}
+                  isReadOnly
+                  variant="bordered"
+                />
+                <Input
+                  label="Label"
+                  placeholder="e.g. Mathematics"
+                  value={form.label}
+                  onChange={(e) => {
+                    const label = e.target.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      label,
+                      key: makeKeyFromLabel(label),
+                    }));
+                  }}
+                  variant="bordered"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-default-700">Existing options</p>
+                <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                  {items.length === 0 ? (
+                    <p className="text-sm text-default-500">No options available.</p>
+                  ) : (
+                    items.map((item) => (
+                      <div key={item._id} className="flex flex-col gap-3 rounded-lg border border-default-200 bg-default-50 p-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="font-medium text-default-800">{item.label}</p>
+                          <p className="text-xs text-default-400">{item.key}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="flat" onPress={() => openEdit(item)} startContent={<CheckCircle size={14} />}>
+                            Edit
+                          </Button>
+                          <Button size="sm" color="danger" variant="flat" onPress={() => deleteItem(item._id)} startContent={<CheckCircle size={14} />}>
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={saveItem} isLoading={isSaving}>
+              {editingId ? "Update" : "Add"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    );
+  }
 type GenderPreference = "male" | "female" | "both" | "all" | "others";
 type CommissionBasis = "first_month" | "project_value";
 type ProjectType = "one-time" | "ongoing";
@@ -68,6 +268,32 @@ export default function JobPostForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [extraSources, setExtraSources] = useState<{ _id: string; key: string; label: string }[]>([]);
+  const [isSourceManagerOpen, setIsSourceManagerOpen] = useState(false);
+
+  const combinedSources = useMemo(() => {
+    const map = new Map<string, string>();
+    sourceLists.forEach((s) => map.set(s.key, s.label));
+    extraSources.forEach((s) => {
+      if (!map.has(s.key)) map.set(s.key, s.label);
+    });
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }, [extraSources]);
+
+  const loadSources = async () => {
+    try {
+      const res = await fetch(`/api/v1/admin/sources`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.sources)) {
+        setExtraSources(
+          data.sources.map((s: any) => ({ _id: s._id, key: s.key, label: s.label })),
+        );
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   // Fetch job data for edit mode
   useEffect(() => {
@@ -126,6 +352,10 @@ export default function JobPostForm({
     };
     fetchJob();
   }, [isEditMode, postId]);
+
+  useEffect(() => {
+    loadSources();
+  }, []);
 
   // Pre-fill form data from enquiry if available (create mode only)
   useEffect(() => {
@@ -532,7 +762,7 @@ export default function JobPostForm({
                 <h4 className="text-lg font-semibold text-default-700">
                   Client Details
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Client Name"
                     placeholder="Enter client name"
@@ -568,14 +798,20 @@ export default function JobPostForm({
                     selectedKeys={formData.source ? new Set([formData.source]) : new Set<string>()}
                     onSelectionChange={(keys) => {
                       const value = Array.from(keys)[0] as string | undefined;
-                      if (value) handleChange("source", value);
+                      if (!value) return;
+                      if (value === ADD_NEW_VALUE) {
+                        setIsSourceManagerOpen(true);
+                        return;
+                      }
+                      handleChange("source", value);
                     }}
                     isRequired
                     isInvalid={!!errors.source}
                     errorMessage={errors.source}
                     variant="bordered"
                   >
-                    {sourceLists.map((source) => (
+                    <SelectItem key={ADD_NEW_VALUE}>Add new option</SelectItem>
+                    {combinedSources.map((source) => (
                       <SelectItem key={source.key}>{source.label}</SelectItem>
                     ))}
                   </Select>
@@ -614,6 +850,7 @@ export default function JobPostForm({
                   </Select>
                 </div>
               </div>
+
             </Step>
 
             {/* Step 2: Job Details */}
@@ -1224,6 +1461,14 @@ export default function JobPostForm({
               </div>
             </Step>
           </Stepper>
+          <OptionManagerModal
+            title="Sources"
+            endpoint="/api/v1/admin/sources"
+            items={extraSources}
+            isOpen={isSourceManagerOpen}
+            onClose={() => setIsSourceManagerOpen(false)}
+            onRefresh={loadSources}
+          />
         </div>
       )}
     </div>

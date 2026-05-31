@@ -40,7 +40,7 @@ const createJobBaseSchema = z.object({
     .trim()
     .min(1, "Guardian phone is required"),
 
-  source: z.enum(sourceKeys),
+  source: z.string().trim().min(1, "Source is required"),
 
   companyType: z.enum(COMPANY_TYPES, {
     message: `Company type must be one of: ${COMPANY_TYPES.join(", ")}`,
@@ -176,7 +176,7 @@ export const listJobsSchema = z.object({
     .optional()
     .default("all"),
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(200).optional().default(20),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(10),
   search: z
     .string()
     .max(200, "Search term must be at most 200 characters")
