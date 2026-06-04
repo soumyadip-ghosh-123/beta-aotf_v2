@@ -2,16 +2,14 @@ import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import clsx from "clsx";
+import { RootProvider } from "fumadocs-ui/provider/next";
+import { headers } from "next/headers";
 
 import { Providers } from "./providers";
 
-import { navConfig, siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Navbar } from "@/components/navbar";
-import FloatingButton from "@/components/FloatingButton";
-import ClickSpark from "@/components/reactbits/ui/ClickSpark";
-import BottomNav from "@/components/reactbits/bottomNav";
-import AdPlacementSlot from "@/components/AdPlacementSlot";
+import { SiteShell } from "@/components/site-shell";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -65,17 +63,21 @@ export const metadata: Metadata = {
   manifest: `${siteConfig.url}/site.webmanifest`,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get("x-aotf-pathname") ?? "/";
+  const showChrome = !pathname.startsWith("/docs");
+
   return (
     <html suppressHydrationWarning lang="en">
       <head />
       <body
         className={clsx(
-          "text-foreground bg-background font-sans antialiased ",
+          "text-foreground bg-background font-sans antialiased min-h-screen flex flex-col",
           fontSans.variable
         )}
       >
@@ -91,24 +93,13 @@ export default function RootLayout({
             },
           }}
         >
-          <ClickSpark
-            sparkSize={9}
-            sparkRadius={25}
-            duration={500}
-            extraScale={0.9}
-          >
+          <RootProvider>
             <Providers
               themeProps={{ attribute: "class", defaultTheme: "light" }}
             >
-              <BottomNav />
-              <div className="relative flex flex-col">
-                <FloatingButton />
-                <Navbar />
-                <AdPlacementSlot placement="popup" />
-                <main className="container mx-auto grow px-2">{children}</main>
-              </div>
+              <SiteShell showChrome={showChrome}>{children}</SiteShell>
             </Providers>
-          </ClickSpark>
+          </RootProvider>
         </ClerkProvider>
       </body>
     </html>

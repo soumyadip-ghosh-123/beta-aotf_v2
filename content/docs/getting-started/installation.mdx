@@ -1,0 +1,58 @@
+---
+title: Installation
+description: Clone the repository and install dependencies.
+---
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/your-org/aotf_v2.git
+cd aotf_v2
+```
+
+---
+
+## Install Dependencies
+
+AOTF uses **pnpm** as its package manager. The project includes an `.npmrc` with HeroUI hoisting configuration:
+
+```bash
+pnpm install
+```
+
+> **Why pnpm?** The project's `.npmrc` contains `public-hoist-pattern[]=*@heroui/*` to ensure HeroUI packages are properly hoisted. This is required for HeroUI v2 to work correctly.
+
+---
+
+## Verify Installation
+
+After installation completes, verify that the key dependencies are in place:
+
+```bash
+# Check Next.js
+npx next --version
+
+# Check TypeScript
+npx tsc --version
+```
+
+---
+
+## Project Scripts
+
+The following npm scripts are available in `package.json`:
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `dev` | `pnpm dev` | Start dev server with Turbopack |
+| `build` | `pnpm build` | Production build |
+| `start` | `pnpm start` | Start production server |
+| `lint` | `pnpm lint` | Run ESLint with auto-fix |
+| `create:admin` | `pnpm create:admin` | Create initial superadmin |
+| `test:sheets` | `pnpm test:sheets` | Test Google Sheets integration |
+
+---
+
+## Next Steps
+
+Before running the dev server, you'll need to configure your [environment variables](/docs/getting-started/environment-variables).

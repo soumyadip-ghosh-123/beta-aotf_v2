@@ -1,0 +1,137 @@
+---
+title: Payments Endpoints
+description: API endpoints for payment processing via Razorpay.
+---
+
+## Base Path
+
+```
+/api/v1/payments
+```
+
+All endpoints require **user authentication**.
+
+---
+
+## Overview
+
+AOTF uses **Razorpay** as its payment gateway, supporting UPI, Card, and Wallet payments. The primary use case is user registration/onboarding fees.
+
+---
+
+## Create Payment Order
+
+```
+POST /api/v1/payments/create-order
+```
+
+Creates a Razorpay order for payment processing.
+
+**Request Body:**
+
+```json
+{
+  "amount": 4900,
+  "currency": "INR",
+  "type": "registration"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | `number` | ✅ | Amount in paise (₹49 = 4900 paise) |
+| `currency` | `string` | ❌ | Currency code (default: `INR`) |
+| `type` | `string` | ✅ | Payment type identifier |
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "order": {
+    "id": "order_ABC123",
+    "amount": 4900,
+    "currency": "INR"
+  }
+}
+```
+
+---
+
+## Verify Payment
+
+```
+POST /api/v1/payments/verify
+```
+
+Verifies a completed Razorpay payment.
+
+**Request Body:**
+
+```json
+{
+  "razorpay_order_id": "order_ABC123",
+  "razorpay_payment_id": "pay_XYZ789",
+  "razorpay_signature": "..."
+}
+```
+
+**Verification Process:**
+
+1. Validate the Razorpay signature using HMAC-SHA256
+2. Create a `Payment` document in MongoDB
+3. Update the user's `registrationPaymentId` and `onboardingCompleted` status
+4. Update Clerk `publicMetadata` with `onboardingCompleted: true`
+
+---
+
+## Payment Configuration
+
+From `config/site.ts`:
+
+```typescript
+payment: {
+  registrationFee: 49,          // Teacher registration fee (INR)
+  freelancerRegistrationFee: 99, // Freelancer registration fee (INR)
+  currency: "INR",
+  paymentGateway: "Razorpay",
+  supportedMethods: ["UPI", "Card", "Wallet"]
+}
+```
+
+### UPI Configuration
+
+```typescript
+UPI: {
+  name: "Soumyadip Ghosh",
+  Id: "sghosh5326-3@okaxis",
+  Currency: "INR"
+}
+```
+
+---
+
+## Payment Model
+
+The `Payment` model stores transaction records:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `razorpayOrderId` | `string` | Razorpay order ID |
+| `razorpayPaymentId` | `string` | Razorpay payment ID |
+| `amount` | `number` | Amount in paise |
+| `currency` | `string` | Currency code |
+| `status` | `string` | Payment status |
+| `userId` | `ObjectId` | Reference to User |
+
+---
+
+## Invoice Payments
+
+For tuition-related payments, invoices track payment status separately:
+
+| Status | Description |
+|--------|-------------|
+| `paid` | Full payment received |
+| `unpaid` | No payment received |
+| `partial` | Partial payment with tracking of `amountPaid`, `percentagePaid`, `amountDue` |

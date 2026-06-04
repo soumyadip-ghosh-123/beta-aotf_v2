@@ -1,0 +1,134 @@
+---
+title: Monitoring
+description: Error tracking and performance monitoring with Sentry.
+---
+
+## Overview
+
+AOTF uses **Sentry** for error tracking and performance monitoring across both client and server. The integration is configured through the `@sentry/nextjs` SDK.
+
+---
+
+## Configuration Files
+
+| File | Scope | Description |
+|------|-------|-------------|
+| `sentry.server.config.ts` | Server-side | Initialises Sentry for API routes and SSR |
+| `sentry.edge.config.ts` | Edge runtime | Initialises Sentry for edge middleware |
+| `instrumentation-client.ts` | Client-side | Initialises Sentry in the browser |
+| `instrumentation.ts` | Server startup | Registers Sentry + DB warmup |
+
+---
+
+## Setup
+
+### 1. Environment Variables
+
+```bash
+SENTRY_DSN=https://...@sentry.io/...
+SENTRY_AUTH_TOKEN=sntrys_...
+SENTRY_ORG=aotf
+SENTRY_PROJECT=javascript-nextjs
+```
+
+### 2. Next.js Config Integration
+
+Sentry wraps the Next.js config in `next.config.js`:
+
+```javascript
+import { withSentryConfig } from "@sentry/nextjs";
+
+export default withSentryConfig(withMDX(nextConfig), {
+  org: "aotf",
+  project: "javascript-nextjs",
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  webpack: {
+    automaticVercelMonitors: true,
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});
+```
+
+---
+
+## Key Features
+
+### Tunnel Route
+
+Client-side errors are routed through `/monitoring` to bypass ad blockers:
+
+```javascript
+tunnelRoute: "/monitoring",
+```
+
+This means Sentry events from the browser go through your own domain instead of directly to `sentry.io`.
+
+### Source Maps
+
+Source maps are uploaded during build for readable stack traces:
+
+```javascript
+widenClientFileUpload: true, // Upload more source maps
+```
+
+### Vercel Cron Monitors
+
+Automatic instrumentation of Vercel Cron Jobs:
+
+```javascript
+automaticVercelMonitors: true,
+```
+
+### Tree Shaking
+
+Debug logging is removed from production bundles:
+
+```javascript
+treeshake: {
+  removeDebugLogging: true,
+}
+```
+
+---
+
+## Error Boundaries
+
+The app includes error boundary components for graceful error handling:
+
+| File | Scope |
+|------|-------|
+| `app/error.tsx` | Route-level error boundary |
+| `app/global-error.tsx` | App-level error boundary (catches layout errors) |
+
+Both components:
+1. Display a user-friendly error message
+2. Report the error to Sentry automatically
+3. Offer a "Try Again" option
+
+---
+
+## Vercel Analytics
+
+In addition to Sentry, the app uses **Vercel Analytics** for web performance metrics:
+
+```typescript
+import { Analytics } from "@vercel/analytics/react";
+```
+
+This provides Core Web Vitals tracking (LCP, FID, CLS) directly in the Vercel dashboard.
+
+---
+
+## Monitoring Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/monitoring` | Sentry tunnel route (client errors) |
+| `/api/sentry-example-api` | Test endpoint for verifying Sentry integration |
+| `/sentry-example-page` | Test page for triggering a client-side error |
+
+> The test page and API are temporary routes for verifying Sentry is correctly configured. They should be removed before production deployment if not needed.

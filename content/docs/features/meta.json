@@ -1,0 +1,4 @@
+{
+  "title": "Features",
+  "pages": ["onboarding-flow", "application-lifecycle", "calendar-integration", "email-notifications", "google-sheets-sync"]
+}

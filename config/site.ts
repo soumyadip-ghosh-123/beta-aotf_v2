@@ -64,7 +64,7 @@ export const siteConfig = {
   shortName: "AOTF",
   subDescription: "Your Complete Platform for Learning, Earning & Skill-Based Opportunities",
   description: `From qualified tutors to skilled candidates, AOTF helps learners, guardians, and clients find trusted professionals with ease.`,
-  url: "https://aotf.in",
+  url: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://aotf.in",
   lastUpdated: "April 1, 2026",
   //payment ids
   UPI: {

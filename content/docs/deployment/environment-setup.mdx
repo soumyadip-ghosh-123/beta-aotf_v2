@@ -1,0 +1,122 @@
+---
+title: Environment Setup
+description: Production environment configuration and security best practices.
+---
+
+## Production vs. Development
+
+Several behaviours change between development and production:
+
+| Feature | Development | Production |
+|---------|------------|------------|
+| DNS Servers | `1.1.1.1` (overridden) | System default |
+| CSRF Localhost | Allowed | Not allowed |
+| CSP `script-src` | Includes `unsafe-eval` (HMR) | No `unsafe-eval` |
+| HSTS | Disabled | Enabled (1 year) |
+| Sentry Source Maps | Not uploaded | Uploaded |
+
+---
+
+## Required Production Variables
+
+Ensure these are set in your production environment:
+
+### Critical
+
+```bash
+# Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+CLERK_SECRET_KEY=sk_live_...
+CLERK_WEBHOOK_SECRET=whsec_...
+
+# Database
+MONGODB_URI=mongodb+srv://...
+
+# Application
+NEXT_PUBLIC_APP_URL=https://aotf.in
+NEXT_PUBLIC_SITE_URL=https://aotf.in
+```
+
+### Payments
+
+```bash
+# Razorpay LIVE keys (not test)
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_...
+```
+
+### Services
+
+```bash
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+
+# Resend
+RESEND_API_KEY=re_...
+EMAIL_FROM="AOTF <noreply@aotf.in>"
+```
+
+---
+
+## Security Checklist
+
+Before deploying to production, verify:
+
+- [ ] All `_test_` API keys replaced with live keys
+- [ ] `MONGODB_URI` points to a production cluster (not free M0)
+- [ ] Clerk webhook secret matches the production endpoint
+- [ ] `NEXT_PUBLIC_APP_URL` matches your domain
+- [ ] MongoDB Atlas IP whitelist is configured correctly
+- [ ] Sentry DSN is set for error tracking
+- [ ] CSP headers are correctly configured
+- [ ] HSTS is enabled via `next.config.js`
+
+---
+
+## MongoDB Production Settings
+
+### Atlas Configuration
+
+| Setting | Recommendation |
+|---------|---------------|
+| Cluster Tier | M10+ for production |
+| Region | Same as Vercel deployment region |
+| Backup | Enable automated backups |
+| Network Access | Restrict to Vercel IP ranges |
+
+### Connection Options
+
+The app uses production-tuned connection options:
+
+```typescript
+{
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 15_000,
+  connectTimeoutMS: 15_000,
+  socketTimeoutMS: 30_000,
+  heartbeatFrequencyMS: 10_000,
+}
+```
+
+---
+
+## Clerk Production Setup
+
+1. Switch from Development to Production instance in Clerk dashboard
+2. Update all `pk_test_` / `sk_test_` keys to `pk_live_` / `sk_live_`
+3. Configure production webhook endpoint
+4. Enable production domains
+5. Verify email sender domains
+
+---
+
+## DNS Configuration
+
+| Record | Type | Value |
+|--------|------|-------|
+| `aotf.in` | A / CNAME | Vercel |
+| `www.aotf.in` | CNAME | Vercel |
+| `docs.aotf.in` | CNAME | Vercel |

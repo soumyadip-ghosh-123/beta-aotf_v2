@@ -1,0 +1,153 @@
+---
+title: Application Model
+description: Application schema, lifecycle events, sub-documents, and calendar hooks.
+---
+
+## Overview
+
+The `Application` model tracks a provider's application to a post (tuition) or job. It stores the full lifecycle from initial application through demo class, guardian call, and final decision.
+
+**Collection:** `applications`
+**File:** `lib/models/Application.ts`
+
+---
+
+## Schema
+
+| Field | Type | Required | Default | Description |
+|-------|------|:--------:|---------|-------------|
+| `applicationId` | `String` | ✅ | — | Unique application ID |
+| `jobId` | `ObjectId` | — | — | Reference to Job (for job applications) |
+| `jobIdPublic` | `String` | — | — | Public job ID string |
+| `postId` | `String` | — | — | Post ID (for tuition applications) |
+| `applicantId` | `ObjectId` | ✅ | — | Reference to User |
+| `profileId` | `String` | ✅ | — | Profile ID for lookup |
+| `applicantType` | `String` | ✅ | — | `"teacher"` or `"candidate"` |
+| `applicantSnapshot` | `Object` | ✅ | — | Frozen profile snapshot |
+| `coverLetter` | `String` | — | — | Application cover letter |
+| `status` | `String` | ✅ | `"applied"` | Current status |
+| `dcDate` | `Date` | — | — | Demo class date |
+| `dcMeta` | `Object` | — | — | Demo class metadata |
+| `gcMeta` | `Object` | — | — | Guardian call metadata |
+| `declineMeta` | `Object` | — | — | Decline details |
+| `approvalMeta` | `Object` | — | — | Approval details |
+| `isActive` | `Boolean` | ✅ | `true` | Active flag |
+| `appliedAt` | `Date` | ✅ | `Date.now` | Application timestamp |
+
+---
+
+## Sub-documents
+
+### Applicant Snapshot
+
+Frozen at application time to preserve data integrity:
+
+```typescript
+{
+  name: string,
+  email: string,
+  phone: string,
+  avatarUrl: string | null,
+}
+```
+
+### DC (Demo Class) Meta
+
+```typescript
+{
+  scheduledDate: Date,      // When the demo class is scheduled
+  setByAdminId: ObjectId,   // Admin who scheduled it
+  setAt: Date,              // When it was set
+}
+```
+
+### GC (Guardian Call) Meta
+
+```typescript
+{
+  scheduledDate: Date,      // When the call is scheduled
+  setByAdminId: ObjectId,   // Admin who scheduled it
+  setAt: Date,              // When it was set
+}
+```
+
+### Decline Meta
+
+```typescript
+{
+  reason: string,                           // Why declined
+  autoDeclinedBecauseApplicationId: ObjectId, // If auto-declined
+  declinedByAdminId: ObjectId,              // Admin who declined
+  declinedAt: Date,                         // When declined
+}
+```
+
+### Approval Meta
+
+```typescript
+{
+  approvedByAdminId: ObjectId,   // Admin who approved
+  approvedAt: Date,              // When approved
+}
+```
+
+---
+
+## Indexes
+
+| Fields | Type | Purpose |
+|--------|------|---------|
+| `applicationId: 1` | Unique | Primary lookup |
+| `applicantId: 1` | Standard | Find user's applications |
+| `jobId: 1` | Standard | Find applications for a job |
+| `postId: 1` | Standard | Find applications for a post |
+| `status: 1` | Standard | Status filtering |
+| `jobId: 1, applicantId: 1` | Unique (partial) | Prevent duplicate job applications |
+| `postId: 1, applicantId: 1, applicantType: 1` | Unique (partial) | Prevent duplicate post applications |
+| `appliedAt: -1` | Standard | Chronological ordering |
+
+> The partial unique indexes only enforce uniqueness when the filtered fields exist, allowing applications to either a job or a post.
+
+---
+
+## Calendar Write-Through Hooks
+
+The Application model uses Mongoose post-hooks to automatically sync with calendar events:
+
+```typescript
+// After create
+ApplicationSchema.post("save", function(doc) {
+  const input = mapApplication(doc.toObject());
+  if (input) void upsertCalendarEvent(input);
+});
+
+// After update
+ApplicationSchema.post("findOneAndUpdate", function(doc) {
+  // ... sync calendar
+});
+
+// After delete
+ApplicationSchema.post("findOneAndDelete", function(doc) {
+  // ... delete calendar event
+});
+```
+
+These are fire-and-forget operations that don't block the primary database write.
+
+---
+
+## Application Event Model
+
+The `ApplicationEvent` model (`lib/models/ApplicationEvent.ts`) tracks state changes:
+
+```typescript
+{
+  applicationId: ObjectId,
+  event: string,          // "status_changed", "dc_scheduled", etc.
+  fromStatus: string,
+  toStatus: string,
+  performedBy: ObjectId,  // Admin who made the change
+  metadata: object,       // Additional context
+  createdAt: Date,
+}
+```

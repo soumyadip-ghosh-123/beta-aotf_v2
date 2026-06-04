@@ -1,0 +1,19 @@
+{
+  "title": "AOTF Docs",
+  "pages": [
+    "---Introduction---",
+    "introduction",
+    "---Setup---",
+    "getting-started",
+    "---Core Concepts---",
+    "architecture",
+    "data-models",
+    "---Reference---",
+    "api-reference",
+    "admin-system",
+    "---Guides---",
+    "features",
+    "deployment",
+    "contributing"
+  ]
+}

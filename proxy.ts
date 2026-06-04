@@ -38,6 +38,7 @@ const isPublicRoute = createRouteMatcher([
   "/sentry-example-page(.*)", // Temporary page to test Sentry error tracking in production,
   "/test(.*)", // Temporary public route for testing/debugging purposes
   "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
+  "/docs(.*)", // Docs are public, but skip onboarding check to avoid unnecessary DB calls for unauthenticated users accessing docs pages. If we need onboarding for docs in the future, we can remove this from the public routes list and add an explicit onboarding check in the /docs/[[...slug]] route handler instead.
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
@@ -65,6 +66,27 @@ const middleware = clerkMiddleware(async (auth, req) => {
     | undefined;
 
   const { pathname } = req.nextUrl;
+  const requestHeaders = new Headers(req.headers);
+  const host = requestHeaders.get("host") ?? requestHeaders.get("x-forwarded-host") ?? "";
+  const isDocsHost = host === "docs.aotf.in" || host === "www.docs.aotf.in";
+
+  if (isDocsHost && pathname === "/") {
+    return NextResponse.redirect(new URL("/docs", req.url));
+  }
+
+  if (
+    isDocsHost &&
+    !pathname.startsWith("/docs") &&
+    !pathname.startsWith("/api/") &&
+    !pathname.startsWith("/_next/") &&
+    pathname !== "/favicon.ico" &&
+    !pathname.startsWith("/monitoring")
+  ) {
+    return NextResponse.redirect(new URL("/docs", req.url));
+  }
+
+  requestHeaders.set("x-aotf-pathname", pathname);
+  const forward = () => NextResponse.next({ request: { headers: requestHeaders } });
   const method = req.method;
   const start = Date.now();
   const isApiRequest = pathname.startsWith("/api/");
@@ -312,7 +334,7 @@ const middleware = clerkMiddleware(async (auth, req) => {
     console.log(`[${method}] ${pathname} — ${duration}ms`);
   }
 
-  return NextResponse.next();
+  return forward();
 });
 
 // ─── Proxy ───────────────────────────────────────────────────────────
@@ -324,7 +346,9 @@ export async function proxy(request: NextRequest) {
   // Clerk attaches to every webhook delivery. Those headers must reach
   // the route handler intact so verifyWebhook() can authenticate the call.
   if (request.nextUrl.pathname.startsWith("/api/v1/webhooks/")) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-aotf-pathname", request.nextUrl.pathname);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   const event = {

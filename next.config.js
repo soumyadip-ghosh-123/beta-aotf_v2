@@ -1,3 +1,6 @@
+import { createMDX } from "fumadocs-mdx/next";
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const DEFAULT_CLERK_ORIGINS = [
   "https://*.clerk.accounts.dev",
@@ -106,13 +109,12 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const withMDX = createMDX({
+  // customize the config file path
+  // configPath: "source.config.ts"
+});
 
-// Injected content via Sentry wizard below
-
-const { withSentryConfig } = require("@sentry/nextjs");
-
-module.exports = withSentryConfig(module.exports, {
+export default withSentryConfig(withMDX(nextConfig), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 

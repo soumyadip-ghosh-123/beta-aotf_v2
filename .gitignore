@@ -39,7 +39,7 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 bun.lockb
-.vscode/settings.json
+.vscode
 ecosystem.config.js
 aotf-21-c52aced2c4d7.json
 
@@ -54,3 +54,5 @@ package/aotf_v2.zip
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+.source

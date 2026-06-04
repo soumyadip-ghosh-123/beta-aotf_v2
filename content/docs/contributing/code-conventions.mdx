@@ -1,0 +1,166 @@
+---
+title: Code Conventions
+description: Coding standards, linting, formatting, and architectural patterns.
+---
+
+## TypeScript
+
+The project uses TypeScript 5.9 with strict mode. Key `tsconfig.json` settings:
+
+- **Path aliases** — `@/*` maps to the project root
+- **Target** — ES2017+
+- **Module** — ESNext with bundler resolution
+
+### Type Patterns
+
+- Use `InferSchemaType` for Mongoose model types:
+  ```typescript
+  export type IUser = InferSchemaType<typeof userSchema> & {
+    _id: mongoose.Types.ObjectId;
+  };
+  ```
+- Use `interface` for component props and API contracts
+- Use `type` for unions, intersections, and utility types
+- Export enums as `const` arrays with `as const`:
+  ```typescript
+  export const POST_STATUSES = ["open", "matched", "closed"] as const;
+  export type PostStatus = (typeof POST_STATUSES)[number];
+  ```
+
+---
+
+## ESLint
+
+The project uses a flat ESLint config (`eslint.config.mjs`) with:
+
+| Plugin | Purpose |
+|--------|---------|
+| `@typescript-eslint` | TypeScript-specific rules |
+| `eslint-plugin-react` | React best practices |
+| `eslint-plugin-react-hooks` | Hooks rules |
+| `eslint-plugin-import` | Import ordering |
+| `eslint-plugin-unused-imports` | Remove unused imports |
+| `eslint-plugin-jsx-a11y` | Accessibility |
+| `eslint-plugin-tailwindcss` | Tailwind class ordering |
+| `eslint-plugin-prettier` | Prettier integration |
+
+### Running the Linter
+
+```bash
+pnpm lint
+```
+
+This runs `eslint --fix`, automatically fixing issues where possible.
+
+---
+
+## Prettier
+
+Code formatting is handled by Prettier with Tailwind CSS class sorting:
+
+```json
+{
+  "plugins": ["prettier-plugin-tailwindcss"]
+}
+```
+
+---
+
+## File Naming Conventions
+
+| Type | Convention | Example |
+|------|-----------|---------|
+| Components | PascalCase | `FilterSidebar.tsx` |
+| Pages | `page.tsx` (Next.js) | `app/jobs/page.tsx` |
+| Layouts | `layout.tsx` (Next.js) | `app/admin/layout.tsx` |
+| API Routes | `route.ts` (Next.js) | `app/api/v1/posts/route.ts` |
+| Models | PascalCase | `Application.ts` |
+| Services | kebab-case | `calendar-event.service.ts` |
+| Validations | kebab-case | `api-route.ts` |
+| Utilities | camelCase | `formatCurrency.js` |
+| Config | camelCase | `site.ts` |
+| Hooks | camelCase with `use` prefix | `use-disclosure.ts` |
+
+---
+
+## API Route Pattern
+
+Every API route handler follows this consistent structure:
+
+```typescript
+import { NextRequest, NextResponse } from "next/server";
+import { checkCsrfOrigin, handleApiError, getClientIp, checkRateLimit } from "@/lib/api-utils";
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. CSRF check
+    const csrfError = checkCsrfOrigin(request);
+    if (csrfError) return csrfError;
+
+    // 2. Rate limiting
+    const rateLimitError = checkRateLimit(limiter, getClientIp(request));
+    if (rateLimitError) return rateLimitError;
+
+    // 3. Parse & validate input
+    const body = await request.json();
+    const validated = schema.parse(body);
+
+    // 4. Call service
+    const result = await someService(validated);
+
+    // 5. Return response
+    return NextResponse.json({ success: true, data: result }, { status: 201 });
+  } catch (error) {
+    return handleApiError(error, "POST /api/v1/resource");
+  }
+}
+```
+
+---
+
+## Model Pattern
+
+Every Mongoose model follows this structure:
+
+```typescript
+// 1. Imports
+import mongoose, { Schema, Document, Model, models } from "mongoose";
+
+// 2. Enums as const arrays
+export const STATUSES = ["active", "inactive"] as const;
+export type Status = (typeof STATUSES)[number];
+
+// 3. Interface
+export interface IMyModel extends Document { ... }
+
+// 4. Schema definition
+const MyModelSchema = new Schema<IMyModel>({ ... }, { timestamps: true });
+
+// 5. Indexes
+MyModelSchema.index({ field: 1 });
+
+// 6. Hooks (optional)
+MyModelSchema.post("save", function(doc) { ... });
+
+// 7. Model export (with hot-reload safety)
+const MyModel: Model<IMyModel> =
+  models.MyModel || mongoose.model<IMyModel>("MyModel", MyModelSchema);
+
+export default MyModel;
+```
+
+---
+
+## Import Ordering
+
+Imports should follow this order:
+
+1. Node.js built-ins (`node:dns/promises`)
+2. React/Next.js (`react`, `next/server`)
+3. Third-party libraries (`mongoose`, `zod`)
+4. Internal aliases (`@/lib/*`, `@/components/*`)
+5. Relative imports (`./utils`)
+
+The `eslint-plugin-import` enforces this automatically.

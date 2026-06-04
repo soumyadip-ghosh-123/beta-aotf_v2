@@ -1,0 +1,126 @@
+---
+title: Tech Stack
+description: Complete breakdown of technologies used in the AOTF platform.
+---
+
+## Framework & Runtime
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| [Next.js](https://nextjs.org) | 16.x | Full-stack React framework (App Router) |
+| [React](https://react.dev) | 19.x | UI rendering |
+| [TypeScript](https://typescriptlang.org) | 5.9 | Type-safe development |
+| [Turbopack](https://turbo.build/pack) | Built-in | Dev server bundler (`next dev --turbopack`) |
+
+---
+
+## UI & Styling
+
+| Technology | Purpose |
+|-----------|---------|
+| [HeroUI v2](https://heroui.com) | Component library (Accordion, Table, Modal, Toast, etc.) |
+| [Tailwind CSS v4](https://tailwindcss.com) | Utility-first CSS framework |
+| [Tailwind Variants](https://tailwind-variants.org) | Conditional variant styling |
+| [Framer Motion](https://motion.dev) | Declarative animations & transitions |
+| [Lucide React](https://lucide.dev) | Icon library |
+| [React Icons](https://react-icons.github.io) | Additional icon sets |
+| [GSAP](https://gsap.com) | Advanced scroll & timeline animations |
+| [Lottie React](https://lottiereact.com) | Lottie animation player |
+| [tsParticles](https://particles.js.org) | Particle effects |
+
+---
+
+## Backend & Data
+
+| Technology | Purpose |
+|-----------|---------|
+| [MongoDB Atlas](https://mongodb.com/atlas) | Cloud-hosted document database |
+| [Mongoose](https://mongoosejs.com) | ODM for MongoDB (schemas, validation, hooks) |
+| [Zod](https://zod.dev) | Runtime schema validation (API input) |
+
+---
+
+## Authentication & Security
+
+| Technology | Purpose |
+|-----------|---------|
+| [Clerk](https://clerk.com) | Authentication provider (username/password, webhooks, session management) |
+| Custom RBAC | 3-tier role system via `publicMetadata` |
+| CSRF Protection | Origin/Referer validation on mutations |
+| Rate Limiting | In-memory sliding-window limiter |
+| NoSQL Injection Prevention | `mongoose.set('sanitizeFilter', true)` |
+
+---
+
+## Payments & Finance
+
+| Technology | Purpose |
+|-----------|---------|
+| [Razorpay](https://razorpay.com) | Payment gateway (UPI, Card, Wallet) |
+| Custom Invoicing | PDF-ready invoice generation with line items |
+
+---
+
+## Media & Communication
+
+| Technology | Purpose |
+|-----------|---------|
+| [Cloudinary](https://cloudinary.com) | Image/media upload & CDN |
+| [Resend](https://resend.com) | Transactional email delivery |
+| [Google Sheets API](https://developers.google.com/sheets) | Enquiry ledger sync |
+
+---
+
+## Monitoring & Analytics
+
+| Technology | Purpose |
+|-----------|---------|
+| [Sentry](https://sentry.io) | Error tracking & performance monitoring |
+| [Vercel Analytics](https://vercel.com/analytics) | Web analytics |
+
+---
+
+## Documentation
+
+| Technology | Purpose |
+|-----------|---------|
+| [Fumadocs](https://fumadocs.vercel.app) | MDX-powered documentation framework |
+| MDX | Markdown + JSX for rich doc pages |
+
+---
+
+## Development Tooling
+
+| Tool | Purpose |
+|------|---------|
+| [pnpm](https://pnpm.io) | Fast, disk-efficient package manager |
+| [ESLint](https://eslint.org) | Code linting |
+| [Prettier](https://prettier.io) | Code formatting |
+| [Jest](https://jestjs.io) | Unit testing framework |
+| [tsx](https://github.com/privatenumber/tsx) | TypeScript script execution |
+
+---
+
+## Rich Text Editing
+
+| Technology | Purpose |
+|-----------|---------|
+| [Tiptap](https://tiptap.dev) | Headless rich-text editor framework |
+| ProseMirror | Underlying editing engine |
+
+---
+
+## Utility Libraries
+
+| Library | Purpose |
+|---------|---------|
+| `date-fns` | Date manipulation & formatting |
+| `clsx` + `tailwind-merge` | Conditional CSS class merging |
+| `class-variance-authority` | Component variant patterns |
+| `jsPDF` | Client-side PDF generation |
+| `html-to-image` | DOM-to-image capture |
+| `qrcode` / `react-qr-code` | QR code generation |
+| `@zxing/browser` | Barcode/QR scanning |
+| `react-hook-form` + `@hookform/resolvers` | Form state management |
+| `react-dnd` | Drag-and-drop interactions |
+| `react-day-picker` | Date picker component |

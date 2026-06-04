@@ -1,0 +1,83 @@
+---
+title: Post Model
+description: Tuition post schema, student sub-documents, and status management.
+---
+
+## Overview
+
+The `Post` model represents a tuition requirement posted by an admin on behalf of a guardian/parent. It tracks student details, scheduling preferences, budget, and lifecycle status.
+
+**Collection:** `posts`
+**File:** `lib/models/Post.ts`
+
+---
+
+## Schema
+
+| Field | Type | Required | Default | Description |
+|-------|------|:--------:|---------|-------------|
+| `postId` | `String` | ✅ | — | Unique identifier (e.g., `POST-ABC123`) |
+| `enquiryId` | `ObjectId` | — | — | Link to originating enquiry |
+| `guardianName` | `String` | ✅ | — | Parent/guardian name |
+| `guardianPhone` | `String` | ✅ | — | Contact phone |
+| `source` | `String` | ✅ | — | Lead source (whatsapp, website, etc.) |
+| `students` | `[Student]` | ✅ | — | At least one student required |
+| `classType` | `String` | ✅ | — | `"online"` / `"offline"` / `"both"` |
+| `frequencyPerWeek` | `Number` | ✅ | — | Weekly classes |
+| `preferredDays` | `[String]` | — | `[]` | Preferred days |
+| `preferredTime` | `String` | — | — | Preferred time slot |
+| `location` | `String` | ✅ | — | Teaching location |
+| `monthlyBudget` | `Number` | ✅ | — | Budget in INR |
+| `notes` | `String` | — | — | Additional notes |
+| `status` | `String` | ✅ | `"open"` | Post status |
+| `paymentstatus` | `String` | — | — | Guardian payment status |
+| `paymentDate` | `Date` | — | — | When payment was received |
+| `tentativeDate` | `Date` | — | — | Follow-up date for pending payment |
+| `matchedTeacherClerkId` | `String` | — | — | Selected teacher's Clerk ID |
+| `createdByAdminClerkId` | `String` | — | — | Admin who created the post |
+| `updatedByAdminClerkId` | `String` | — | — | Admin who last updated |
+| `invoiceGenerated` | `Boolean` | — | `false` | Whether invoice exists |
+
+---
+
+## Student Sub-document
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `className` | `String` | ✅ | Class/grade (e.g., "10th") |
+| `board` | `String` | ✅ | Education board (CBSE, ICSE, etc.) |
+| `subjects` | `[String]` | ✅ | Required subjects |
+| `subjectsNormalized` | `[String]` | — | Normalized subject names for search |
+
+---
+
+## Status Flow
+
+| Status | Description |
+|--------|-------------|
+| `open` | Actively accepting applications |
+| `matched` | Teacher has been assigned |
+| `closed` | Tuition completed/ended |
+| `cancelled` | Post was cancelled |
+| `hold` | Temporarily paused |
+
+### Payment Status
+
+| Status | Description |
+|--------|-------------|
+| `done` | Guardian payment received |
+| `pending` | Payment pending |
+
+---
+
+## Indexes
+
+| Fields | Purpose |
+|--------|---------|
+| `postId: 1` | Unique lookup |
+| `enquiryId: 1` | Find posts from enquiries |
+| `guardianPhone: 1` | Find posts by guardian |
+| `status: 1, createdAt: -1` | Status-filtered listing |
+| `matchedTeacherClerkId: 1` | Find teacher assignments |
+| `createdByAdminClerkId: 1, createdAt: -1` | Admin's post history |
+| `students.subjectsNormalized: 1` | Subject-based search |
