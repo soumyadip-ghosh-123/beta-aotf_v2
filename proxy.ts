@@ -39,6 +39,7 @@ const isPublicRoute = createRouteMatcher([
   "/test(.*)", // Temporary public route for testing/debugging purposes
   "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
   "/docs(.*)", // Docs are public, but skip onboarding check to avoid unnecessary DB calls for unauthenticated users accessing docs pages. If we need onboarding for docs in the future, we can remove this from the public routes list and add an explicit onboarding check in the /docs/[[...slug]] route handler instead.
+  "/api/search(.*)", // Docs search API endpoint should be public
 ]);
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
