@@ -1,0 +1,250 @@
+/* ============================================================
+   AOTF Documentation — Brand Theme
+   Compatible with Fumadocs UI v16 + shadcn/ui CSS variables
+   
+   Brand Palette:
+     Primary Navy:  #3B418B
+     Deep Navy:     #342F74
+     Dark Indigo:   #1B1464
+     Brand Orange:  #E25C23
+     Amber Gold:    #FFA800
+     Near Black:    #231F20
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Light Mode ─────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --background: 240 20% 98%;            /* #F8F8FB — warm off-white */
+  --foreground: 345 7% 13%;             /* #231F20 near-black */
+  --muted: 240 15% 94%;                 /* #EDEDF4 subtle gray */
+  --muted-foreground: 240 8% 46%;       /* #6B6B80 subdued text */
+
+  /* Cards & surfaces */
+  --card: 0 0% 100%;                    /* pure white */
+  --card-foreground: 345 7% 13%;
+  --border: 240 15% 88%;                /* #DCDCE8 */
+  --input: 240 15% 88%;
+
+  /* Primary — Navy/Indigo */
+  --primary: 237 40% 39%;               /* #3B418B */
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary — softer navy tint */
+  --secondary: 237 30% 92%;             /* #E4E6F5 */
+  --secondary-foreground: 237 40% 30%;  /* darker navy */
+
+  /* Accent — Brand Orange */
+  --accent: 19 76% 52%;                 /* #E25C23 */
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Popover / Tooltip */
+  --popover: 0 0% 100%;
+  --popover-foreground: 345 7% 13%;
+
+  /* Ring / focus */
+  --ring: 237 40% 39%;
+
+  /* Sidebar */
+  --sidebar-background: 240 20% 96%;    /* #F2F2F8 */
+  --sidebar-foreground: 240 8% 25%;
+  --sidebar-border: 240 15% 88%;
+  --sidebar-accent: 237 30% 92%;        /* hover */
+  --sidebar-accent-foreground: 237 40% 30%;
+  --sidebar-primary: 237 40% 39%;       /* active item */
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-ring: 237 40% 39%;
+
+  /* Code blocks */
+  --fd-code-background: 240 20% 95%;    /* #F0F0F8 */
+  --fd-code-border: 240 15% 85%;
+
+  /* Links */
+  --fd-link: 237 40% 39%;              /* primary navy */
+  --fd-link-hover: 19 76% 52%;         /* orange on hover */
+
+  /* Status */
+  --success: 145 63% 32%;
+  --warning: 38 92% 50%;               /* #FFA800 amber */
+  --error: 0 72% 51%;
+
+  /* Typography */
+  --radius: 0.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ─── Dark Mode ──────────────────────────────────────────── */
+
+.dark {
+  /* Backgrounds */
+  --background: 240 25% 6%;             /* #0D0D15 near-black with blue tint */
+  --foreground: 240 15% 92%;            /* #E8E8F2 */
+  --muted: 240 20% 11%;                 /* #161620 */
+  --muted-foreground: 240 10% 58%;      /* #898998 */
+
+  /* Cards & surfaces */
+  --card: 240 22% 9%;                   /* #111119 */
+  --card-foreground: 240 15% 92%;
+  --border: 240 18% 18%;               /* #232330 */
+  --input: 240 18% 18%;
+
+  /* Primary — lighter navy for dark bg */
+  --primary: 237 55% 68%;               /* #7B82D4 accessible on dark */
+  --primary-foreground: 240 25% 6%;
+
+  /* Secondary */
+  --secondary: 237 25% 18%;             /* #222240 */
+  --secondary-foreground: 237 55% 78%;
+
+  /* Accent — brighter orange */
+  --accent: 19 100% 60%;               /* #FF7030 */
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive */
+  --destructive: 0 65% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Popover */
+  --popover: 240 22% 9%;
+  --popover-foreground: 240 15% 92%;
+
+  /* Ring */
+  --ring: 237 55% 68%;
+
+  /* Sidebar */
+  --sidebar-background: 240 25% 5%;
+  --sidebar-foreground: 240 12% 78%;
+  --sidebar-border: 240 18% 16%;
+  --sidebar-accent: 240 20% 11%;
+  --sidebar-accent-foreground: 240 12% 88%;
+  --sidebar-primary: 237 55% 68%;
+  --sidebar-primary-foreground: 240 25% 6%;
+  --sidebar-ring: 237 55% 68%;
+
+  /* Code blocks */
+  --fd-code-background: 240 22% 10%;
+  --fd-code-border: 240 18% 18%;
+
+  /* Links */
+  --fd-link: 237 65% 72%;
+  --fd-link-hover: 19 100% 65%;
+
+  /* Status */
+  --success: 145 63% 45%;
+  --warning: 38 92% 55%;
+  --error: 0 65% 60%;
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, kbd, samp {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ─── Docs-specific overrides ────────────────────────────── */
+
+/* Active sidebar item pill */
+[data-active="true"] {
+  background-color: hsl(var(--sidebar-primary) / 0.12);
+  color: hsl(var(--sidebar-primary));
+  font-weight: 600;
+  border-left: 3px solid hsl(var(--sidebar-primary));
+}
+
+/* Orange accent on hover for interactive elements */
+a:hover,
+[data-state="checked"] {
+  color: hsl(var(--accent));
+  transition: color 0.15s ease;
+}
+
+/* Code block styling */
+pre {
+  background-color: hsl(var(--fd-code-background)) !important;
+  border: 1px solid hsl(var(--fd-code-border)) !important;
+  border-radius: var(--radius);
+}
+
+/* Callout / alert blocks */
+.callout,
+.nd-callout {
+  border-radius: var(--radius);
+  border-left-width: 4px;
+}
+
+/* Search highlight */
+mark {
+  background-color: hsl(38 92% 50% / 0.3);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Heading anchor links */
+h1 a, h2 a, h3 a, h4 a {
+  color: inherit;
+  text-decoration: none;
+}
+h1 a:hover, h2 a:hover, h3 a:hover, h4 a:hover {
+  color: hsl(var(--primary));
+}
+
+/* ─── Print stylesheet (for PDF export) ──────────────────── */
+
+@media print {
+  /* Hide non-content elements */
+  nav,
+  aside,
+  [data-toolbar],
+  .fd-sidebar,
+  .fd-toc,
+  footer,
+  .nd-sidebar,
+  button {
+    display: none !important;
+  }
+
+  body {
+    font-size: 11pt;
+    color: #000;
+    background: #fff;
+  }
+
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  pre, code {
+    font-size: 9pt;
+    border: 1px solid #ccc;
+    background: #f5f5f5 !important;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+    color: #1B1464;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 4pt 8pt;
+  }
+}

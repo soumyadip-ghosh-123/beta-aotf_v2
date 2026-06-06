@@ -7,9 +7,9 @@ import {
   DocsPage,
   DocsTitle,
 } from "fumadocs-ui/layouts/docs/page";
-
 import { getMDXComponents } from "@/components/mdx";
 import { source } from "@/lib/source";
+import { DocToolbar } from "@/components/docs/doc-toolbar";
 
 type DocPageProps = {
   params: Promise<{
@@ -26,6 +26,7 @@ export default async function Page({ params }: DocPageProps) {
   }
 
   const MDX = page.data.body;
+  const pageUrl = `https://aotf.in/docs/${(slug ?? []).join("/")}`;
 
   return (
     <DocsPage toc={page.data.toc} full={page.data.full}>
@@ -38,6 +39,12 @@ export default async function Page({ params }: DocPageProps) {
           })}
         />
       </DocsBody>
+      {/* Floating AI share + export toolbar */}
+      <DocToolbar
+        rawContent={page.data.description ?? ""}
+        title={page.data.title ?? "AOTF Docs"}
+        url={pageUrl}
+      />
     </DocsPage>
   );
 }

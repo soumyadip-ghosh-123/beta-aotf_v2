@@ -1,0 +1,13 @@
+{
+  "title": "Database Models",
+  "pages": [
+    "overview",
+    "user-profile",
+    "application",
+    "admin",
+    "enquiry",
+    "job-post",
+    "calendar",
+    "other"
+  ]
+}

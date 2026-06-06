@@ -1,4 +1,0 @@
-{
-  "title": "Architecture",
-  "pages": ["system-overview", "database-design", "authentication", "middleware", "services-layer"]
-}

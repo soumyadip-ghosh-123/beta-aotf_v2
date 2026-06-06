@@ -9,6 +9,8 @@
     "lint": "eslint --fix",
     "create:admin": "tsx scripts/create-admin.ts",
     "test:sheets": "tsx scripts/test-sheets.ts",
+    "benchmark:api": "tsx scripts/benchmark-api.ts",
+    "benchmark:db": "tsx scripts/benchmark-db.ts",
     "ship:zip": "mkdir -p package && rm -f package/aotf_v2.zip && zip -r package/aotf_v2.zip . -x 'node_modules/*' '.git/*' '.next/*' 'package/*' '*.zip'"
   },
   "dependencies": {
@@ -93,6 +95,7 @@
     "fumadocs-core": "^16.9.3",
     "fumadocs-mdx": "^15.0.10",
     "fumadocs-mermaid": "^1.3.1",
+    "fumadocs-openapi": "^10.10.3",
     "fumadocs-ui": "^16.9.3",
     "google-auth-library": "^10.6.2",
     "googleapis": "^171.4.0",

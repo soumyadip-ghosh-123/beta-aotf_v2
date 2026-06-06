@@ -1,65 +1,52 @@
 ---
-title: AOTF Documentation
-description: Official developer documentation for the Academy of Tutorials & Freelancers platform.
+title: Welcome to AOTF Docs
+description: Complete documentation and knowledge transfer guide for the Academy of Tutors & Freelancers platform.
 ---
 
-import { Cards, Card } from "fumadocs-ui/components/card";
+# AOTF Documentation
 
-## Welcome to AOTF Docs
+Welcome to the official documentation for **AOTF — Academy of Tutors & Freelancers**. This site serves as both a developer reference and a full knowledge transfer guide for the platform.
 
-**Academy of Tutorials & Freelancers (AOTF)** is a full-stack platform that connects **Providers** (Tutors & Freelancers) with **Consumers** (Students, Parents & Clients). Built with Next.js, MongoDB, and Clerk, the platform offers end-to-end gig management — from posting requirements to application review, selection, and payment.
+## What is AOTF?
 
-This documentation covers everything you need to understand, develop, and deploy the AOTF platform.
+AOTF is a semi-automated, admin-moderated platform that acts as an intermediary connecting:
 
----
+- **Providers** (Teachers and Freelance Candidates) — who want work
+- **Consumers** (Students, Parents, Clients) — who need tutors or freelancers
+- **Admins** — who moderate, verify, and facilitate matches
 
-## Quick Navigation
+The platform digitises the entire gig-matching pipeline: from requirement intake → posting → application → review → assignment → feedback.
 
-<Cards>
-  <Card title="Introduction" href="/docs/introduction/overview">
-    Understand the project vision, business workflow, and what AOTF does.
-  </Card>
-  <Card title="Getting Started" href="/docs/getting-started/prerequisites">
-    Set up your local development environment in minutes.
-  </Card>
-  <Card title="Architecture" href="/docs/architecture/system-overview">
-    Explore the system design, database layer, authentication, and middleware.
-  </Card>
-  <Card title="API Reference" href="/docs/api-reference/overview">
-    Complete reference for every REST endpoint.
-  </Card>
-  <Card title="Admin System" href="/docs/admin-system/roles-and-permissions">
-    Role-based access control, security features, and audit logging.
-  </Card>
-  <Card title="Data Models" href="/docs/data-models/user">
-    Mongoose schemas, indexes, and relationships for every collection.
-  </Card>
-  <Card title="Features" href="/docs/features/onboarding-flow">
-    Deep dives into onboarding, applications, calendar sync, and emails.
-  </Card>
-  <Card title="Deployment" href="/docs/deployment/vercel">
-    Deploy to Vercel, configure production environment, and set up monitoring.
-  </Card>
-</Cards>
+## Documentation Structure
 
----
+This documentation follows the **[Diataxis](https://diataxis.fr/)** framework:
+
+| Section | Purpose | Best for |
+|---|---|---|
+| 🎓 **Tutorials** | Learning-oriented walkthroughs | New developers onboarding |
+| 🛠 **How-To Guides** | Task-oriented step-by-step guides | Getting specific things done |
+| 📖 **Reference** | Information-oriented API & schema docs | Looking up exact details |
+| 💡 **Explanations** | Understanding-oriented deep dives | Understanding *why* things work |
+
+## Quick Links
+
+- [Quick Start (Developers)](/docs/tutorials/quick-start) — Clone the repo and get running in minutes
+- [API Overview](/docs/reference/api/overview) — How every API route is structured
+- [Database Models](/docs/reference/db/overview) — MongoDB collections and field reference
+- [Admin Hierarchy](/docs/reference/admin/hierarchy) — Roles, permissions, and access control
+- [Application Lifecycle](/docs/explanations/application-lifecycle) — How applications move from `applied` to `approved`
+- [Deployment Guide](/docs/how-to/deploy-vercel) — Vercel + MongoDB Atlas free tier setup
 
 ## Tech Stack at a Glance
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| UI Library | HeroUI v2 + Tailwind CSS v4 |
-| Database | MongoDB Atlas + Mongoose |
-| Authentication | Clerk (Username/Password, Webhooks) |
-| Payments | Razorpay (UPI, Card, Wallet) |
+|---|---|
+| Framework | Next.js 16.1 (App Router) |
+| Database | MongoDB Atlas M0 (free tier) via Mongoose |
+| Auth | Clerk (username/password + JWT) |
+| Payments | Razorpay (provider registration fee) |
 | Media | Cloudinary |
 | Email | Resend |
 | Monitoring | Sentry |
-| Documentation | Fumadocs |
-
----
-
-## Who is this for?
-
-This documentation is aimed at **developers** working on the AOTF codebase — whether you're onboarding as a new contributor, building a feature, debugging an issue, or deploying to production.
+| Docs | Fumadocs v16 |
+| Hosting | Vercel (free tier) |

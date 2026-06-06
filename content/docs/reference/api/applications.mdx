@@ -1,0 +1,190 @@
+---
+title: Applications API
+description: API reference for provider application submissions — status lifecycle, DC/GC flow, and auto-decline behavior.
+---
+
+# Applications API
+
+Applications link a **Provider** (teacher or candidate) to a **Post** or **Job** they want to work on. Admins manage the status progression from `applied` through to `approved` or `decline`.
+
+## Application Status Lifecycle
+
+```
+applied → DC → GC → approved
+    ↘         ↘         ↘
+  decline   decline   auto_declined (others)
+  withdrawn
+```
+
+| Status | Triggered By | Meaning |
+|---|---|---|
+| `applied` | Provider | Initial submission |
+| `DC` | Admin | Demo Call scheduled |
+| `GC` | Admin | Guardian Confirmed (consumer approved) |
+| `approved` | Admin | Provider selected and assignment created |
+| `decline` | Admin | Provider rejected |
+| `auto_declined` | System | Another applicant was approved (auto) |
+| `withdrawn` | Provider | Provider withdraws their application |
+
+**Auto-decline**: When an admin approves one application for a post/job, **all other active applications** for the same post/job are automatically set to `auto_declined`. This is handled server-side atomically.
+
+## List Applications
+
+```http
+GET /api/v1/applications
+Authorization: Bearer <clerk_jwt>
+```
+
+For **providers**: Returns only their own applications.  
+For **admins**: Returns all applications with full details.
+
+**Query Parameters**:
+
+| Param | Type | Description |
+|---|---|---|
+| `postId` | `string` | Filter by post human-readable ID |
+| `jobId` | `string` | Filter by job human-readable ID |
+| `status` | `string` | Filter by status |
+| `page` | `number` | Page (default: 1) |
+| `limit` | `number` | Per page (default: 20) |
+
+**Response 200**:
+```json
+{
+  "applications": [
+    {
+      "_id": "...",
+      "applicantClerkId": "user_...",
+      "applicantUsername": "teacher1",
+      "postId": "POST-001",
+      "status": "applied",
+      "coverLetter": "I am interested...",
+      "appliedAt": "2026-01-01T00:00:00.000Z",
+      "dcDate": null,
+      "gcDate": null
+    }
+  ],
+  "total": 12
+}
+```
+
+## Submit Application
+
+```http
+POST /api/v1/applications
+Authorization: Bearer <clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+Providers only. Admins cannot apply on behalf of providers.
+
+**Request Body**:
+```json
+{
+  "postId": "POST-001",
+  "coverLetter": "I have 5 years of experience teaching Math to Class 9–12 students."
+}
+```
+
+Or for a job:
+```json
+{
+  "jobId": "JOB-001",
+  "coverLetter": "I am a React developer with 3 years of experience."
+}
+```
+
+**Validation**:
+- Must provide exactly one of `postId` or `jobId` (not both, not neither)
+- Cannot apply to a post/job with status `closed`, `cancelled`, or `matched`
+- Cannot apply more than once to the same post/job (returns **409**)
+
+**Response 201**: Created application document.
+
+## Get Single Application
+
+```http
+GET /api/v1/applications/:applicationId
+Authorization: Bearer <clerk_jwt>
+```
+
+Providers can only access their own applications. Admins can access any.
+
+**Response 200**: Full application document.
+
+## Update Application Status (Admin)
+
+```http
+PATCH /api/v1/applications/:applicationId
+Authorization: Bearer <admin_clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+**Permission required**: varies by transition:
+
+| Transition | Permission Required |
+|---|---|
+| `applied` → `DC` | `canCallApplicants` |
+| `DC` → `GC` | `canCallApplicants` |
+| `GC` → `approved` | `canManagePosts` |
+| Any → `decline` | `canManagePosts` |
+
+**Request Body**:
+```json
+{
+  "status": "DC",
+  "dcDate": "2026-01-10T15:00:00.000Z",
+  "dcNote": "Scheduled via phone call"
+}
+```
+
+For `approved`:
+```json
+{
+  "status": "approved"
+}
+```
+
+**Side effects on `approved`**:
+1. All other applications for the same post/job → `auto_declined`
+2. `Post.status` or `Job.status` → `matched`
+3. `PostLedger` updated with teacher assignment details
+4. Google Sheet updated
+5. Provider receives notification email
+6. `CalendarEvent` created for assignment
+
+## Withdraw Application (Provider)
+
+```http
+PATCH /api/v1/applications/:applicationId
+Authorization: Bearer <clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+Providers can withdraw their own applications (any status except `approved`):
+
+```json
+{ "status": "withdrawn" }
+```
+
+**Response 200**: Updated application.
+
+## Application Events
+
+Every status change is logged in the `ApplicationEvent` collection:
+
+```json
+{
+  "applicationId": "...",
+  "fromStatus": "applied",
+  "toStatus": "DC",
+  "changedByClerkId": "user_admin...",
+  "changedAt": "2026-01-10T12:00:00.000Z",
+  "note": "Scheduled via phone call"
+}
+```
+
+This provides a complete audit trail of all status changes for every application.

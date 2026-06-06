@@ -1,0 +1,231 @@
+---
+title: Users, Profile & Onboarding APIs
+description: API reference for user account management, provider profiles, and the onboarding completion flow.
+---
+
+# Users, Profile & Onboarding APIs
+
+## Users
+
+### List Users
+
+```http
+GET /api/v1/users
+Authorization: Bearer <admin_clerk_jwt>
+```
+
+**Permission required**: `canManageUsers`
+
+**Query Parameters**:
+
+| Param | Type | Description |
+|---|---|---|
+| `page` | `number` | Page number (default: 1) |
+| `limit` | `number` | Results per page (default: 20, max: 100) |
+| `status` | `string` | Filter by status: `active`, `blocked`, `deleted` |
+| `search` | `string` | Search by username or email |
+
+**Response 200**:
+```json
+{
+  "users": [
+    {
+      "_id": "...",
+      "clerkId": "user_...",
+      "username": "teacher1",
+      "role": "teacher",
+      "plan": { "current": "teacher", "hasTuitionAccess": true },
+      "onboardingCompleted": true,
+      "status": "active",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "total": 142,
+  "page": 1,
+  "pages": 8
+}
+```
+
+---
+
+### Get User by Clerk ID
+
+```http
+GET /api/v1/users/:clerkId
+Authorization: Bearer <admin_clerk_jwt>
+```
+
+**Response 200**: Single user document with profile data populated.
+
+**Response 404**:
+```json
+{ "error": "User not found" }
+```
+
+---
+
+### Update User Status
+
+```http
+PATCH /api/v1/users/:clerkId
+Authorization: Bearer <admin_clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+**Permission required**: `canBlockUsers`
+
+**Request Body**:
+```json
+{ "status": "blocked" }
+```
+
+Valid values: `"active"`, `"blocked"`, `"deleted"`
+
+**Response 200**: Updated user document.
+
+**Notes**:
+- Blocking a user prevents them from logging in (Clerk account remains, but `proxy.ts` checks DB status)
+- Setting status to `"deleted"` is a soft delete — data is preserved in MongoDB
+
+---
+
+## Current User (Me)
+
+### Get Current User
+
+```http
+GET /api/v1/me
+Authorization: Bearer <clerk_jwt>
+```
+
+Returns the current user's document + profile. Available to any authenticated user.
+
+**Response 200**:
+```json
+{
+  "user": {
+    "_id": "...",
+    "clerkId": "user_...",
+    "username": "teacher1",
+    "role": "teacher",
+    "plan": { "hasTuitionAccess": true, "hasCandidateAccess": false },
+    "onboardingCompleted": true,
+    "status": "active"
+  },
+  "profile": {
+    "displayName": "John Doe",
+    "bio": "Experienced Math tutor",
+    "subjects": ["Mathematics", "Physics"],
+    "experience": 5,
+    "avatarUrl": "https://res.cloudinary.com/..."
+  }
+}
+```
+
+---
+
+## Profile
+
+### Get Own Profile
+
+```http
+GET /api/v1/profile
+Authorization: Bearer <clerk_jwt>
+```
+
+Returns the complete profile for the currently authenticated user.
+
+---
+
+### Get Public Profile by Username
+
+```http
+GET /api/v1/profile/:username
+```
+
+No authentication required. Returns profile data for the provider's public-facing page at `/u/[username]`.
+
+**Response 404** if profile `isPublic: false` or username not found.
+
+---
+
+### Update Own Profile
+
+```http
+PATCH /api/v1/profile
+Authorization: Bearer <clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+**Request Body** (all fields optional):
+```json
+{
+  "displayName": "John Doe",
+  "bio": "Experienced Math tutor",
+  "location": "Kolkata, WB",
+  "websiteUrl": "https://johndoe.com",
+  "subjects": ["Mathematics", "Physics"],
+  "experience": 5,
+  "gender": "male",
+  "qualification": "B.Sc. Mathematics",
+  "board": "CBSE",
+  "phone": "9876543210",
+  "whatsapp": "9876543210",
+  "address": "123, Park Street, Kolkata",
+  "teachingExp": "2-5",
+  "jobExp": "0-1",
+  "socialLinks": {
+    "linkedin": "https://linkedin.com/in/johndoe",
+    "twitter": "https://twitter.com/johndoe",
+    "github": "https://github.com/johndoe"
+  }
+}
+```
+
+**Validation**:
+- `bio`: Max 300 characters
+- `address`: Max 200 characters
+- `gender`: `"male"` | `"female"` | `"other"`
+- `board`: `"CBSE"` | `"ICSE"` | `"WB"`
+- `teachingExp` / `jobExp`: `"0-1"` | `"2-5"` | `"6-10"` | `"10+"`
+
+---
+
+## Onboarding
+
+### Complete Onboarding
+
+```http
+POST /api/v1/onboarding
+Authorization: Bearer <clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+Called after successful Razorpay payment verification. Sets `onboardingCompleted: true` on the `User` document and syncs to Clerk.
+
+**Request Body**:
+```json
+{
+  "plan": "teacher",
+  "phone": "9876543210",
+  "whatsapp": "9876543210",
+  "address": "123, Park Street, Kolkata"
+}
+```
+
+**Response 200**:
+```json
+{ "success": true, "onboardingCompleted": true }
+```
+
+**State Machine**:
+- `OnboardingDetails.status` transitions: `incomplete` → `complete`
+- `User.onboardingCompleted` → `true`
+- `User.plan.hasTuitionAccess` → `true`
+- `User.plan.hasCandidateAccess` → `true` (for `teacher_candidate` plan)
+- Clerk `publicMetadata.onboardingCompleted` → `true`
+
+This is a **sensitive operation** — once complete, it cannot be undone via the API. Use the admin panel to reset onboarding status if needed.

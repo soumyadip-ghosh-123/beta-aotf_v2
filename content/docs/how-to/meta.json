@@ -1,0 +1,11 @@
+{
+  "title": "How-To Guides",
+  "pages": [
+    "deploy-vercel",
+    "configure-clerk",
+    "run-benchmarks",
+    "seed-users",
+    "google-sheets-sync",
+    "enquiry-to-job"
+  ]
+}

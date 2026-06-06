@@ -1,0 +1,22 @@
+{
+  "title": "Explanations",
+  "pages": [
+    "architecture",
+    "proxy-vs-middleware",
+    "auth-flow",
+    "application-lifecycle",
+    "webhook-flow",
+    "sheets-sync",
+    "calendar",
+    "cold-start",
+    "admin-tracking",
+    "payments",
+    "admin-workflow",
+    "provider-flow",
+    "enquiries",
+    "admin-features",
+    "provider-features",
+    "improvements",
+    "function-params"
+  ]
+}

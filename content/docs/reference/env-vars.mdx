@@ -1,0 +1,134 @@
+---
+title: Environment Variables
+description: Complete reference for all AOTF environment variables — required vs optional, where they're used, and how to set them.
+---
+
+# Environment Variables
+
+All environment variables live in `.env.local` for development and in **Vercel → Settings → Environment Variables** for production. Never commit `.env.local` to version control.
+
+## MongoDB
+
+| Variable | Required | Description |
+|---|---|---|
+| `MONGODB_URI` | ✅ | Full Atlas connection string |
+
+```bash
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/aotf?retryWrites=true&w=majority
+```
+
+## Clerk
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✅ | Public key (browser-safe) |
+| `CLERK_SECRET_KEY` | ✅ | Secret key (server-only) |
+| `CLERK_WEBHOOK_SECRET` | ✅ | Svix signing secret from Clerk Webhooks |
+| `ADMIN_EMAIL_DOMAIN` | Optional | Domain for auto-generated admin emails (default: `example.com`) |
+
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+CLERK_SECRET_KEY=sk_live_...
+CLERK_WEBHOOK_SECRET=whsec_...
+ADMIN_EMAIL_DOMAIN=aotf.in
+```
+
+## Application
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_APP_URL` | ✅ | Canonical app URL (used in CSRF check and email links) |
+
+```bash
+NEXT_PUBLIC_APP_URL=https://aotf.in
+```
+
+## Razorpay
+
+| Variable | Required | Description |
+|---|---|---|
+| `RAZORPAY_KEY_ID` | ✅ | Server-side API key |
+| `RAZORPAY_KEY_SECRET` | ✅ | API secret (for signature verification) |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | ✅ | Public key (passed to browser for payment modal) |
+| `RAZORPAY_WEBHOOK_SECRET` | ✅ | Webhook signing secret |
+
+```bash
+RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_KEY_SECRET=...
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_...
+RAZORPAY_WEBHOOK_SECRET=...
+```
+
+> For testing, use `rzp_test_` keys from the Razorpay dashboard.
+
+## Cloudinary
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | ✅ | Cloud name (browser-safe) |
+| `CLOUDINARY_API_KEY` | ✅ | API key |
+| `CLOUDINARY_API_SECRET` | ✅ | API secret |
+
+```bash
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+## Google Sheets
+
+| Variable | Required | Description |
+|---|---|---|
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | ✅ | Service account email |
+| `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | ✅ | RSA private key (with literal `\n`) |
+| `GOOGLE_SHEETS_SPREADSHEET_ID` | ✅ | Spreadsheet ID from the URL |
+
+```bash
+GOOGLE_SERVICE_ACCOUNT_EMAIL=aotf@project.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMII...\n-----END RSA PRIVATE KEY-----\n"
+GOOGLE_SHEETS_SPREADSHEET_ID=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
+```
+
+> **Private key formatting**: The key must have literal `\n` characters. Vercel stores them correctly. In `.env.local`, wrap in double quotes.
+
+## Resend (Email)
+
+| Variable | Required | Description |
+|---|---|---|
+| `RESEND_API_KEY` | ✅ | Resend API key |
+| `RESEND_FROM_EMAIL` | Optional | Sender address (default: `noreply@aotf.in`) |
+
+```bash
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=noreply@aotf.in
+```
+
+## Sentry (Monitoring)
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_SENTRY_DSN` | Optional | Sentry DSN (enables error tracking) |
+| `SENTRY_AUTH_TOKEN` | Optional | For source maps upload during build |
+| `SENTRY_ORG` | Optional | Your Sentry org slug |
+| `SENTRY_PROJECT` | Optional | Your Sentry project slug |
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
+SENTRY_AUTH_TOKEN=sntrys_...
+SENTRY_ORG=aotf
+SENTRY_PROJECT=aotf-nextjs
+```
+
+## Quick Validation
+
+Run the health check to verify env vars are set correctly:
+
+```bash
+# Start dev server
+pnpm dev
+
+# In another terminal — should return { "status": "ok", "db": "connected" }
+curl http://localhost:3000/api/health | jq .
+```
+
+If `db: "disconnected"`, check `MONGODB_URI`. If the server fails to start, check for missing `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` or `CLERK_SECRET_KEY`.

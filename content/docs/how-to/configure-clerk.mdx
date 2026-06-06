@@ -1,0 +1,179 @@
+---
+title: Configure Clerk
+description: Complete Clerk configuration guide for AOTF — instance settings, JWT templates, webhook setup, and public metadata structure.
+---
+
+# Configure Clerk
+
+AOTF uses **Clerk** for all authentication — both for providers (username/password sign-up) and for admins (via the admin seeding script). This guide covers every Clerk configuration setting required.
+
+> **📸 Screenshots**: This page has placeholder sections for Clerk dashboard screenshots. Upload your screenshots and they will be embedded and annotated here.
+
+## Instance Type
+
+AOTF uses **two Clerk instances**:
+
+| Instance | Purpose | Key |
+|---|---|---|
+| Development | Local dev, testing | `pk_test_...` / `sk_test_...` |
+| Production | Live at aotf.in | `pk_live_...` / `sk_live_...` |
+
+> **⚠ Dev mode limit**: Clerk's development instance supports **maximum 100 users**. Once you hit this limit, new sign-ups are blocked. Use the [user seeding scripts](/docs/how-to/seed-users) carefully to stay within this limit. Switch to a production instance for real users.
+
+## Required Environment Variables
+
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...   # or pk_live_...
+CLERK_SECRET_KEY=sk_test_...                     # or sk_live_...
+CLERK_WEBHOOK_SECRET=whsec_...
+```
+
+## 1. Authentication Settings
+
+### Sign-Up Options
+
+Configure in **Clerk Dashboard → User & Authentication → Email, Phone, Username**:
+
+- ✅ **Username** — Required (used as the primary identifier in AOTF)
+- ✅ **Email address** — Required
+- ✅ **Password** — Required
+- ❌ Social providers — Disable Google/GitHub OAuth (providers should use password auth)
+
+> [TODO: Add screenshot of Clerk "Email, Phone, Username" settings page]
+
+### Sign-In Options
+
+- ✅ Username + Password
+- ❌ Magic link / OTP — Disable these for provider accounts
+
+> [TODO: Add screenshot of Clerk "Sign-in" configuration page]
+
+## 2. Username Configuration
+
+AOTF uses usernames as permanent identifiers (`/u/[username]` profile URLs). Configure:
+
+- **Min length**: 3 characters
+- **Max length**: 20 characters
+- **Allowed characters**: Lowercase letters, numbers, underscores, hyphens
+- **Uniqueness**: Enforced by Clerk + MongoDB (case-insensitive index)
+
+> [TODO: Add screenshot of username settings]
+
+## 3. Session Configuration
+
+In **Clerk Dashboard → Sessions**:
+
+- **Session token lifetime**: 7 days (default is fine)
+- **JWT claims**: Leave default — AOTF reads `publicMetadata` from `sessionClaims`
+
+### JWT Template (optional but recommended)
+
+Create a JWT template named `aotf` that includes `publicMetadata` in the token payload so claims are immediately available without a Clerk API call:
+
+```json
+{
+  "publicMetadata": "{{user.public_metadata}}"
+}
+```
+
+> [TODO: Add screenshot of JWT template configuration]
+
+## 4. publicMetadata Structure
+
+AOTF reads the following fields from Clerk `publicMetadata` in `proxy.ts`:
+
+### Provider Users
+
+```json
+{
+  "role": "teacher",
+  "onboardingCompleted": true
+}
+```
+
+| Field | Type | Set By | Purpose |
+|---|---|---|---|
+| `role` | `"teacher"` \| `"teacher_candidate"` | Webhook on sign-up, updated post-payment | Determines platform access |
+| `onboardingCompleted` | `boolean` | `/api/v1/payments/verify` | Gates access to protected routes |
+
+### Admin Users
+
+```json
+{
+  "isAdmin": true,
+  "role": "super_admin",
+  "aotfRole": "SUPER_ADMIN",
+  "requirePasswordChange": false,
+  "permissions": {
+    "canManageUsers": true,
+    "canManagePosts": true,
+    ...
+  }
+}
+```
+
+| Field | Type | Purpose |
+|---|---|---|
+| `isAdmin` | `boolean` | Distinguishes admin from provider accounts |
+| `role` | `"super_admin"` \| `"admin"` \| `"support_admin"` \| `"crm"` | Used in UI role display |
+| `aotfRole` | `"SUPER_ADMIN"` etc. | Legacy field — kept for backward compatibility |
+| `requirePasswordChange` | `boolean` | Forces password reset on next login |
+| `permissions` | `object` | Cached permission flags — DB is source of truth |
+
+> **Source of truth**: `proxy.ts` always cross-checks the DB (`Admin` collection) for admin routes. The JWT metadata is a performance cache, not the authority. If DB and JWT disagree, the DB wins.
+
+## 5. Webhook Configuration
+
+### Add Webhook Endpoint
+
+In **Clerk Dashboard → Webhooks → Add Endpoint**:
+
+1. **URL**: `https://aotf.in/api/v1/webhooks/clerk`
+2. **Events**: Select exactly these three:
+   - `user.created`
+   - `user.updated`
+   - `user.deleted`
+3. **Version**: v2 (recommended)
+
+> [TODO: Add screenshot of Clerk webhook configuration]
+
+### Why Webhooks Bypass proxy.ts
+
+Clerk webhooks are delivered with `svix-id`, `svix-timestamp`, and `svix-signature` headers. `clerkMiddleware` in Next.js **strips these headers** when it rebuilds the request. 
+
+`proxy.ts` detects webhook paths and bypasses the Clerk middleware for them:
+
+```ts
+// proxy.ts
+if (request.nextUrl.pathname.startsWith("/api/v1/webhooks/")) {
+  // Pass through directly — preserve Svix headers
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+```
+
+### Webhook Signing Secret
+
+After adding the endpoint, Clerk shows a **Signing Secret** (`whsec_...`). Copy it to:
+- `.env.local` as `CLERK_WEBHOOK_SECRET` (dev)
+- Vercel Environment Variables as `CLERK_WEBHOOK_SECRET` (prod)
+
+## 6. Admin Accounts in Clerk
+
+Admins are created via `pnpm create:admin` and exist in the **same Clerk instance** as providers. The only difference is the `publicMetadata.isAdmin: true` flag.
+
+Admins use the same sign-in page but are redirected to `/admin` after login by the proxy's admin route guard.
+
+> [TODO: Add screenshot of Clerk Users list showing admin vs provider accounts]
+
+## 7. Rate Limits & Billing
+
+Clerk's free tier is generous for development. Key limits:
+
+| Feature | Free Tier |
+|---|---|
+| Monthly active users | 10,000 (production) |
+| Dev mode users | **100 max** |
+| Webhooks | Unlimited |
+| JWT customization | Available |
+
+For production with real users, you will likely stay well within the 10,000 MAU free tier.
