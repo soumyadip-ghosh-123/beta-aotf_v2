@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
@@ -102,10 +103,6 @@ export async function POST(req: Request) {
       key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    console.error("[create-order] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to create order" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/v1/payments/create-order");
   }
 }

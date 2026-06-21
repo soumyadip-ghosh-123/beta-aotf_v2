@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
@@ -137,6 +138,7 @@ type LocationType = "on-site" | "remote" | "hybrid";
           color: "success",
         });
       } catch (error) {
+      reportClientError(error, { feature: "admin-job-form" });
         addToast({
           description: error instanceof Error ? error.message : `Failed to save ${title.toLowerCase()}`,
           color: "danger",
@@ -165,6 +167,7 @@ type LocationType = "on-site" | "remote" | "hybrid";
           color: "success",
         });
       } catch (error) {
+      reportClientError(error, { feature: "admin-job-form" });
         addToast({
           description: error instanceof Error ? error.message : `Failed to delete ${title.toLowerCase()}`,
           color: "danger",
@@ -388,6 +391,7 @@ export default function JobPostForm({
       setErrors({});
       return true;
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-form" });
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         error.issues.forEach((issue) => {
@@ -478,6 +482,7 @@ export default function JobPostForm({
       setErrors({});
       return true;
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-form" });
       if (error instanceof z.ZodError) {
         error.issues.forEach((issue) => {
           const path = issue.path.join(".");
@@ -669,6 +674,7 @@ export default function JobPostForm({
         router.refresh();
       }, 2000);
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-form" });
       addToast({
         description:
           error instanceof Error

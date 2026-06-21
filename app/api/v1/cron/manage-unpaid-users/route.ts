@@ -12,15 +12,29 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { clerkClient } from "@clerk/nextjs/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+
+import { reportError } from "@/lib/sentry-report";
+
+const CRON_MONITOR_SLUG = "manage-unpaid-users";
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const checkInId = Sentry.captureCheckIn(
+    { monitorSlug: CRON_MONITOR_SLUG, status: "in_progress" },
+    {
+      schedule: { type: "crontab", value: "30 21 * * *" },
+      checkinMargin: 5,
+      maxRuntime: 30,
+    },
+  );
 
   await dbConnect();
 
@@ -46,6 +60,11 @@ export async function GET(req: NextRequest) {
   ).lean();
 
   if (unpaidUsers.length === 0) {
+    Sentry.captureCheckIn({
+      checkInId,
+      monitorSlug: CRON_MONITOR_SLUG,
+      status: "ok",
+    });
     return NextResponse.json({ warned: 0, deleted: 0, failed: [] });
   }
 
@@ -117,5 +136,19 @@ export async function GET(req: NextRequest) {
   }
 
   console.log(`[manage-unpaid] Results:`, results);
+
+  if (results.failed.length > 0) {
+    reportError(new Error("manage-unpaid-users cron had failures"), {
+      tags: { layer: "cron", job: CRON_MONITOR_SLUG },
+      extra: { failed: results.failed, warned: results.warned, deleted: results.deleted },
+    });
+  }
+
+  Sentry.captureCheckIn({
+    checkInId,
+    monitorSlug: CRON_MONITOR_SLUG,
+    status: results.failed.length > 0 ? "error" : "ok",
+  });
+
   return NextResponse.json(results);
 }

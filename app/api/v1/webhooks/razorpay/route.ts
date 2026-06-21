@@ -7,6 +7,8 @@ import Payment from "@/lib/models/Payment";
 import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import WebhookEvent from "@/lib/models/WebhookEvent";
 
+import { reportError } from "@/lib/sentry-report";
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 type PayloadMap = Record<string, Record<string, Record<string, unknown>>>;
@@ -146,6 +148,10 @@ export async function POST(req: Request) {
     );
   } catch (err) {
     console.error(`[razorpay-webhook] Error processing ${event}:`, err);
+    reportError(err, {
+      tags: { provider: "razorpay", event },
+      extra: { entityId, orderId },
+    });
     await WebhookEvent.updateOne(
       { provider: "razorpay", event, entityId },
       { error: err instanceof Error ? err.message : "Unknown error" },

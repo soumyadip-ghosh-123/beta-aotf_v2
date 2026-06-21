@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -40,8 +41,7 @@ export async function GET(
     }
 
     return NextResponse.json(ledger);
-  } catch (err) {
-    console.error("[GET /api/admin/tuitions/[id]/ledger] Error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, "GET /api/admin/tuitions/[id]/ledger", { legacyAdminShape: true });
   }
 }

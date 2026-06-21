@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -114,6 +115,7 @@ export default function EnquiryCard({
 
       addToast({ description: "Enquiry ID copied", color: "success" });
     } catch (err: any) {
+      reportClientError(err, { feature: "admin-enquiry-card" });
       addToast({
         description: err?.message || "Failed to copy",
         color: "danger",
@@ -176,6 +178,7 @@ export default function EnquiryCard({
       onClose();
       onStatusUpdated?.();
     } catch (err: any) {
+      reportClientError(err, { feature: "admin-enquiry-card" });
       addToast({ description: err.message, color: "danger" });
     } finally {
       setIsUpdating(false);

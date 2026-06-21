@@ -31,6 +31,7 @@ import {
   CameraIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { reportClientError } from "@/lib/client-report-error";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -195,6 +196,7 @@ export default function RenownedTeachersPage() {
         color: "success",
       });
     } catch (err) {
+      reportClientError(err, { feature: "admin-teachers", extra: { action: "upload-image" } });
       addToast({
         description: err instanceof Error ? err.message : "Upload failed",
         color: "danger",

@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -176,11 +177,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true, profile });
   } catch (error) {
-    console.error("[profile] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to update profile" },
-      { status: 500 },
-    );
+    return handleApiError(error, "PATCH /api/v1/profile");
   }
 }
 
@@ -203,10 +200,6 @@ export async function GET() {
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error("[profile] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch profile" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/v1/profile");
   }
 }

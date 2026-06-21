@@ -4,6 +4,7 @@ import * as adminService from "@/lib/services/admin.service";
 import Admin from "@/lib/models/Admin";
 import AdminRole from "@/lib/models/admin/AdminRole";
 import dbConnect from "@/lib/db";
+import { handleApiError } from "@/lib/api-utils";
 
 /**
  * POST /api/v1/admin/admins - Create new admin
@@ -106,11 +107,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    console.error("[POST /api/v1/admin/admins] Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/v1/admin/admins");
   }
 }
 
@@ -206,10 +203,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("[GET /api/v1/admin/admins] Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/v1/admin/admins");
   }
 }

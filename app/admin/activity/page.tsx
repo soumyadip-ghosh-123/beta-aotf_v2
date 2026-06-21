@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -369,6 +370,7 @@ export default function SuperadminActivityLogs() {
       setLogs(data.logs);
       setTotalPages(data.pagination.totalPages);
     } catch (err) {
+      reportClientError(err, { feature: "admin-activity" });
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);

@@ -6,6 +6,7 @@ import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 import AdminRole from "@/lib/models/admin/AdminRole";
 import { ADMIN_PERMISSION_KEYS } from "@/lib/admin/admin-permissions";
+import { reportError } from "@/lib/sentry-report";
 
 function splitName(name: string) {
   const [firstName, ...rest] = name.trim().split(/\s+/);
@@ -419,6 +420,7 @@ export async function POST(req: Request) {
       );
     }
 
+    reportError(error, { route: "POST /api/v1/admin/provision" });
     return NextResponse.json(
       { error: "Failed to provision admin" },
       { status: 500 },

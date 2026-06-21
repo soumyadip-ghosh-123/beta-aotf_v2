@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -99,6 +100,7 @@ const Page = () => {
       const mapped = (data.jobs ?? []).map(mapApiJob);
       setPosts(mapped);
     } catch (err) {
+      reportClientError(err, { feature: "admin-jobs" });
       setFetchError(err instanceof Error ? err.message : "Failed to fetch");
     } finally {
       setIsLoading(false);
@@ -181,6 +183,7 @@ const Page = () => {
       setCancelTarget(null);
       fetchJobs();
     } catch (error) {
+      reportClientError(error, { feature: "admin-jobs" });
       addToast({
         description:
           error instanceof Error

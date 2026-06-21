@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useEffect } from "react";
 // import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -200,6 +201,7 @@ export default function AdminInvoicePage() {
         );
         setPaymentStatus(parsedData.paymentStatus || "unpaid");
       } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-create" });
         console.error("Error loading saved data:", error);
       }
     } else {
@@ -479,6 +481,7 @@ export default function AdminInvoicePage() {
           });
       }
     } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-create" });
       console.error("❌ Error saving invoice:", error);
       if (!silent)
         addToast({
@@ -687,6 +690,7 @@ export default function AdminInvoicePage() {
 
       setAutoSaveTimer(timer);
     } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-create" });
       console.error("Error fetching project:", error);
       addToast({
         description: "Failed to fetch project details. Please try again.",
@@ -818,6 +822,7 @@ export default function AdminInvoicePage() {
 
       setAutoSaveTimer(timer);
     } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-create" });
       console.error("Error fetching post:", error);
       addToast({
         description: "Failed to fetch post details. Please try again.",
@@ -863,6 +868,7 @@ export default function AdminInvoicePage() {
           color: "success",
         });
       } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-create" });
         console.error("Error generating PDF:", error);
         addToast({
           description:

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useAuth, useUser } from "@clerk/nextjs";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -134,6 +135,7 @@ function OptionManagerModal({
         color: "success",
       });
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-form" });
       addToast({
         description:
           error instanceof Error
@@ -164,6 +166,7 @@ function OptionManagerModal({
         color: "success",
       });
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-form" });
       addToast({
         description:
           error instanceof Error
@@ -505,6 +508,7 @@ export default function TuitionPostForm({
       setErrors({});
       return true;
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-form" });
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
         error.issues.forEach((issue) => {
@@ -583,6 +587,7 @@ export default function TuitionPostForm({
       setErrors({});
       return true;
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-form" });
       if (error instanceof z.ZodError) {
         error.issues.forEach((issue) => {
           const path = issue.path.join(".");
@@ -740,6 +745,7 @@ export default function TuitionPostForm({
         router.refresh();
       }, 2000);
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-form" });
       addToast({
         description:
           error instanceof Error

@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as adminService from "@/lib/services/admin.service";
@@ -52,14 +53,7 @@ export async function GET(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(
-      `[GET /api/v1/admin/admins/${(await params).id}] Error:`,
-      error,
-    );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/v1/admin/admins/[id]");
   }
 }
 
@@ -149,13 +143,6 @@ export async function PATCH(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(
-      `[PATCH /api/v1/admin/admins/${(await params).id}] Error:`,
-      error,
-    );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "PATCH /api/v1/admin/admins/[id]");
   }
 }

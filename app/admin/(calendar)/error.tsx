@@ -4,7 +4,7 @@ import { Button } from "@heroui/button";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
-export default function Error({
+export default function CalendarError({
   error,
   reset,
 }: {
@@ -17,15 +17,8 @@ export default function Error({
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
-      <h2 className="text-lg font-bold">Something went wrong!</h2>
-      <Button
-        onClick={
-          // Attempt to recover by trying to re-render the segment
-          () => reset()
-        }
-      >
-        Try again
-      </Button>
+      <h2 className="text-lg font-bold">Calendar failed to load</h2>
+      <Button onClick={() => reset()}>Try again</Button>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import dbConnect from "@/lib/db";
 import Admin from "@/lib/models/Admin";
 import AdminActivityLog from "@/lib/models/admin/AdminActivityLog";
+import { handleApiError } from "@/lib/api-utils";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -84,7 +85,6 @@ export async function GET(req: Request) {
       }
     });
   } catch (error) {
-    console.error("Error fetching activity logs:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handleApiError(error, "GET /api/admin/activity-logs");
   }
 }

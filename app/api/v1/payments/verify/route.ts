@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
@@ -121,10 +122,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[verify-payment] Error:", error);
-    return NextResponse.json(
-      { error: "Payment verification failed" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/v1/payments/verify");
   }
 }

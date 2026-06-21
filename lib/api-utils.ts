@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AppError, ValidationError } from "@/lib/errors";
+import { reportError } from "@/lib/sentry-report";
 
 /** Standard shape returned by every error response */
 interface ErrorResponse {
   error: string;
   fieldErrors?: Record<string, string[]>;
+}
+
+interface AdminErrorResponse {
+  success: false;
+  message: string;
+  fieldErrors?: Record<string, string[]>;
+}
+
+export interface HandleApiErrorOptions {
+  /** Preserve `{ success: false, message }` shape used by legacy admin APIs */
+  legacyAdminShape?: boolean;
 }
 
 // ─── CSRF Origin Check ──────────────────────────────────────────────────
@@ -153,7 +165,10 @@ function isZodError(
 export function handleApiError(
   error: unknown,
   context?: string,
-): NextResponse<ErrorResponse> {
+  options?: HandleApiErrorOptions,
+): NextResponse<ErrorResponse | AdminErrorResponse> {
+  const admin = options?.legacyAdminShape === true;
+
   // Log with context for debugging server-side
   if (context) {
     console.error(`[${context}]`, error);
@@ -168,6 +183,12 @@ export function handleApiError(
       const key = issue.path.join(".");
       (fieldErrors[key] ??= []).push(issue.message);
     }
+    if (admin) {
+      return NextResponse.json(
+        { success: false, message: "Validation failed", fieldErrors },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
       { error: "Validation failed", fieldErrors },
       { status: 400 },
@@ -176,6 +197,16 @@ export function handleApiError(
 
   // ── Known operational errors ───────────────────────────────────────
   if (error instanceof ValidationError) {
+    if (admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+          fieldErrors: error.fieldErrors,
+        },
+        { status: error.statusCode },
+      );
+    }
     return NextResponse.json(
       { error: error.message, fieldErrors: error.fieldErrors },
       { status: error.statusCode },
@@ -183,6 +214,12 @@ export function handleApiError(
   }
 
   if (error instanceof AppError) {
+    if (admin) {
+      return NextResponse.json(
+        { success: false, message: error.message },
+        { status: error.statusCode },
+      );
+    }
     return NextResponse.json(
       { error: error.message },
       { status: error.statusCode },
@@ -191,6 +228,12 @@ export function handleApiError(
 
   // ── Malformed JSON request bodies ──────────────────────────────────
   if (error instanceof SyntaxError) {
+    if (admin) {
+      return NextResponse.json(
+        { success: false, message: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
@@ -201,6 +244,15 @@ export function handleApiError(
     "code" in error &&
     (error as { code: number }).code === 11000
   ) {
+    if (admin) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A duplicate entry was detected. Please try again.",
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { error: "A duplicate entry was detected. Please try again." },
       { status: 409 },
@@ -208,5 +260,12 @@ export function handleApiError(
   }
 
   // ── Catch-all (never leak internals) ───────────────────────────────
+  reportError(error, { route: context });
+  if (admin) {
+    return NextResponse.json(
+      { success: false, message: "Internal server error" },
+      { status: 500 },
+    );
+  }
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }

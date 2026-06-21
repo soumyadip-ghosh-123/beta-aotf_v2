@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -106,8 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, totalSynced: ledgers.length });
-  } catch (err) {
-    console.error("[POST /api/admin/resync-sheet/enquiries] Error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, "POST /api/admin/resync-sheet/enquiries", { legacyAdminShape: true });
   }
 }

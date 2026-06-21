@@ -5,6 +5,7 @@ import type { NextFetchEvent } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import Admin from "@/lib/models/Admin";
+import { reportError } from "@/lib/sentry-report";
 
 // ─── Route matchers ─────────────────────────────────────────────────────
 
@@ -35,7 +36,6 @@ const isPublicRoute = createRouteMatcher([
   "/services(.*)",
   "/sso-callback(.*)",
   "/verify(.*)",
-  "/sentry-example-page(.*)", // Temporary page to test Sentry error tracking in production,
   "/test(.*)", // Temporary public route for testing/debugging purposes
   "/admin/invoices(.*)", // Admin route that doesn't require onboarding, so skip the check in the middleware (API route still checks admin auth)
   "/docs(.*)", // Docs are public, but skip onboarding check to avoid unnecessary DB calls for unauthenticated users accessing docs pages. If we need onboarding for docs in the future, we can remove this from the public routes list and add an explicit onboarding check in the /docs/[[...slug]] route handler instead.
@@ -127,7 +127,11 @@ const middleware = clerkMiddleware(async (auth, req) => {
       }
       // Payment not completed yet — send to onboarding
       return NextResponse.redirect(new URL("/onboarding", req.url));
-    } catch {
+    } catch (err) {
+      reportError(err, {
+        tags: { layer: "proxy" },
+        extra: { pathname, userId, phase: "dashboard-redirect" },
+      });
       // DB unreachable — send to home as safe fallback
       return NextResponse.redirect(new URL("/", req.url));
     }
@@ -153,6 +157,10 @@ const middleware = clerkMiddleware(async (auth, req) => {
       }
     } catch (err) {
       console.error("[proxy] Error resolving admin status for onboarding check:", err);
+      reportError(err, {
+        tags: { layer: "proxy" },
+        extra: { pathname, userId, phase: "admin-status-onboarding" },
+      });
     }
   }
 
@@ -192,6 +200,10 @@ const middleware = clerkMiddleware(async (auth, req) => {
       }
     } catch (err) {
       console.error("[proxy] Error checking admin status:", err);
+      reportError(err, {
+        tags: { layer: "proxy" },
+        extra: { pathname, userId, phase: "admin-guard" },
+      });
       // If DB is down, fall back to JWT claim to avoid blocking admins
     }
 
@@ -319,7 +331,11 @@ const middleware = clerkMiddleware(async (auth, req) => {
         }
         // DB says completed — let the user through. Clerk metadata will catch
         // up on the next token refresh and the slow path won't be needed again.
-      } catch {
+      } catch (err) {
+        reportError(err, {
+          tags: { layer: "proxy" },
+          extra: { pathname, userId, phase: "onboarding-gate" },
+        });
         // If the DB is unreachable, fall back to the JWT claim to avoid
         // blocking the user with a redirect loop.
         if (meta?.onboardingCompleted !== true) {

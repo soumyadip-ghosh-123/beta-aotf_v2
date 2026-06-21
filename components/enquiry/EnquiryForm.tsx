@@ -8,6 +8,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { addToast } from "@heroui/toast";
 import { SendIcon } from "lucide-react";
 import { enquiryFormSchema as schema } from "@/lib/validations/forms";
+import { reportClientError } from "@/lib/client-report-error";
 
 type EnquiryFormProps = {
   onSuccess?: (enquiryId: string) => void;
@@ -89,6 +90,7 @@ export default function EnquiryForm({ onSuccess }: EnquiryFormProps) {
       setForm({ name: "", phone: "", query: "" });
       setErrors({});
     } catch (err: any) {
+      reportClientError(err, { feature: "enquiry-form" });
       showToast(err.message || "Failed to submit enquiry", "error");
     } finally {
       setIsSubmitting(false);

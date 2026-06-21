@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@heroui/button";
@@ -237,6 +238,7 @@ function AdminAccountsSection() {
         if (!mounted) return;
         setMyAdmin(json.admin ?? null);
       } catch (e) {
+      reportClientError(e, { feature: "admin-settings" });
         // ignore
       }
     })();
@@ -268,6 +270,7 @@ function AdminAccountsSection() {
           })),
         );
       } catch (err) {
+      reportClientError(err, { feature: "admin-settings" });
         if (!mounted) return;
         setRoleError(
           err instanceof Error ? err.message : "Failed to load roles",
@@ -335,6 +338,7 @@ function AdminAccountsSection() {
           })),
         );
       } catch (e) {
+      reportClientError(e, { feature: "admin-settings" });
         console.error("Failed to fetch admins:", e);
       } finally {
         if (mounted) setIsLoadingAdmins(false);
@@ -558,6 +562,7 @@ function AdminAccountsSection() {
       setAddErrors({});
       closeAdd();
     } catch (err) {
+      reportClientError(err, { feature: "admin-settings" });
       console.error("Add admin error:", err);
       addToast({ description: "Failed to create admin", color: "danger" });
     } finally {
@@ -633,6 +638,7 @@ function AdminAccountsSection() {
       setNewRolePermissions(permissionsFromRole(roles, "admin"));
       closeRole();
     } catch (err) {
+      reportClientError(err, { feature: "admin-settings" });
       addToast({
         description:
           err instanceof Error ? err.message : "Failed to create role",

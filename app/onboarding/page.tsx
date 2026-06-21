@@ -2,7 +2,7 @@
 import Stepper, { Step } from "@/components/reactbits/ui/Stepper";
 import { useState, useEffect, useRef } from "react";
 import { useUser, useSession } from "@clerk/nextjs";
-import * as Sentry from "@sentry/nextjs";
+import { reportClientError } from "@/lib/client-report-error";
 import {
   PhoneFields,
   AddressField,
@@ -520,11 +520,11 @@ export default function Onboarding() {
             ? err.message
             : "Payment failed. Please try again."
         );
+        reportClientError(err, {
+          feature: "onboarding",
+          extra: { step: "payment" },
+        });
       }
-      Sentry.captureException(err, {
-        tags: { feature: "onboarding", step: "payment" },
-        extra: { formData },
-      });
     } finally {
       setIsPaymentLoading(false);
     }

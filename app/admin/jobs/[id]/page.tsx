@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -114,6 +115,7 @@ export default function ViewJobPostPage({
           setCandidates(mapped);
         }
       } catch (err) {
+      reportClientError(err, { feature: "admin-job-detail" });
         setFetchError(
           err instanceof Error ? err.message : "Failed to fetch job"
         );
@@ -197,6 +199,7 @@ export default function ViewJobPostPage({
 
       onClose();
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-detail" });
       addToast({
         description:
           error instanceof Error

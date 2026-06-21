@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
@@ -164,6 +165,7 @@ export default function ViewPostPage({
           setCandidates(mapped);
         }
       } catch (err) {
+      reportClientError(err, { feature: "admin-tuition-detail" });
         setFetchError(
           err instanceof Error ? err.message : "Failed to fetch post"
         );
@@ -247,6 +249,7 @@ export default function ViewPostPage({
 
       onClose();
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-detail" });
       addToast({
         description:
           error instanceof Error

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
 import { useUser } from "@clerk/nextjs";
@@ -141,6 +142,7 @@ export default function ApplyActionButton({
       });
       router.refresh();
     } catch (error) {
+      reportClientError(error, { feature: "apply-action" });
       addToast({
         description:
           error instanceof Error

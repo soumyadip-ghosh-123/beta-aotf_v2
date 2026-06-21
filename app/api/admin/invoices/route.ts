@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Invoice from "@/lib/models/Invoice";
@@ -64,11 +65,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[GET /api/admin/invoices]", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/admin/invoices", { legacyAdminShape: true });
   }
 }
 
@@ -326,24 +323,6 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("[POST /api/admin/invoices]", error);
-
-    // Duplicate invoiceId (shouldn't happen but safe)
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code: number }).code === 11000
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Invoice ID collision, please try again." },
-        { status: 409 },
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/admin/invoices", { legacyAdminShape: true });
   }
 }

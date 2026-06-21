@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "@heroui/spinner";
@@ -67,6 +68,7 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
 
         setEnquiry(data.enquiry as Enquiry);
       } catch (err: any) {
+        reportClientError(err, { feature: "admin-enquiry-detail" });
         setError(err.message);
       } finally {
         setLoading(false);

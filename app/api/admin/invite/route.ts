@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/db";
@@ -116,7 +117,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, inviteId: invite._id.toString() });
   } catch (error) {
-    console.error("[POST /api/admin/invite] Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleApiError(error, "POST /api/admin/invite", { legacyAdminShape: true });
   }
 }

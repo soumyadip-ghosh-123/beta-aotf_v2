@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import type { SuperAdminPayload } from "@/components/admin/dashboard/SuperAdminDashboard";
 import type { AdminPayload } from "@/components/admin/dashboard/AdminDashboard";
 import type { SupportAdminPayload } from "@/components/admin/dashboard/SupportAdminDashboard";
+import { reportClientError } from "@/lib/client-report-error";
 
 // Lazy-load dashboard views — code split so each role only loads its bundle
 const SuperAdminDashboard = dynamic(
@@ -95,6 +96,7 @@ export default function AdminHomePage() {
         const data = await res.json();
         setPayload(data);
       } catch (err: unknown) {
+        reportClientError(err, { feature: "admin-dashboard" });
         setError(err instanceof Error ? err.message : "Failed to load dashboard");
       } finally {
         setIsLoading(false);

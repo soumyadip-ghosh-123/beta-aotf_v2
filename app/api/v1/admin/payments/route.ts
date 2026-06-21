@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -154,10 +155,6 @@ export async function GET(_request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("[GET /api/v1/admin/payments] Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/v1/admin/payments");
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -57,6 +58,7 @@ export default function AdminChangePasswordPage() {
         router.push("/admin");
       }, 2000);
     } catch (err: unknown) {
+      reportClientError(err, { feature: "admin-change-password" });
       console.error("Password change error:", err);
       if (err && typeof err === "object" && "errors" in err) {
         const errors = (err as { errors: Array<{ message: string }> }).errors;

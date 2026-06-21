@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Button } from "@heroui/button";
 import { Modal, ModalContent, ModalHeader, ModalBody, useDisclosure } from "@heroui/modal";
@@ -59,6 +60,7 @@ export default function EnquiriesPage() {
 
       setEnquiries(data.enquiries);
     } catch (err: any) {
+      reportClientError(err, { feature: "admin-enquiries" });
       setError(err.message);
     } finally {
       setLoading(false);

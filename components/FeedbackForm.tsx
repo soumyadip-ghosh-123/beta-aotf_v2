@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
@@ -87,6 +88,7 @@ export default function FeedbackForm() {
       reset();
       setTimeout(() => setSubmitted(false), 2000);
     } catch (error) {
+      reportClientError(error, { feature: "feedback-form" });
       addToast({
         description:
           error instanceof Error

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
@@ -224,6 +225,7 @@ export default function AdsPage() {
       setAds((data.ads ?? []).map(mapApiAd));
       if (data.analytics) setAnalytics(data.analytics);
     } catch (err) {
+      reportClientError(err, { feature: "admin-ads" });
       setFetchError(
         err instanceof Error ? err.message : "Failed to fetch ads",
       );
@@ -384,6 +386,7 @@ export default function AdsPage() {
       setForm({ ...emptyForm });
       fetchAds();
     } catch (err) {
+      reportClientError(err, { feature: "admin-ads" });
       addToast({
         description: err instanceof Error ? err.message : "Failed to save ad",
         color: "danger",
@@ -415,6 +418,7 @@ export default function AdsPage() {
       setDeleteTarget(null);
       fetchAds();
     } catch (err) {
+      reportClientError(err, { feature: "admin-ads" });
       addToast({
         description: err instanceof Error ? err.message : "Failed to delete ad",
         color: "danger",
@@ -443,6 +447,7 @@ export default function AdsPage() {
       });
       fetchAds();
     } catch (err) {
+      reportClientError(err, { feature: "admin-ads" });
       addToast({
         description: err instanceof Error ? err.message : "Failed to update status",
         color: "danger",

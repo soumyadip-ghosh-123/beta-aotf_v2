@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -114,11 +115,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true, onboardingDetails });
   } catch (error) {
-    console.error("[onboarding] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to save onboarding details" },
-      { status: 500 },
-    );
+    return handleApiError(error, "PATCH /api/v1/onboarding");
   }
 }
 
@@ -162,10 +159,6 @@ export async function GET() {
       paymentPaidButNotOnboarded,
     });
   } catch (error) {
-    console.error("[onboarding] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch onboarding details" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/v1/onboarding");
   }
 }

@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Invoice from "@/lib/models/Invoice";
@@ -25,11 +26,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, invoice });
   } catch (error) {
-    console.error("[GET /api/admin/invoices/[invoiceId]]", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "GET /api/admin/invoices/[invoiceId]", { legacyAdminShape: true });
   }
 }
 
@@ -196,11 +193,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, invoice: existing });
   } catch (error) {
-    console.error("[PUT /api/admin/invoices/[invoiceId]]", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "PUT /api/admin/invoices/[invoiceId]", { legacyAdminShape: true });
   }
 }
 
@@ -224,10 +217,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: "Invoice deleted" });
   } catch (error) {
-    console.error("[DELETE /api/admin/invoices/[invoiceId]]", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "DELETE /api/admin/invoices/[invoiceId]", { legacyAdminShape: true });
   }
 }

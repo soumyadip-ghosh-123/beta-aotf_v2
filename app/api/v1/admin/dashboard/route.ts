@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import mongoose from "mongoose";
@@ -304,11 +305,7 @@ export async function GET() {
     }
 
     return NextResponse.json(data);
-  } catch (err) {
-    console.error("[dashboard-api] Error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, "GET /api/v1/admin/dashboard");
   }
 }

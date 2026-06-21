@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -777,6 +778,7 @@ const Page = () => {
         }
       );
     } catch (err) {
+      reportClientError(err, { feature: "admin-tuitions" });
       setFetchError(
         err instanceof Error ? err.message : "Failed to fetch posts"
       );
@@ -930,6 +932,7 @@ const Page = () => {
       cancelDisclosure.onClose();
       setPostToCancel(null);
     } catch (err) {
+      reportClientError(err, { feature: "admin-tuitions" });
       addToast({
         description: err instanceof Error ? err.message : "Failed to update",
         color: "danger",

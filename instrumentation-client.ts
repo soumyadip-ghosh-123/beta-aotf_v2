@@ -4,28 +4,27 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: "https://274fb4d9a4a51ddb6cc85d7b35069c05@o4511274687135744.ingest.us.sentry.io/4511274688446464",
+import {
+  sentryDsn,
+  sentryReplaysSessionSampleRate,
+  sentrySendDefaultPii,
+  sentryTracesSampleRate,
+} from "./lib/sentry-config";
 
-  // Add optional integrations for additional features
+Sentry.init({
+  dsn: sentryDsn,
+
   integrations: [Sentry.replayIntegration()],
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
+  tracesSampleRate: sentryTracesSampleRate,
+
   enableLogs: true,
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
+  replaysSessionSampleRate: sentryReplaysSessionSampleRate,
 
-  // Define how likely Replay events are sampled when an error occurs.
   replaysOnErrorSampleRate: 1.0,
 
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  sendDefaultPii: sentrySendDefaultPii,
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

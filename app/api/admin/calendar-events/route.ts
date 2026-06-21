@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import dbConnect from "@/lib/db";
@@ -49,8 +50,7 @@ export async function GET(request: Request) {
 
     const events = await getEventsInRange(startDate, endDate);
     return NextResponse.json({ events });
-  } catch (err) {
-    console.error("[calendar-events] Error:", err);
-    return NextResponse.json({ events: [], error: String(err) }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, "GET /api/admin/calendar-events", { legacyAdminShape: true });
   }
 }

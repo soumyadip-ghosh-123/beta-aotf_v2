@@ -6,6 +6,8 @@ import { PERMISSIONS } from "@/lib/admin/permissions";
 import { requirePermission } from "@/lib/admin/requirePermission";
 import AdminActivityLog from "@/lib/models/admin/AdminActivityLog";
 import AdminUser from "@/lib/models/admin/AdminUser";
+import { InternalError } from "@/lib/errors";
+import { reportError } from "@/lib/sentry-report";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -20,6 +22,9 @@ export async function GET(req: Request) {
   const actor = permissionCheck.admin;
   const actorLevel = await getRoleLevel(actor.role);
   if (actorLevel === null) {
+    reportError(new InternalError("Actor role missing"), {
+      route: "GET /api/admin/metrics",
+    });
     return NextResponse.json({ error: "Actor role missing" }, { status: 500 });
   }
 
@@ -44,6 +49,10 @@ export async function GET(req: Request) {
 
   const targetLevel = await getRoleLevel(targetAdmin.role);
   if (targetLevel === null) {
+    reportError(new InternalError("Target role missing"), {
+      route: "GET /api/admin/metrics",
+      extra: { adminId },
+    });
     return NextResponse.json({ error: "Target role missing" }, { status: 500 });
   }
 

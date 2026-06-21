@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import Admin from "@/lib/models/Admin";
 import { logActivity } from "@/lib/admin/logActivity";
 import dbConnect from "@/lib/db";
+import { handleApiError } from "@/lib/api-utils";
 
 export async function GET() {
   const sources = await listSources();
@@ -36,6 +37,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ source });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+    return handleApiError(err, "POST /api/v1/admin/sources");
   }
 }

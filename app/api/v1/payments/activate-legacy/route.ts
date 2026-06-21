@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
@@ -137,10 +138,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[activate-legacy] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to activate account" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/v1/payments/activate-legacy");
   }
 }

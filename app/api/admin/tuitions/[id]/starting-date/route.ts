@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -88,8 +89,7 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, startingDate: parsedDate });
-  } catch (err) {
-    console.error("[PATCH /api/admin/tuitions/[id]/starting-date] Error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, "PATCH /api/admin/tuitions/[id]/starting-date", { legacyAdminShape: true });
   }
 }

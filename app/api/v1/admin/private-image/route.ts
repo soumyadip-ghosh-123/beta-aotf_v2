@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+import { reportError } from "@/lib/sentry-report";
+
 const ALLOWED_IMAGES = ["sign.png", "paid.png", "unpaid.png"];
 
 export async function GET(request: NextRequest) {
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error serving private image:", error);
+    reportError(error, { route: "GET /api/v1/admin/private-image" });
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
@@ -155,7 +156,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[POST /api/admin/join] Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return handleApiError(error, "POST /api/admin/join", { legacyAdminShape: true });
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -234,6 +235,7 @@ export default function JobCandidateDetailPage() {
       // Navigate back to candidates list
       router.push(`/admin/jobs/${postId}`);
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-candidate" });
       addToast({
         description: "Failed to delete candidate",
         color: "danger",
@@ -273,6 +275,7 @@ export default function JobCandidateDetailPage() {
 
       setNotes("");
     } catch (error) {
+      reportClientError(error, { feature: "admin-job-candidate" });
       addToast({
         description: "Failed to update status",
         color: "danger",

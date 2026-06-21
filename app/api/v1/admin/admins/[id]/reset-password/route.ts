@@ -1,3 +1,4 @@
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import * as adminService from "@/lib/services/admin.service";
@@ -68,13 +69,6 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(
-      `[POST /api/v1/admin/admins/${(await params).id}/reset-password] Error:`,
-      error,
-    );
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return handleApiError(error, "POST /api/v1/admin/admins/[id]/reset-password");
   }
 }

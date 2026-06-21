@@ -19,6 +19,7 @@ import {
   Search,
 } from "lucide-react";
 import AdminSearchBar from "@/components/admin/ui/AdminSearchBar";
+import { reportClientError } from "@/lib/client-report-error";
 
 type Role = "teacher" | "candidate";
 type Status = "all" | "active" | "blocked" | "deleted";
@@ -160,6 +161,7 @@ export default function UsersPage() {
     try {
       await fetchUsers(selectedTab, statusFilter);
     } catch (err) {
+      reportClientError(err, { feature: "admin-users" });
       setError(err instanceof Error ? err.message : "Failed to load users");
     } finally {
       setIsLoading(false);
@@ -220,6 +222,7 @@ export default function UsersPage() {
       });
       void reloadUsers(true);
     } catch (err) {
+      reportClientError(err, { feature: "admin-users", extra: { action: "update-status" } });
       addToast({
         description:
           err instanceof Error ? err.message : "Failed to update user",

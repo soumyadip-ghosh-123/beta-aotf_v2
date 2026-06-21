@@ -9,9 +9,11 @@
  *
  * @see https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
-export async function onRequestError() {
-  // intentionally empty — must be exported for Next.js to load this file
-}
+import * as Sentry from "@sentry/nextjs";
+
+import { reportError } from "@/lib/sentry-report";
+
+export const onRequestError = Sentry.captureRequestError;
 
 /** Required environment variables — fail fast if any are missing. */
 const REQUIRED_ENV_VARS = ["MONGODB_URI"] as const;
@@ -41,6 +43,10 @@ export async function register() {
     } catch (err) {
       // Log but don't crash the server — dbConnect will retry on first request
       console.error("[instrumentation] MongoDB warm-up failed:", err);
+      reportError(err, {
+        tags: { layer: "instrumentation" },
+        extra: { phase: "mongodb-warm-up" },
+      });
     }
   }
 }

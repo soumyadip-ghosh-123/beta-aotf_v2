@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteSourceById, updateSourceById } from "@/lib/services/adminOptions.service";
+import { handleApiError } from "@/lib/api-utils";
 
 const schema = z.object({ key: z.string().min(1), label: z.string().min(1) });
 
@@ -15,7 +16,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     return NextResponse.json({ source });
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+    return handleApiError(err, "PATCH /api/v1/admin/sources/[id]");
   }
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { addToast } from "@heroui/toast";
@@ -136,6 +137,7 @@ export default function PaymentDashboard() {
         throw new Error(payload.error || "Failed to load payment data");
       setData(payload);
     } catch (err) {
+      reportClientError(err, { feature: "admin-payments-dashboard" });
       addToast({
         description:
           err instanceof Error
@@ -391,6 +393,7 @@ export default function PaymentDashboard() {
       addToast({ description: "Payment updated", color: "success" });
       await fetchData();
     } catch (error) {
+      reportClientError(error, { feature: "admin-payments-dashboard" });
       addToast({
         description:
           error instanceof Error ? error.message : "Failed to update payment",

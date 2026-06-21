@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { reportClientError } from "@/lib/client-report-error";
 import { User } from "@heroui/user";
 import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -189,6 +190,7 @@ const TuitionPost = ({
       });
       onClose();
     } catch (error) {
+      reportClientError(error, { feature: "tuition-post-card" });
       addToast({
         description: "An error occurred while withdrawing",
         color: "danger",

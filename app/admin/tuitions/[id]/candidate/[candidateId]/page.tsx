@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -166,6 +167,7 @@ export default function CandidateDetailPage({
           }
         }
       } catch (err) {
+      reportClientError(err, { feature: "admin-tuition-candidate" });
         setFetchError(
           err instanceof Error ? err.message : "Failed to fetch application"
         );
@@ -198,6 +200,7 @@ export default function CandidateDetailPage({
       });
       router.push(`/admin/tuitions/${postId}`);
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-candidate" });
       addToast({
         description:
           error instanceof Error
@@ -331,6 +334,7 @@ export default function CandidateDetailPage({
         color: "success",
       });
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-candidate" });
       addToast({
         description:
           error instanceof Error ? error.message : "Failed to update status",
@@ -362,6 +366,7 @@ export default function CandidateDetailPage({
       }
       addToast({ description: "Starting date saved!", color: "success" });
     } catch (error) {
+      reportClientError(error, { feature: "admin-tuition-candidate" });
       addToast({
         description:
           error instanceof Error ? error.message : "Failed to save starting date",

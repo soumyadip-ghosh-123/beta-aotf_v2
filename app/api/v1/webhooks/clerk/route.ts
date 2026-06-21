@@ -9,6 +9,8 @@ import OnboardingDetails from "@/lib/models/OnboardingDetails";
 import WebhookEvent from "@/lib/models/WebhookEvent";
 import mongoose from "mongoose";
 
+import { reportError } from "@/lib/sentry-report";
+
 export async function POST(req: NextRequest) {
   let evt: Awaited<ReturnType<typeof verifyWebhook>>;
 
@@ -79,6 +81,10 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error(`[clerk-webhook] Error processing ${eventType}:`, err);
+    reportError(err, {
+      tags: { provider: "clerk", eventType },
+      extra: { entityId },
+    });
     // Delete the idempotency record so that Clerk's automatic retry can
     // attempt the event again on the next delivery.
     await WebhookEvent.deleteOne({

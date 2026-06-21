@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
@@ -69,6 +70,7 @@ export default function InvoiceListPage() {
         addToast({ description: "Failed to fetch invoices", color: "danger" });
       }
     } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-list" });
       console.error("Error fetching invoices:", error);
       addToast({ description: "Failed to fetch invoices", color: "danger" });
     } finally {
@@ -105,6 +107,7 @@ export default function InvoiceListPage() {
         });
       }
     } catch (error) {
+      reportClientError(error, { feature: "admin-invoices-list" });
       console.error("Error deleting invoice:", error);
       addToast({ description: "Failed to delete invoice", color: "danger" });
     }

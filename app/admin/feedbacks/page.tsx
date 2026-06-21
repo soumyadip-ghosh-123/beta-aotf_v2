@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/client-report-error";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -108,6 +109,7 @@ export default function FeedbackPage() {
 
       setFeedbacks(data.feedbacks);
     } catch (err) {
+      reportClientError(err, { feature: "admin-feedbacks" });
       console.error("Fetch error:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch feedbacks");
     } finally {
@@ -180,6 +182,7 @@ export default function FeedbackPage() {
       await fetchFeedbacks();
       handleClose();
     } catch (err) {
+      reportClientError(err, { feature: "admin-feedbacks" });
       addToast({
         description:
           err instanceof Error ? err.message : "Failed to update feedback",

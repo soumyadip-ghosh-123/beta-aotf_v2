@@ -4,6 +4,8 @@ import { PERMISSIONS } from "@/lib/admin/permissions";
 import { getRoleLevel } from "@/lib/admin/hierarchyCheck";
 import { requirePermission } from "@/lib/admin/requirePermission";
 import AdminUser from "@/lib/models/admin/AdminUser";
+import { InternalError } from "@/lib/errors";
+import { reportError } from "@/lib/sentry-report";
 
 export async function GET(req: Request) {
   await dbConnect();
@@ -18,6 +20,9 @@ export async function GET(req: Request) {
   const actor = permissionCheck.admin;
   const actorLevel = await getRoleLevel(actor.role);
   if (actorLevel === null) {
+    reportError(new InternalError("Actor role not found"), {
+      route: "GET /api/admin/users",
+    });
     return NextResponse.json({ error: "Actor role not found" }, { status: 500 });
   }
 
