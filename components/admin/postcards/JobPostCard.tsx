@@ -19,6 +19,7 @@ import {
   Edit,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
+import { formatPhone } from "@/lib/utils/phone";
 import {
   formatJobShare,
   shareOnWhatsApp,
@@ -273,7 +274,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-default-700">
               Client Contact:{" "}
-              <span className="text-default-600">{post.phoneNumber}</span>
+              <span className="text-default-600">{formatPhone(post.phoneNumber)}</span>
             </p>
           </div>
 

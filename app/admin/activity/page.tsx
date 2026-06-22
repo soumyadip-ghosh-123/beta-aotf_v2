@@ -346,6 +346,8 @@ function buildNarrative(log: ActivityLog): React.ReactNode {
   );
 }
 
+const PAGE_SIZE = 10;
+
 export default function SuperadminActivityLogs() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -361,7 +363,7 @@ export default function SuperadminActivityLogs() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/activity-logs?page=${p}&limit=25`);
+      const res = await fetch(`/api/admin/activity-logs?page=${p}&limit=${PAGE_SIZE}`);
       if (res.status === 403 || res.status === 401) {
         throw new Error("Unauthorized. Only Superadmins can view activity logs.");
       }

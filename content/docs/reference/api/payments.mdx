@@ -28,7 +28,23 @@ Origin: https://aotf.in
 
 Creates a Razorpay order for the provider registration fee. Only callable during onboarding (user must have `onboardingCompleted: false`).
 
-**Request Body**:
+**Registration amounts** (in paise):
+
+| Plan | Amount |
+|---|---|
+| `teacher` | `4900` (₹49) |
+| `teacher_candidate` | `9900` (₹99) |
+
+**Migrated legacy users**: If Clerk `publicMetadata` has `migratedFromLegacy: true` and `registrationFeeStatus: "paid"`, returns immediately without creating a Razorpay order:
+
+**Response 200** (legacy — already paid):
+```json
+{ "alreadyPaid": true }
+```
+
+The onboarding UI then shows **Activate Account**, which calls [`POST /api/v1/payments/activate-legacy`](#activate-legacy-account).
+
+**Request Body** (new users):
 ```json
 { "plan": "teacher" }
 ```
@@ -118,21 +134,55 @@ if (generatedSignature !== razorpay_signature) {
 { "error": "Payment verification failed. Invalid signature." }
 ```
 
+## Activate Legacy Account
+
+```http
+POST /api/v1/payments/activate-legacy
+Authorization: Bearer <clerk_jwt>
+Content-Type: application/json
+Origin: https://aotf.in
+```
+
+Completes onboarding for users who already paid in the legacy system. Only available when Clerk `publicMetadata` has `migratedFromLegacy: true` and `registrationFeeStatus: "paid"`.
+
+**Request Body** (optional):
+```json
+{ "plan": "teacher" }
+```
+
+Plan is taken from `legacyPlan` in metadata if present; body is a fallback.
+
+**Response 200**:
+```json
+{ "success": true, "message": "Account activated." }
+```
+
+**Side effects on success**:
+1. Creates a `Payment` with `purpose: "legacy_migration"`, `provider: "legacy"`, `amount: 0`
+2. Sets `User.onboardingCompleted: true` and plan access flags
+3. Updates Clerk `publicMetadata.onboardingCompleted: true`
+4. Marks `OnboardingDetails` complete
+
+Idempotent — safe to call if user is already activated.
+
 ## Payment Model
 
 ```ts
 // lib/models/Payment.ts
 {
   _id: ObjectId;
-  userId: ObjectId;             // ref: User
+  userId: ObjectId;
   clerkId: string;
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-  razorpaySignature: string;
-  amount: number;               // in paise
+  purpose: "registration" | "plan_upgrade" | "admin_grant" | "refund" | "legacy_migration";
+  fromPlan: "teacher" | "teacher_candidate" | null;
+  toPlan: "teacher" | "teacher_candidate";
+  amount: number;               // in paise (0 for legacy_migration)
   currency: "INR";
-  plan: "teacher" | "teacher_candidate";
-  status: "created" | "captured" | "failed";
+  provider: "razorpay" | "legacy";
+  providerOrderId: string;
+  providerPaymentId: string | null;
+  status: "created" | "paid" | "failed" | "refunded";
+  paidAt: Date | null;
   createdAt: Date;
 }
 ```

@@ -26,6 +26,7 @@ import {
 import { addToast } from "@heroui/toast";
 import { Plus } from "lucide-react";
 import { motion } from "motion/react";
+import { formatPhone, normalizePhone } from "@/lib/utils/phone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,22 +88,43 @@ export default function AdminFab() {
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.name.trim() || !newUser.phone.trim()) {
-      addToast({ description: "Name and phone are required", color: "danger" });
+    if (!newUser.name.trim() || !newUser.phone.trim() || !newUser.email.trim()) {
+      addToast({
+        description: "Name, phone, and email are required",
+        color: "danger",
+      });
       return;
     }
     setIsCreating(true);
     try {
-      // TODO: wire to real API — for now just toast success
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch("/api/admin/app-users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newUser.name.trim(),
+          email: newUser.email.trim(),
+          phone: newUser.phone.trim(),
+          role: newUser.role,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create user");
+      }
       addToast({
-        description: `${newUser.role === "teacher" ? "Teacher" : "Candidate"} created!`,
+        description: `${newUser.role === "teacher" ? "Teacher" : "Candidate"} created successfully`,
         color: "success",
       });
+      window.dispatchEvent(new CustomEvent("admin-users-refresh"));
       setNewUser({ name: "", email: "", phone: "", role: "teacher" });
       closeUser();
-    } catch {
-      addToast({ description: "Failed to create user", color: "danger" });
+    } catch (err) {
+      addToast({
+        description: err instanceof Error ? err.message : "Failed to create user",
+        color: "danger",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -140,25 +162,29 @@ export default function AdminFab() {
               label="Phone Number"
               placeholder="10-digit mobile number"
               type="tel"
-              value={newUser.phone}
-              onValueChange={(v) => setNewUser((p) => ({ ...p, phone: v }))}
+              value={formatPhone(newUser.phone)}
+              onValueChange={(v) =>
+                setNewUser((p) => ({ ...p, phone: normalizePhone(v) }))
+              }
               isRequired
               variant="bordered"
             />
             <Input
-              label="Email (optional)"
+              label="Email"
               placeholder="user@example.com"
               type="email"
               value={newUser.email}
               onValueChange={(v) => setNewUser((p) => ({ ...p, email: v }))}
+              isRequired
               variant="bordered"
             />
             <Select
               label="Role"
               selectedKeys={[newUser.role]}
-              onChange={(e) =>
-                setNewUser((p) => ({ ...p, role: e.target.value as Role }))
-              }
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as Role | undefined;
+                if (value) setNewUser((p) => ({ ...p, role: value }));
+              }}
               isRequired
               variant="bordered"
             >

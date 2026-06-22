@@ -13,6 +13,7 @@ import { LuNotebookPen } from "react-icons/lu";
 import { FcPrivacy } from "react-icons/fc";
 import { FaLocationDot } from "react-icons/fa6";
 import { Badge } from "@heroui/badge";
+import { formatPhone } from "@/lib/utils/phone";
 import {
   FaBook,
   FaChalkboardTeacher,
@@ -164,7 +165,7 @@ export default function ProfilePage() {
     ? (clerkUser?.imageUrl ?? profile.avatarUrl ?? undefined)
     : (profile.avatarUrl ?? undefined);
   const email = clerkUser?.primaryEmailAddress?.emailAddress ?? undefined;
-  const phone = profile.phone ? `+91 ${profile.phone}` : null;
+  const phone = profile.phone ? formatPhone(`+91${profile.phone}`) : null;
   const memberSince = new Date(userData.memberSince);
   const joinMonth = memberSince.toLocaleDateString("en-IN", {
     month: "short",

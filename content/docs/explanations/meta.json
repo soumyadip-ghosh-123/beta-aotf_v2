@@ -2,8 +2,10 @@
   "title": "Explanations",
   "pages": [
     "architecture",
+    "monitoring-sentry",
     "proxy-vs-middleware",
     "auth-flow",
+    "account-linking",
     "application-lifecycle",
     "webhook-flow",
     "sheets-sync",

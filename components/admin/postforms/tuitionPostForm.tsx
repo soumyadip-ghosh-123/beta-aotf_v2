@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone, normalizePhone } from "@/lib/utils/phone";
 import { useAuth, useUser } from "@clerk/nextjs";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -370,12 +371,7 @@ export default function TuitionPostForm({
       // ignore
     }
   };
-  const normalizePhone = (value: string) =>
-    value.replace(/\D/g, "").slice(0, 10);
-  const formatPhone = (value: string) =>
-    value.length <= 5 ? value : `${value.slice(0, 5)} ${value.slice(5)}`;
 
-  // Fetch post data for edit mode
   useEffect(() => {
     if (!isEditMode || !postId) return;
     const fetchPost = async () => {
@@ -1266,7 +1262,7 @@ export default function TuitionPostForm({
                           <div>
                             <span className="text-default-500">Phone:</span>{" "}
                             <span className="font-medium">
-                              {formData.guardianPhone}
+                              {formatPhone(formData.guardianPhone)}
                             </span>
                           </div>
                         </div>

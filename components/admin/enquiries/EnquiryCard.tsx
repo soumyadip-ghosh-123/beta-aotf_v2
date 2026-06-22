@@ -38,6 +38,7 @@ import { FaPen, FaPhone } from "react-icons/fa";
 import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
 import { addToast } from "@heroui/toast";
+import { formatPhone } from "@/lib/utils/phone";
 
 export const ENQUIRY_STATUSES = [
   "new",
@@ -475,15 +476,4 @@ function MetaRow({
 function formatDate(date?: string) {
   if (!date) return "-";
   return new Date(date).toLocaleString();
-}
-
-function formatPhone(value?: string) {
-  if (!value) return "";
-  const digits = value.replace(/\D/g, "");
-  if (!digits) return "";
-  const parts: string[] = [];
-  for (let i = 0; i < digits.length; i += 5) {
-    parts.push(digits.slice(i, i + 5));
-  }
-  return parts.join(" ");
 }

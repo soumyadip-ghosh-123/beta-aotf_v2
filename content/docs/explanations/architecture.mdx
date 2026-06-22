@@ -31,6 +31,8 @@ graph TD
   Vercel -->|Error reports| Sentry
 ```
 
+For how errors are captured, filtered, and triaged, see [Monitoring with Sentry](/docs/explanations/monitoring-sentry).
+
 ## Request Lifecycle
 
 ```mermaid
@@ -79,7 +81,7 @@ aotf_v2/
 │   │   ├── openapi.json/      # GET /api/openapi.json
 │   │   ├── search/            # GET /api/search (Fumadocs)
 │   │   └── v1/
-│   │       ├── admin/         # Admin management APIs
+│   │       ├── admin/         # Admin management APIs (incl. app-users)
 │   │       ├── applications/
 │   │       ├── enquiry/
 │   │       ├── jobs/
@@ -110,9 +112,14 @@ aotf_v2/
 │   ├── mdx/                   # MDX element renderers
 │   ├── providers/             # Context providers
 │   ├── shared/                # Cross-context components
+│   ├── skeletons/             # Route loading placeholders
 │   └── ui/                    # Base UI components
 ├── content/docs/              # MDX documentation pages
 ├── lib/
+│   ├── migration/             # Clerk ↔ MongoDB seed and sync helpers
+│   │   ├── seed-clerk-user.ts
+│   │   ├── sync-clerk-app-users.ts
+│   │   └── clerk-user-filters.ts
 │   ├── models/                # Mongoose schemas
 │   │   ├── admin/             # Admin-specific models
 │   │   ├── Application.ts
@@ -152,6 +159,17 @@ aotf_v2/
 | PostLedger | `postLedger.service.ts` | `upsertPostLedger` — writes to MongoDB + Google Sheets |
 
 All services are called **asynchronously** from Mongoose hooks — they never block API responses.
+
+## Legacy Migration (Dual Database)
+
+During the transition from the legacy **Academy of Tutorials** platform, two MongoDB clusters coexist:
+
+| Variable | Database | Role |
+|---|---|---|
+| `MONGODB_URI_LEGACY` | `academy-of-tutorials-freelancers` | Read-only source (`teachers`, `freelancers` collections) |
+| `MONGODB_URI` | New app DB | Runtime source of truth (`users`, `profiles`, etc.) |
+
+Migration scripts in `scripts/` read legacy data, create Clerk users, and seed the new DB via `lib/migration/seed-clerk-user.ts`. The Clerk webhook provides a backup seed path. See [Migrate Legacy Users](/docs/how-to/migrate-legacy-users).
 
 ## Key Design Decisions
 

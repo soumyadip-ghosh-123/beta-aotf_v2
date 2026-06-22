@@ -45,6 +45,7 @@ CLERK_WEBHOOK_SECRET=whsec_...
 
 # App
 NEXT_PUBLIC_APP_URL=https://aotf.in
+CRON_SECRET=...
 
 # Razorpay
 RAZORPAY_KEY_ID=rzp_live_...
@@ -68,11 +69,22 @@ RESEND_API_KEY=re_...
 # Sentry
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 SENTRY_AUTH_TOKEN=...
-SENTRY_ORG=...
-SENTRY_PROJECT=...
+SENTRY_ORG=aotf
+SENTRY_PROJECT=javascript-nextjs
 ```
 
 See the [Environment Variables reference](/docs/reference/env-vars) for complete descriptions.
+
+### Sentry Post-Deploy Checklist
+
+After the first production deploy with Sentry enabled:
+
+1. **Runtime DSN** — Confirm `NEXT_PUBLIC_SENTRY_DSN` is set for the **Production** environment in Vercel
+2. **Source maps** (recommended) — Set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG=aotf`, and `SENTRY_PROJECT=javascript-nextjs` so builds upload source maps for readable stack traces
+3. **Cron monitor** — In Sentry → **Crons**, create a monitor named `manage-unpaid-users` with schedule `30 21 * * *` (must match the slug in `app/api/v1/cron/manage-unpaid-users/route.ts`)
+4. **Smoke test** — Trigger a test error or wait for the first real event; confirm it appears under [Sentry Issues](https://aotf.sentry.io/) filtered to `production`
+
+For triage workflow and troubleshooting when events are missing, see [Triage Sentry Errors](/docs/how-to/triage-sentry-errors). For the full monitoring overview, see [Monitoring with Sentry](/docs/explanations/monitoring-sentry).
 
 ## 3. Vercel Free Tier Limits
 

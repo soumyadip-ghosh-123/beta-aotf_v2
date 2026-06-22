@@ -129,7 +129,12 @@ flowchart LR
   F -- No --> G["Redirect to /onboarding"]
 ```
 
-`onboardingCompleted` is set to `true` by `/api/v1/payments/verify` after Razorpay payment. For legacy migrated users, it is set during the `user.created` webhook by detecting `migratedFromLegacy: true`.
+`onboardingCompleted` is set to `true` by:
+
+- **`POST /api/v1/payments/verify`** — after Razorpay payment (new sign-ups)
+- **`POST /api/v1/payments/activate-legacy`** — after migrated users click **Activate Account** on `/onboarding`
+
+For legacy migrated users, the `user.created` webhook sets `onboardingCompleted: false` and preserves migration flags (`migratedFromLegacy`, `registrationFeeStatus`, `legacyPlan`, `legacyTeacherId`). Activation happens only when the user completes the in-app flow.
 
 ## Edge Runtime Limitation
 

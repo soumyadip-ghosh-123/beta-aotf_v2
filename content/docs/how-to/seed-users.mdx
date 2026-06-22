@@ -1,138 +1,154 @@
 ---
 title: Seed Teachers & Candidates
-description: Use the migration scripts to bulk-import teachers and candidates into Clerk + MongoDB. Includes the 100-user dev mode limit warning.
+description: Migrate paid teachers and candidates from the legacy MongoDB cluster into Clerk and the new app database. Includes dry-run workflow, sync backfill, and dev instance limits.
 ---
 
 # Seed Teachers & Candidates
 
-AOTF provides migration scripts to bulk-import existing teachers and candidates from a legacy system into Clerk + MongoDB. These scripts create Clerk accounts and corresponding `User` + `Profile` documents.
+AOTF provides migration scripts to import **paid** teachers and freelance candidates from the **legacy production MongoDB** into **Clerk** and the **new app MongoDB**. The legacy cluster is read-only; scripts never modify it.
 
-> **⚠ Critical**: Clerk's development instance has a hard limit of **100 users**. Plan your seeding carefully — once you hit 100, no new sign-ups work until you delete users or switch to a production instance.
+For a full production runbook, see [Migrate Legacy Users](/docs/how-to/migrate-legacy-users).
 
-## Available Scripts
+> **Critical**: Clerk's **development** instance supports a maximum of **100 users**. Use a **production** Clerk instance (`pk_live_` / `sk_live_`) for real migrations.
 
-| Script | Purpose |
-|---|---|
-| `scripts/migrate-teachers-to-clerk.mjs` | Imports teachers (tuition-only access) |
-| `scripts/migrate-freelancers-to-clerk.mjs` | Imports freelance candidates |
-| `scripts/migrate-to-clerk.mjs` | General-purpose migration script |
+## Script Matrix
 
-## How the Migration Works
+| Script | Source | Role in Clerk | Notes |
+|---|---|---|---|
+| `scripts/migrate-teachers-to-clerk.mjs` | Legacy `teachers` collection | `teacher` | **Recommended** for teachers |
+| `scripts/migrate-freelancers-to-clerk.mjs` | Legacy `freelancers` collection | `teacher_candidate` | **Recommended** for candidates |
+| `scripts/migrate-to-clerk.mjs` | Single `MONGODB_URI` | Mixed | **Deprecated** — no paid filter, no direct Mongo seed |
+| `scripts/sync-clerk-users-to-mongodb.mjs` | Clerk user list | — | Backfill when users exist in Clerk but not `/admin/users` |
+| `pnpm sync:clerk-users` | Clerk user list | — | TypeScript wrapper for the sync script |
+
+## Data Source
+
+Scripts read from the legacy database **`academy-of-tutorials-freelancers`** on `MONGODB_URI_LEGACY`:
+
+- Collection `teachers` — filter `{ registrationFeeStatus: "paid" }`
+- Collection `freelancers` — filter `{ registrationFeeStatus: "paid" }`
+
+Required fields per record: `email`, `name`. Optional: `teacherId`, `termsAgreedAt`, `createdAt`.
+
+Usernames are **derived from email** (letters only, lowercase, 4–32 chars) with numeric suffix retries on collision. There is no CSV/JSON import step.
+
+## Required Environment Variables
+
+```bash
+MONGODB_URI_LEGACY=mongodb+srv://...   # Legacy cluster (read-only)
+MONGODB_URI=mongodb+srv://...        # New app database
+CLERK_SECRET_KEY=sk_live_...         # Target Clerk instance
+```
+
+Load these from `.env.local` at the repo root (scripts call `dotenv` automatically).
+
+## How Migration Works
 
 ```mermaid
 sequenceDiagram
   participant Script
+  participant LegacyDB as Legacy_MongoDB
   participant Clerk
-  participant MongoDB
-  
-  Script->>Script: Read source data (CSV or JSON)
+  participant NewDB as New_MongoDB
+
+  Script->>LegacyDB: find paid teachers or freelancers
   loop For each user
-    Script->>Clerk: createUser (username, email, password)
-    Clerk-->>Script: { id: "user_..." }
-    Script->>Clerk: updateUserMetadata (publicMetadata)
-    Script->>MongoDB: User.create({ clerkId, username, ... })
-    Script->>MongoDB: Profile.create({ clerkId, ... })
-    Script->>MongoDB: OnboardingDetails.create({ expiresAt: null })
+    Script->>Clerk: getUserList by email
+    alt Not in Clerk
+      Script->>Clerk: createUser no password legalAcceptedAt metadata
+    else Already exists
+      Script->>Script: Skip create idempotent
+    end
+    Script->>NewDB: seedClerkUserInMongo User Profile OnboardingDetails
   end
   Script->>Script: Print summary report
 ```
 
-The scripts set `publicMetadata.migratedFromLegacy: true` and `publicMetadata.registrationFeeStatus: "paid"` on each Clerk user. The Clerk webhook then:
-
-1. Detects the `migratedFromLegacy: true` flag on `user.created`
-2. Creates an `OnboardingDetails` stub with `expiresAt: null` (skips the 30-day TTL)
-3. Preserves legacy plan and teacher ID in metadata
-
-## Running a Seeding Script
-
-```bash
-# Set required env vars
-export CLERK_SECRET_KEY=sk_test_...
-export MONGODB_URI=mongodb+srv://...
-
-# Run the teacher migration
-node scripts/migrate-teachers-to-clerk.mjs
-
-# Run the freelancer migration
-node scripts/migrate-freelancers-to-clerk.mjs
-```
-
-> **Note**: These scripts use `.mjs` extension (ES Modules) and run with `node`, not `tsx`.
-
-## Input Data Format
-
-The scripts expect a data source (CSV or MongoDB export) with at minimum:
+Each created Clerk user gets this `publicMetadata`:
 
 ```json
 {
-  "name": "Full Name",
-  "email": "teacher@example.com",
-  "phone": "9876543210",
-  "username": "teacher_username",
-  "subjects": ["Math", "Physics"],
-  "plan": "teacher"
+  "role": "teacher",
+  "onboardingCompleted": false,
+  "migratedFromLegacy": true,
+  "registrationFeeStatus": "paid",
+  "legacyPlan": "teacher",
+  "legacyTeacherId": "AOT-XXXX"
 }
 ```
 
-Edit the script to match your actual data source format.
+Freelancers use `role: "teacher_candidate"` and `legacyPlan: "teacher_candidate"`.
 
-## Clerk 100-User Dev Mode Limit
+**MongoDB write path**: Scripts call `seedClerkUserInMongo()` immediately after each Clerk user is created or found. The [`user.created` webhook](/docs/reference/api/webhooks) is a **backup** path if seeding fails or the user signs in before the script finishes.
 
-### What Happens at 100 Users
+Clerk users are created **without a password**. Migrated users sign in via [Google SSO](/docs/explanations/account-linking) (same Gmail auto-links) or set a password via Forgot Password.
 
-When you reach 100 users in Clerk's development instance:
-- New sign-ups return an error
-- The Clerk dashboard shows a warning banner
-- Existing users can still log in normally
-
-### How to Check Current Count
-
-In **Clerk Dashboard → Users**, the total count is shown in the header.
-
-### Options When You Hit the Limit
-
-| Option | When to Use |
-|---|---|
-| **Delete inactive users** | Dev/testing — clean up test accounts |
-| **Switch to Production instance** | Ready for real users |
-| **Request limit increase** | Contact Clerk support (not guaranteed for dev) |
-
-### Deleting Test Users in Bulk
+## Running the Scripts
 
 ```bash
-# The Clerk SDK allows bulk deletion — write a quick script:
-# (example — adjust to your actual usernames)
-node -e "
-const { clerkClient } = require('@clerk/nextjs/server');
-async function main() {
-  const client = clerkClient();
-  const { data } = await client.users.getUserList({ limit: 100 });
-  const testUsers = data.filter(u => u.username?.startsWith('test_'));
-  for (const u of testUsers) {
-    await client.users.deleteUser(u.id);
-    console.log('Deleted:', u.username);
-  }
-}
-main();
-"
+cd scripts
+
+# Dry run (default) — prints what would be created, no writes
+node migrate-teachers-to-clerk.mjs
+node migrate-freelancers-to-clerk.mjs
+
+# Live migration — creates Clerk users and seeds MongoDB
+node migrate-teachers-to-clerk.mjs --live
+node migrate-freelancers-to-clerk.mjs --live
+
+# Backfill MongoDB from existing Clerk accounts
+node sync-clerk-users-to-mongodb.mjs --live
+# or from repo root:
+pnpm sync:clerk-users -- --live
 ```
 
-## Subjects & Sources Seed Script
+> Scripts use `.mjs` (ES Modules) and run with `node`, not `tsx`.
 
-The `scripts/seed-subjects-sources.ts` script populates the `Subject` and `Source` collections used in the post/job creation forms:
+## Post-Migration Sync
+
+Run the sync script when:
+
+- Users appear in the Clerk dashboard but not on `/admin/users` (admin UI reads MongoDB, not Clerk directly)
+- A prior migration created Clerk users but Mongo seeding failed partway through
+
+The admin Users page also triggers sync on load via `GET /api/admin/app-users?sync=1` — see [Manage Users in Admin](/docs/how-to/admin-manage-users).
+
+## Known Edge Cases
+
+| Issue | Cause | Resolution |
+|---|---|---|
+| `legal_accepted_at` required | Prod Clerk has legal consent enabled | Scripts set `skipLegalChecks: true` and `legalAcceptedAt` from legacy `termsAgreedAt` |
+| Username too long | Email local part exceeds Clerk limit | Create user manually with a shorter username (e.g. `aryabandyopadhyay`) |
+| Invalid email | Bad legacy data (e.g. `abc@a.c`) | Skip or fix in legacy DB |
+| Mongo duplicate key on onboarding | Orphan `OnboardingDetails` for same `userId` | Re-run sync script (upsert matches `clerkId` or `userId`) |
+| DNS `querySrv ECONNREFUSED` | Local DNS cannot resolve Atlas SRV | Set `NODE_ENV=production` in `.env.local` (scripts use public DNS 1.1.1.1) |
+
+Re-running migration scripts is **idempotent**: existing emails are skipped in Clerk and Mongo is re-seeded.
+
+## Clerk 100-User Dev Limit
+
+When the dev instance reaches 100 users, new sign-ups are blocked. Options:
+
+| Option | When to use |
+|---|---|
+| Delete test users in Clerk dashboard | Local dev cleanup |
+| Switch to production Clerk keys | Real user migration |
+| Request limit increase | Contact Clerk support (not guaranteed for dev) |
+
+## Other Seed Scripts
+
+### Subjects & Sources
 
 ```bash
 pnpm tsx scripts/seed-subjects-sources.ts
 ```
 
-This is a one-time operation and is idempotent (safe to re-run).
+Populates `Subject` and `Source` collections for post/job forms. Idempotent.
 
-## Calendar Events Backfill
-
-After migrating data, you may need to rebuild the `CalendarEvent` collection for all existing applications and enquiries:
+### Calendar Events Backfill
 
 ```bash
 pnpm tsx scripts/backfill-calendar-events.ts
 ```
 
-This script reads all existing `Application`, `Enquiry`, `Feedback`, and `TodoEvent` documents and upserts corresponding `CalendarEvent` records.
+Rebuilds `CalendarEvent` from existing applications, enquiries, feedback, and todos.

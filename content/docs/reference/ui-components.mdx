@@ -156,5 +156,23 @@ components/
 ├── mdx/             # MDX custom element renderers
 ├── providers/       # Context providers (HeroUI, theme, etc.)
 ├── shared/          # Shared components used across both admin and user UIs
+├── skeletons/       # Route loading placeholders (FeedSkeleton, etc.)
 └── ui/              # Base UI components (Button wrappers, etc.)
 ```
+
+## Loading Skeletons
+
+AOTF uses Next.js App Router [`loading.tsx`](https://nextjs.org/docs/app/api-reference/file-conventions/loading) files with shared skeleton components in `components/skeletons/`:
+
+| Component | Used by |
+|---|---|
+| `FeedSkeleton` | `/posts`, `/jobs` list pages |
+| `DetailSkeleton` | `/posts/[id]`, `/jobs/[id]` detail pages |
+| `ProfileSkeleton` | `/u/[username]` public profiles |
+| `AdminPageSkeleton` | `/admin`, `/admin/invoices` |
+
+Import from `@/components/skeletons` (barrel export in `components/skeletons/index.ts`).
+
+**Convention**: Prefer these shared skeletons over inline loaders in new routes. `AdminDashboardSkeleton` is exported but the dashboard page uses a local inline skeleton instead.
+
+Skeleton components set `aria-busy` and `aria-label` for accessibility during Suspense boundaries.

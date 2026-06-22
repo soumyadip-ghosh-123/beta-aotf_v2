@@ -11,6 +11,7 @@ import JobPostForm from "@/components/admin/postforms/jobPostForm";
 import TuitionPostForm from "@/components/admin/postforms/tuitionPostForm";
 import { Enquiry } from "@/components/admin/enquiries/EnquiryCard";
 import { FaPhone } from "react-icons/fa";
+import { formatPhone } from "@/lib/utils/phone";
 
 interface EnquiryFormPageProps {
   params: Promise<{ id: string }>;
@@ -25,17 +26,6 @@ export default function EnquiryFormPage({ params }: EnquiryFormPageProps) {
   const [error, setError] = useState<string | null>(null);
 
   const type = searchParams.get("type") as "job" | "tuition" | null;
-
-  const formatPhone = (value?: string) => {
-    if (!value) return "-";
-    const digits = value.replace(/\D/g, "");
-    if (!digits) return value;
-    const parts: string[] = [];
-    for (let i = 0; i < digits.length; i += 5) {
-      parts.push(digits.slice(i, i + 5));
-    }
-    return parts.join(" ");
-  };
 
   useEffect(() => {
     const loadParams = async () => {

@@ -4,6 +4,7 @@ import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
 import { useState } from "react";
 import { validateField } from "./types";
+import { formatPhone, normalizePhone } from "@/lib/utils/phone";
 
 interface PhoneFieldsProps {
   phone: string;
@@ -35,11 +36,11 @@ export default function PhoneFields({
         label="Phone Number"
         type="tel"
         isRequired
-        maxLength={10}
-        value={phone}
+        maxLength={11}
+        value={formatPhone(phone)}
         isInvalid={!!phoneError}
         errorMessage={phoneError}
-        onValueChange={(v) => onChange("phone", v)}
+        onValueChange={(v) => onChange("phone", normalizePhone(v))}
         onBlur={() => setPhoneTouched(true)}
       />
 
@@ -48,12 +49,12 @@ export default function PhoneFields({
           label="WhatsApp Number"
           type="tel"
           isRequired
-          maxLength={10}
+          maxLength={11}
           isDisabled={sameAsPhone}
-          value={whatsapp}
+          value={formatPhone(whatsapp)}
           isInvalid={!!whatsappError}
           errorMessage={whatsappError}
-          onValueChange={(v) => onChange("whatsapp", v)}
+          onValueChange={(v) => onChange("whatsapp", normalizePhone(v))}
           onBlur={() => setWhatsappTouched(true)}
         />
 

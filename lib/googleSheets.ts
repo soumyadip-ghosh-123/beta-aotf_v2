@@ -1,5 +1,4 @@
 import { google, type sheets_v4 } from "googleapis";
-import { GoogleAuth } from "google-auth-library";
 
 let sheetsClientPromise: Promise<sheets_v4.Sheets> | null = null;
 
@@ -26,12 +25,11 @@ export async function getGoogleSheetsClient(): Promise<sheets_v4.Sheets> {
       // Many platforms store newlines as literal "\n" sequences.
       const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
 
-      const auth = new GoogleAuth({
+      const auth = new google.auth.GoogleAuth({
         credentials: { client_email: clientEmail, private_key: privateKey },
         scopes: ["https://www.googleapis.com/auth/spreadsheets"],
       });
 
-      const authClient = await auth.getClient();
       return google.sheets({ version: "v4", auth });
     })();
   }

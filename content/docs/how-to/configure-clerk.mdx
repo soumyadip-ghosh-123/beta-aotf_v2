@@ -30,32 +30,60 @@ CLERK_WEBHOOK_SECRET=whsec_...
 
 ## 1. Authentication Settings
 
-### Sign-Up Options
+AOTF uses **two sign-in paths** depending on how the account was created:
+
+| Audience | How they sign up / sign in | Clerk settings |
+|---|---|---|
+| **New providers** | `/sign-up` → username + email + password | Password required; Google optional |
+| **Migrated legacy users** | Pre-created in Clerk by migration scripts; sign in with **Google** (same Gmail) or set password via Forgot Password | **Enable Google** on production |
+
+### New Provider Sign-Up
 
 Configure in **Clerk Dashboard → User & Authentication → Email, Phone, Username**:
 
-- ✅ **Username** — Required (used as the primary identifier in AOTF)
-- ✅ **Email address** — Required
-- ✅ **Password** — Required
-- ❌ Social providers — Disable Google/GitHub OAuth (providers should use password auth)
+- **Username** — Required (primary identifier in AOTF, `/u/[username]` URLs)
+- **Email address** — Required
+- **Password** — Required for new self-service sign-ups
 
-> [TODO: Add screenshot of Clerk "Email, Phone, Username" settings page]
+### Migrated Legacy Users (Production)
+
+Migration scripts create Clerk accounts **without passwords**. Users sign in with:
+
+1. **Continue with Google** — same Gmail as the migrated email auto-links to the existing Clerk account
+2. **Forgot password** — set a password on first use
+3. **Link password after Google** — [`/verify/link-account`](/docs/explanations/account-linking) adds password login to an account that signed in with Google
+
+On **production**, enable **Google** as a social provider. Do not rely on password-only sign-in for migrated users.
+
+> [TODO: Add screenshot of Clerk social connections showing Google enabled on production]
 
 ### Sign-In Options
 
-- ✅ Username + Password
-- ❌ Magic link / OTP — Disable these for provider accounts
+- Username + Password — for new providers and admins
+- Google OAuth — for migrated legacy users (production)
+- Magic link / OTP — optional; not the primary provider flow
 
 > [TODO: Add screenshot of Clerk "Sign-in" configuration page]
+
+### Legal Consent (Production)
+
+If **Require express consent to legal documents** is enabled in Clerk, Backend API user creation (migration scripts) must pass:
+
+- `skipLegalChecks: true` (recommended for migrations), and/or
+- `legalAcceptedAt` — timestamp from legacy `termsAgreedAt`
+
+Without these fields, `createUser` returns `legal_accepted_at is required`.
 
 ## 2. Username Configuration
 
 AOTF uses usernames as permanent identifiers (`/u/[username]` profile URLs). Configure:
 
 - **Min length**: 3 characters
-- **Max length**: 20 characters
+- **Max length**: 24 characters (Clerk production limit; migration scripts truncate derived usernames)
 - **Allowed characters**: Lowercase letters, numbers, underscores, hyphens
 - **Uniqueness**: Enforced by Clerk + MongoDB (case-insensitive index)
+
+**Migration edge case**: Very long email local parts can produce usernames that exceed Clerk's limit. Create those users manually with a shorter username, then run the [Mongo sync script](/docs/how-to/seed-users#post-migration-sync).
 
 > [TODO: Add screenshot of username settings]
 
@@ -94,7 +122,24 @@ AOTF reads the following fields from Clerk `publicMetadata` in `proxy.ts`:
 | Field | Type | Set By | Purpose |
 |---|---|---|---|
 | `role` | `"teacher"` \| `"teacher_candidate"` | Webhook on sign-up, updated post-payment | Determines platform access |
-| `onboardingCompleted` | `boolean` | `/api/v1/payments/verify` | Gates access to protected routes |
+| `onboardingCompleted` | `boolean` | `/api/v1/payments/verify` or `/api/v1/payments/activate-legacy` | Gates access to protected routes |
+
+### Migrated Legacy Users
+
+Set by [migration scripts](/docs/how-to/seed-users) on Clerk user creation:
+
+```json
+{
+  "role": "teacher",
+  "onboardingCompleted": false,
+  "migratedFromLegacy": true,
+  "registrationFeeStatus": "paid",
+  "legacyPlan": "teacher",
+  "legacyTeacherId": "AOT-XXXX"
+}
+```
+
+`onboardingCompleted` becomes `true` only after the user clicks **Activate Account** on `/onboarding` (`POST /api/v1/payments/activate-legacy`), not during the webhook.
 
 ### Admin Users
 

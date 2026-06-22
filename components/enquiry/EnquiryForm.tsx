@@ -9,6 +9,7 @@ import { addToast } from "@heroui/toast";
 import { SendIcon } from "lucide-react";
 import { enquiryFormSchema as schema } from "@/lib/validations/forms";
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone, normalizePhone } from "@/lib/utils/phone";
 
 type EnquiryFormProps = {
   onSuccess?: (enquiryId: string) => void;
@@ -26,10 +27,8 @@ export default function EnquiryForm({ onSuccess }: EnquiryFormProps) {
       /\b([a-zA-Z])([a-zA-Z]*)/g,
       (_m, first, rest) => `${first.toUpperCase()}${rest.toLowerCase()}`,
     );
-  const normalizePhone = (value: string) =>
-    value.replace(/\D/g, "").slice(0, 10);
-  const formatPhone = (value: string) =>
-    value.length <= 5 ? value : `${value.slice(0, 5)} ${value.slice(5)}`;
+  const handlePhoneChange = (value: string) =>
+    handleChange("phone", normalizePhone(value));
   const placeHolderText =
     role === "guardian"
       ? "I need a science tutor for my son in class 6, ICSE"
@@ -49,8 +48,6 @@ export default function EnquiryForm({ onSuccess }: EnquiryFormProps) {
 
   const handleNameChange = (value: string) =>
     handleChange("name", formatName(value));
-  const handlePhoneChange = (value: string) =>
-    handleChange("phone", normalizePhone(value));
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();

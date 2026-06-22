@@ -7,6 +7,7 @@ import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { User } from "@heroui/user";
 import { Phone, Eye } from "lucide-react";
+import { formatPhone } from "@/lib/utils/phone";
 import { useRouter } from "next/navigation";
 export interface Candidate {
   id: string;
@@ -135,7 +136,7 @@ export const CandidateCard: React.FC<CandidateCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-sm text-default-600">
               <Phone size={14} />
-              <span>{candidate.phone}</span>
+              <span>{formatPhone(candidate.phone)}</span>
             </div>
           </div>
         </div>

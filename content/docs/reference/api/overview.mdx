@@ -117,24 +117,21 @@ All routes use a centralised `handleApiError` utility:
 
 ```ts
 // lib/api-utils.ts
-export function handleApiError(error: unknown): NextResponse {
-  // Mongoose validation errors → 400 with fieldErrors
-  if (error instanceof mongoose.Error.ValidationError) {
-    return NextResponse.json({ error: "Validation failed", fieldErrors: ... }, { status: 400 });
-  }
-  // Mongoose cast errors (bad ObjectId) → 400
-  if (error instanceof mongoose.Error.CastError) {
-    return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
-  }
-  // MongoDB duplicate key → 409
-  if (error?.code === 11000) {
-    return NextResponse.json({ error: "Duplicate entry" }, { status: 409 });
-  }
-  // Default → 500
-  console.error("[API Error]:", error);
+export function handleApiError(
+  error: unknown,
+  context?: string,  // route label, e.g. "GET /api/v1/admin/posts"
+): NextResponse {
+  // Zod validation → 400 with fieldErrors
+  // AppError subclasses → their statusCode (4xx operational errors are NOT sent to Sentry)
+  // Mongoose duplicate key → 409
+  // SyntaxError (bad JSON) → 400
+  // Catch-all → 500
+  reportError(error, { route: context });  // only when shouldReportToSentry() passes
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }
 ```
+
+Unexpected 500s are reported to Sentry via `reportError()` in `lib/sentry-report.ts`. Validation failures, operational 4xx errors, and duplicate keys are handled locally and not reported. See [Monitoring with Sentry](/docs/explanations/monitoring-sentry) for the full filtering rules and coverage map.
 
 ### Standard Error Response Shape
 

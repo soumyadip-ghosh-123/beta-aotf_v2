@@ -55,14 +55,14 @@ The webhook handler at `/api/v1/webhooks/clerk` receives the `user.created` even
 
 ## Step 4: Plan Selection & Payment
 
-On `/onboarding`, the provider selects their plan:
+On `/onboarding`, providers complete a **3-step stepper**: personal/professional details → plan selection → payment or activation.
 
-| Plan | Code | Access |
+| Plan | Code | Registration fee |
 |---|---|---|
-| Teacher | `teacher` | Tuition posts only (`hasTuitionAccess: true`) |
-| Teacher Candidate | `teacher_candidate` | Tuition + freelance/job posts (`hasTuitionAccess: true`, `hasCandidateAccess: true`) |
+| Teacher | `teacher` | ₹49 (4900 paise) |
+| Teacher Candidate | `teacher_candidate` | ₹99 (9900 paise) |
 
-Clicking **Pay** calls `/api/v1/payments/create-order`, which creates a Razorpay order.
+Clicking **Pay** calls `POST /api/v1/payments/create-order`, which creates a Razorpay order (unless the user is a migrated legacy payer — see [Legacy Migrated Users](#legacy-migrated-users)).
 
 ### Razorpay Payment
 
@@ -94,13 +94,27 @@ The provider is redirected to `/u/[username]/dashboard`.
 
 ## Legacy Migrated Users
 
-Users migrated from the previous system have `migratedFromLegacy: true` and `registrationFeeStatus: "paid"` in their Clerk `publicMetadata`. The webhook handler detects this and:
+Users migrated from the previous system have `migratedFromLegacy: true` and `registrationFeeStatus: "paid"` in Clerk `publicMetadata`. They sign in with **Google** (same Gmail) or set a password — see [Account Linking](/docs/explanations/account-linking).
 
-1. Creates an `OnboardingDetails` stub with `expiresAt: null` (skips TTL deletion)
-2. Preserves legacy plan and teacher ID flags
-3. Skips Razorpay payment (they already paid)
+```mermaid
+flowchart TD
+  A["Sign in Google or password"] --> B["Land on /onboarding 3-step form"]
+  B --> C["POST /api/v1/payments/create-order"]
+  C --> D{"alreadyPaid: true?"}
+  D -- Yes --> E["Click Activate Account"]
+  E --> F["POST /api/v1/payments/activate-legacy"]
+  F --> G["onboardingCompleted: true"]
+  G --> H["Dashboard access"]
+  D -- No --> I["Should not happen for migrated paid users"]
+```
 
-These users complete onboarding by clicking **Activate Account** on `/onboarding`.
+During migration or webhook seeding:
+
+1. `OnboardingDetails` stub created with `expiresAt: null` (no auto-deletion timer for paid legacy users)
+2. Legacy plan and teacher ID preserved in Clerk metadata
+3. Razorpay is skipped — `create-order` returns `{ alreadyPaid: true }`
+
+These users complete onboarding by clicking **Activate Account**, which calls `POST /api/v1/payments/activate-legacy` (zero-amount `legacy_migration` payment record).
 
 ## Profile Completion
 

@@ -5,88 +5,19 @@ description: API reference for user account management, provider profiles, and t
 
 # Users, Profile & Onboarding APIs
 
-## Users
+## Admin User Management
 
-### List Users
+Provider account listing and management for admins is handled by the **Admin App Users API**, not `/api/v1/users`.
 
-```http
-GET /api/v1/users
-Authorization: Bearer <admin_clerk_jwt>
-```
+See [Admin App Users API](/docs/reference/api/app-users) and [Manage Users in Admin](/docs/how-to/admin-manage-users).
 
-**Permission required**: `canManageUsers`
-
-**Query Parameters**:
-
-| Param | Type | Description |
-|---|---|---|
-| `page` | `number` | Page number (default: 1) |
-| `limit` | `number` | Results per page (default: 20, max: 100) |
-| `status` | `string` | Filter by status: `active`, `blocked`, `deleted` |
-| `search` | `string` | Search by username or email |
-
-**Response 200**:
-```json
-{
-  "users": [
-    {
-      "_id": "...",
-      "clerkId": "user_...",
-      "username": "teacher1",
-      "role": "teacher",
-      "plan": { "current": "teacher", "hasTuitionAccess": true },
-      "onboardingCompleted": true,
-      "status": "active",
-      "createdAt": "2026-01-01T00:00:00.000Z"
-    }
-  ],
-  "total": 142,
-  "page": 1,
-  "pages": 8
-}
-```
-
----
-
-### Get User by Clerk ID
+The public user endpoint is profile lookup by username only:
 
 ```http
-GET /api/v1/users/:clerkId
-Authorization: Bearer <admin_clerk_jwt>
+GET /api/v1/users/:username
 ```
 
-**Response 200**: Single user document with profile data populated.
-
-**Response 404**:
-```json
-{ "error": "User not found" }
-```
-
----
-
-### Update User Status
-
-```http
-PATCH /api/v1/users/:clerkId
-Authorization: Bearer <admin_clerk_jwt>
-Content-Type: application/json
-Origin: https://aotf.in
-```
-
-**Permission required**: `canBlockUsers`
-
-**Request Body**:
-```json
-{ "status": "blocked" }
-```
-
-Valid values: `"active"`, `"blocked"`, `"deleted"`
-
-**Response 200**: Updated user document.
-
-**Notes**:
-- Blocking a user prevents them from logging in (Clerk account remains, but `proxy.ts` checks DB status)
-- Setting status to `"deleted"` is a soft delete — data is preserved in MongoDB
+No authentication required for public profile data (subject to `isPublic` on the profile).
 
 ---
 
@@ -195,37 +126,52 @@ Origin: https://aotf.in
 
 ## Onboarding
 
-### Complete Onboarding
+### Get Onboarding State
 
 ```http
-POST /api/v1/onboarding
+GET /api/v1/onboarding
+Authorization: Bearer <clerk_jwt>
+```
+
+Returns current onboarding progress, saved step data, and flags such as `paymentPaidButNotOnboarded` (paid via Razorpay but onboarding not marked complete — contact support).
+
+### Save Onboarding Step
+
+```http
+PATCH /api/v1/onboarding
 Authorization: Bearer <clerk_jwt>
 Content-Type: application/json
 Origin: https://aotf.in
 ```
 
-Called after successful Razorpay payment verification. Sets `onboardingCompleted: true` on the `User` document and syncs to Clerk.
+Saves personal/professional fields between steps. Refreshes `OnboardingDetails.expiresAt` (+72 hours from save).
 
-**Request Body**:
+**Request Body** (fields optional):
 ```json
 {
-  "plan": "teacher",
   "phone": "9876543210",
   "whatsapp": "9876543210",
-  "address": "123, Park Street, Kolkata"
+  "address": "123, Park Street, Kolkata",
+  "teachingExp": "2-5",
+  "qualification": "B.Sc."
 }
 ```
 
-**Response 200**:
-```json
-{ "success": true, "onboardingCompleted": true }
-```
+### Complete Onboarding (Payment)
 
-**State Machine**:
-- `OnboardingDetails.status` transitions: `incomplete` → `complete`
+Onboarding completion is **not** a single `POST /api/v1/onboarding` call. It happens via:
+
+| Path | Endpoint |
+|---|---|
+| New users (Razorpay) | `POST /api/v1/payments/verify` after successful payment |
+| Migrated legacy users | `POST /api/v1/payments/activate-legacy` after **Activate Account** |
+
+See [Payments API](/docs/reference/api/payments).
+
+**State machine on completion**:
+- `OnboardingDetails.status` → `complete`
 - `User.onboardingCompleted` → `true`
-- `User.plan.hasTuitionAccess` → `true`
-- `User.plan.hasCandidateAccess` → `true` (for `teacher_candidate` plan)
+- `User.plan.hasTuitionAccess` / `hasCandidateAccess` set per plan
 - Clerk `publicMetadata.onboardingCompleted` → `true`
 
-This is a **sensitive operation** — once complete, it cannot be undone via the API. Use the admin panel to reset onboarding status if needed.
+> **Note**: The onboarding UI shows a 30-day deletion countdown from `User.createdAt` for unpaid users. The `PATCH` endpoint sets a 72-hour `expiresAt` on `OnboardingDetails` — these timers serve related but distinct purposes.

@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone, phoneDigits } from "@/lib/utils/phone";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -598,10 +599,10 @@ export default function CandidateDetailPage({
                 <div>
                   <p className="text-xs text-default-500">Phone Number</p>
                   <a
-                    href={`tel:${application.applicantSnapshot.phone}`}
+                    href={`tel:${phoneDigits(application.applicantSnapshot.phone)}`}
                     className="font-semibold text-primary-600 hover:underline text-lg"
                   >
-                    {application.applicantSnapshot.phone}
+                    {formatPhone(application.applicantSnapshot.phone)}
                   </a>
                 </div>
               </div>

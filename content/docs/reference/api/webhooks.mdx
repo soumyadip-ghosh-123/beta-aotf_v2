@@ -66,15 +66,18 @@ If this insert fails with error code **11000** (duplicate key), the event was al
 
 #### `user.created`
 
-Fires when a new user registers.
+Fires when a new user registers (self-service sign-up) or is created via migration script / admin API.
 
 | Step | Action |
 |---|---|
 | 1 | Check `publicMetadata.isAdmin` — route to admin or user handler |
-| 2 | **User handler**: Create `User` + `Profile` in a MongoDB session/transaction |
-| 3 | If `migratedFromLegacy: true`: create `OnboardingDetails` stub with `expiresAt: null` |
-| 4 | Update Clerk `publicMetadata` with `{ role, onboardingCompleted: false }` |
-| 5 | Retry up to 3 times on transient 404 (Clerk propagation delay) |
+| 2 | **User handler**: Create or update `User` + `Profile` (match by `clerkId` or `username`) |
+| 3 | If `migratedFromLegacy: true` and `registrationFeeStatus: "paid"`: upsert `OnboardingDetails` with `expiresAt: null` |
+| 4 | Update Clerk `publicMetadata` — preserve migration fields (`legacyPlan`, `legacyTeacherId`, `registrationFeeStatus`) |
+| 5 | Set `onboardingCompleted: false` until payment verify or `activate-legacy` |
+| 6 | Retry up to 3 times on transient 404 (Clerk propagation delay) |
+
+**Migration scripts** call `seedClerkUserInMongo()` immediately after Clerk user creation. The webhook is a **backup** if the script seed fails or the user signs in before seeding completes. See [Seed Teachers & Candidates](/docs/how-to/seed-users).
 
 #### `user.updated`
 

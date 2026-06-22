@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone, normalizePhone } from "@/lib/utils/phone";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
@@ -366,7 +367,7 @@ export default function JobPostForm({
     setFormData((prev) => ({
       ...prev,
       clientName: enquiry.name || "",
-      clientPhone: enquiry.phoneNumber || "",
+      clientPhone: normalizePhone(enquiry.phoneNumber || ""),
       notes: enquiry.query ? `From enquiry: ${enquiry.query}` : "",
     }));
   }, [enquiry, isEditMode]);
@@ -377,6 +378,9 @@ export default function JobPostForm({
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
+
+  const handleClientPhoneChange = (value: string) =>
+    handleChange("clientPhone", normalizePhone(value));
 
   const validate = () => {
     try {
@@ -786,10 +790,8 @@ export default function JobPostForm({
                     label="Client Phone"
                     placeholder="Enter phone number"
                     type="tel"
-                    value={formData.clientPhone}
-                    onChange={(e) => {
-                      handleChange("clientPhone", e.target.value);
-                    }}
+                    value={formatPhone(formData.clientPhone)}
+                    onChange={(e) => handleClientPhoneChange(e.target.value)}
                     isRequired
                     isInvalid={!!errors.clientPhone}
                     errorMessage={errors.clientPhone}
@@ -1218,7 +1220,7 @@ export default function JobPostForm({
                           <div>
                             <span className="text-default-500">Phone:</span>{" "}
                             <span className="font-medium">
-                              {formData.clientPhone}
+                              {formatPhone(formData.clientPhone)}
                             </span>
                           </div>
                           {formData.companyName && (

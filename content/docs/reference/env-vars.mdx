@@ -11,10 +11,12 @@ All environment variables live in `.env.local` for development and in **Vercel �
 
 | Variable | Required | Description |
 |---|---|---|
-| `MONGODB_URI` | ✅ | Full Atlas connection string |
+| `MONGODB_URI` | ✅ | New app database connection string |
+| `MONGODB_URI_LEGACY` | Migration only | Legacy production cluster (`academy-of-tutorials-freelancers`). Used by [migration scripts](/docs/how-to/seed-users). Not needed at runtime after migration. |
 
 ```bash
 MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/aotf?retryWrites=true&w=majority
+MONGODB_URI_LEGACY=mongodb+srv://...@legacy-cluster/academy-of-tutorials-freelancers
 ```
 
 ## Clerk
@@ -38,9 +40,11 @@ ADMIN_EMAIL_DOMAIN=aotf.in
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | ✅ | Canonical app URL (used in CSRF check and email links) |
+| `CRON_SECRET` | ✅ (prod cron) | Bearer token for `GET /api/v1/cron/*` routes. Used by Vercel Cron and [Sentry Crons](/docs/how-to/triage-sentry-errors). |
 
 ```bash
 NEXT_PUBLIC_APP_URL=https://aotf.in
+CRON_SECRET=your-random-secret
 ```
 
 ## Razorpay
@@ -107,17 +111,19 @@ RESEND_FROM_EMAIL=noreply@aotf.in
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_SENTRY_DSN` | Optional | Sentry DSN (enables error tracking) |
-| `SENTRY_AUTH_TOKEN` | Optional | For source maps upload during build |
-| `SENTRY_ORG` | Optional | Your Sentry org slug |
-| `SENTRY_PROJECT` | Optional | Your Sentry project slug |
+| `NEXT_PUBLIC_SENTRY_DSN` | Optional | Runtime DSN — enables error tracking in browser and server |
+| `SENTRY_AUTH_TOKEN` | Optional | Build-time only — uploads source maps during CI/Vercel build |
+| `SENTRY_ORG` | Optional | Build-time only — Sentry org slug (must match `next.config.js`) |
+| `SENTRY_PROJECT` | Optional | Build-time only — Sentry project slug (must match `next.config.js`) |
 
 ```bash
 NEXT_PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 SENTRY_AUTH_TOKEN=sntrys_...
 SENTRY_ORG=aotf
-SENTRY_PROJECT=aotf-nextjs
+SENTRY_PROJECT=javascript-nextjs
 ```
+
+Only `NEXT_PUBLIC_SENTRY_DSN` is needed at runtime. The three `SENTRY_*` variables are optional but recommended for readable stack traces in production. See [Monitoring with Sentry](/docs/explanations/monitoring-sentry) for the full setup and [Triage Sentry Errors](/docs/how-to/triage-sentry-errors) for incident response.
 
 ## Quick Validation
 

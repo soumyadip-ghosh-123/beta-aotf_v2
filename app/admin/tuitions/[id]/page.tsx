@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone } from "@/lib/utils/phone";
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
@@ -440,7 +441,7 @@ export default function ViewPostPage({
                   <div className="flex items-center gap-1">
                     <span className="text-default-500">Phone:</span> <br />
                     <span className="font-medium text-sm">
-                      {postData.guardianPhone}
+                      {formatPhone(postData.guardianPhone)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">

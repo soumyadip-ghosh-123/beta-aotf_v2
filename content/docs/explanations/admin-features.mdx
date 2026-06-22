@@ -53,3 +53,14 @@ Admins can generate PDF-ready invoices directly from the `PostLedger` view.
 Every action is tracked.
 - **Activity Log**: Shows who updated an enquiry, who created a post, etc. Crucial for team coordination.
 - **Audit Log**: High-security tracking. Shows who exported data, who changed an admin's role, or who issued a refund.
+
+## 7. Users Management
+
+The **Users** page (`/admin/users`) lists provider accounts from MongoDB with automatic Clerk sync on load.
+
+- Teacher and candidate tabs with status filters
+- Block, unblock, and soft-delete via `/api/admin/app-users`
+- Create-user FAB for manual provisioning
+- Post-migration visibility after [legacy import](/docs/how-to/migrate-legacy-users)
+
+See [Manage Users in Admin](/docs/how-to/admin-manage-users) and [Admin App Users API](/docs/reference/api/app-users).

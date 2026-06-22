@@ -22,6 +22,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { FaRupeeSign } from "react-icons/fa";
+import { formatPhone } from "@/lib/utils/phone";
 import {
   formatTuitionShare,
   shareOnWhatsApp,
@@ -306,7 +307,7 @@ export const TuitionPostCard: React.FC<TuitionPostCardProps> = ({
             |
             <div className="flex items-center gap-2 text-sm">
               <Phone size={16} className="text-default-400" />
-              <span className="text-default-600">{post.guardianPhone}</span>
+              <span className="text-default-600">{formatPhone(post.guardianPhone)}</span>
             </div>
           </div>
         </div>

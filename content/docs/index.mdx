@@ -31,11 +31,16 @@ This documentation follows the **[Diataxis](https://diataxis.fr/)** framework:
 ## Quick Links
 
 - [Quick Start (Developers)](/docs/tutorials/quick-start) — Clone the repo and get running in minutes
+- [Migrate Legacy Users](/docs/how-to/migrate-legacy-users) — Import paid teachers and candidates from the legacy database
+- [Manage Users in Admin](/docs/how-to/admin-manage-users) — Sync, filter, and manage provider accounts
+- [Account Linking](/docs/explanations/account-linking) — Google SSO and password on the same Clerk account
 - [API Overview](/docs/reference/api/overview) — How every API route is structured
 - [Database Models](/docs/reference/db/overview) — MongoDB collections and field reference
 - [Admin Hierarchy](/docs/reference/admin/hierarchy) — Roles, permissions, and access control
 - [Application Lifecycle](/docs/explanations/application-lifecycle) — How applications move from `applied` to `approved`
 - [Deployment Guide](/docs/how-to/deploy-vercel) — Vercel + MongoDB Atlas free tier setup
+- [Monitoring with Sentry](/docs/explanations/monitoring-sentry) — Why error tracking exists and what the dashboard shows
+- [Triage Sentry Errors](/docs/how-to/triage-sentry-errors) — From Sentry issue to codebase fix
 
 ## Tech Stack at a Glance
 
@@ -43,7 +48,7 @@ This documentation follows the **[Diataxis](https://diataxis.fr/)** framework:
 |---|---|
 | Framework | Next.js 16.1 (App Router) |
 | Database | MongoDB Atlas M0 (free tier) via Mongoose |
-| Auth | Clerk (username/password + JWT) |
+| Auth | Clerk (password sign-up; Google SSO for migrated users) |
 | Payments | Razorpay (provider registration fee) |
 | Media | Cloudinary |
 | Email | Resend |

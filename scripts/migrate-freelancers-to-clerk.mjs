@@ -54,23 +54,25 @@ dotenv.config({ path: resolve(__dirname, ".env") });
 
 import { MongoClient } from "mongodb";
 import { createClerkClient } from "@clerk/backend";
+import { seedClerkUserInMongo } from "./lib/seed-clerk-user.mjs";
+
+// Atlas SRV lookups can fail on some local DNS resolvers — use public DNS after env is loaded.
 if (process.env.NODE_ENV === "production") {
-  // In production, use the default DNS servers (e.g. from /etc/resolv.conf)
-  // which should be able to resolve Atlas cluster hostnames.
-} else {
-  // In development, override DNS servers to avoid issues with certain ISPs
-  // that can't resolve Atlas cluster hostnames (e.g. Comcast).
-  dns.setServers(["1.1.1.1"]);
+  dns.setServers(["1.1.1.1", "8.8.8.8"]);
 }
 
 // ─── Validate env ──────────────────────────────────────────────────────────────
 
 const IS_LIVE = process.argv.includes("--live");
-const { MONGODB_URI_LEGACY, CLERK_SECRET_KEY } = process.env;
+const { MONGODB_URI_LEGACY, MONGODB_URI, CLERK_SECRET_KEY } = process.env;
 
 if (!MONGODB_URI_LEGACY)
   throw new Error(
     "Missing MONGODB_URI_LEGACY in env. This must point to the OLD production cluster."
+  );
+if (!MONGODB_URI)
+  throw new Error(
+    "Missing MONGODB_URI in env. This must point to the NEW app database."
   );
 if (!CLERK_SECRET_KEY) throw new Error("Missing CLERK_SECRET_KEY in env");
 
@@ -98,6 +100,14 @@ function log(emoji, msg) {
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Clerk prod requires legal consent when enabled — use legacy agreement timestamp. */
+function legacyLegalAcceptedAt(record) {
+  const raw =
+    record.termsAgreedAt ?? record.paymentVerifiedAt ?? record.createdAt;
+  const date = raw ? new Date(raw) : new Date();
+  return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
 /**
@@ -135,11 +145,16 @@ async function migrate() {
 
   // ── Connect to legacy MongoDB ──────────────────────────────────────────────
 
-  const mongoClient = new MongoClient(MONGODB_URI_LEGACY);
-  await mongoClient.connect();
+  const legacyClient = new MongoClient(MONGODB_URI_LEGACY);
+  await legacyClient.connect();
   log("✅", `Connected to legacy MongoDB — db: "${LEGACY_DB_NAME}"`);
 
-  const db = mongoClient.db(LEGACY_DB_NAME);
+  const newClient = new MongoClient(MONGODB_URI);
+  await newClient.connect();
+  log("✅", "Connected to NEW MongoDB for User/Profile seeding");
+
+  const db = legacyClient.db(LEGACY_DB_NAME);
+  const newDb = newClient.db();
   const freelancersCol = db.collection("freelancers");
 
   // ── Init Clerk ─────────────────────────────────────────────────────────────
@@ -156,7 +171,8 @@ async function migrate() {
 
   if (paidFreelancers.length === 0) {
     log("🤷", "No paid freelancers found. Nothing to migrate.");
-    await mongoClient.close();
+    await legacyClient.close();
+    await newClient.close();
     return;
   }
 
@@ -164,7 +180,7 @@ async function migrate() {
 
   // ── Migrate ────────────────────────────────────────────────────────────────
 
-  const results = { created: 0, skipped: 0, failed: 0 };
+  const results = { created: 0, seeded: 0, skipped: 0, failed: 0 };
   const failures = [];
 
   for (const freelancer of paidFreelancers) {
@@ -198,59 +214,66 @@ async function migrate() {
     // ── Live ─────────────────────────────────────────────────────────────────
 
     try {
-      // Idempotency: skip if this email already exists in Clerk
+      const metadata = {
+        role: "teacher_candidate",
+        onboardingCompleted: false,
+        migratedFromLegacy: true,
+        registrationFeeStatus: "paid",
+        legacyPlan: "teacher_candidate",
+        legacyTeacherId: legacyId,
+      };
+
       const existing = await clerk.users.getUserList({
         emailAddress: [email],
       });
 
-      if (existing.totalCount > 0) {
-        log("⏭️ ", `Already in Clerk, skipping: ${email}`);
+      let clerkUser = existing.data[0] ?? null;
+
+      if (clerkUser) {
+        log("⏭️ ", `Already in Clerk: ${email} — ensuring MongoDB record`);
         results.skipped++;
-        await sleep(CLERK_RATE_LIMIT_DELAY_MS);
-        continue;
-      }
-
-      // Try to create the user; if the username collides, retry with a suffix.
-      let created = false;
-      for (let attempt = 0; attempt <= 9 && !created; attempt++) {
-        const username = makeUsername(email, attempt);
-        try {
-          await clerk.users.createUser({
-            emailAddress: [email],
-            username,
-            firstName,
-            lastName,
-            // No password — users sign in via Google (email auto-links) or
-            // use "Forgot Password" to set a new one.
-            skipPasswordChecks: true,
-            skipPasswordRequirement: true,
-            publicMetadata: {
-              role: "teacher_candidate",
-              onboardingCompleted: false,
-              migratedFromLegacy: true,
-              registrationFeeStatus: "paid",
-              legacyPlan: "teacher_candidate",
-              legacyTeacherId: legacyId,
-            },
-          });
-          created = true;
-        } catch (innerErr) {
-          const isUsernameConflict =
-            innerErr?.errors?.some(
-              (e) => e.code === "form_identifier_exists"
-            ) ?? false;
-          // Only retry on username collision; re-throw everything else
-          if (!isUsernameConflict || attempt === 9) throw innerErr;
+      } else {
+        let created = false;
+        for (let attempt = 0; attempt <= 9 && !created; attempt++) {
+          const username = makeUsername(email, attempt);
+          try {
+            clerkUser = await clerk.users.createUser({
+              emailAddress: [email],
+              username,
+              firstName,
+              lastName,
+              skipPasswordChecks: true,
+              skipPasswordRequirement: true,
+              skipLegalChecks: true,
+              legalAcceptedAt: legacyLegalAcceptedAt(freelancer),
+              publicMetadata: metadata,
+            });
+            created = true;
+          } catch (innerErr) {
+            const isUsernameConflict =
+              innerErr?.errors?.some(
+                (e) => e.code === "form_identifier_exists"
+              ) ?? false;
+            if (!isUsernameConflict || attempt === 9) throw innerErr;
+          }
         }
+
+        log(
+          "✅",
+          `Created: ${email} (teacher_candidate) | legacyId: ${legacyId ?? "n/a"}`
+        );
+        results.created++;
       }
 
-      log(
-        "✅",
-        `Created: ${email} (teacher_candidate) | legacyId: ${legacyId ?? "n/a"}`
-      );
-      results.created++;
+      const seedResult = await seedClerkUserInMongo(newDb, clerkUser);
+      if (seedResult.action !== "skipped") {
+        results.seeded++;
+        log(
+          "🗄️ ",
+          `MongoDB ${seedResult.action}: ${email} (${clerkUser.id})`
+        );
+      }
 
-      // Brief pause to respect Clerk's rate limits
       await sleep(CLERK_RATE_LIMIT_DELAY_MS);
     } catch (err) {
       const reason =
@@ -273,6 +296,9 @@ async function migrate() {
   console.log(
     `  ✅  ${IS_LIVE ? "Created     " : "Would create"} : ${results.created}`
   );
+  console.log(
+    `  🗄️   ${IS_LIVE ? "Mongo seeded" : "Would seed  "} : ${results.seeded}`
+  );
   console.log(`  ⏭️   Skipped      : ${results.skipped}`);
   console.log(`  ❌  Failed       : ${results.failed}`);
 
@@ -294,7 +320,8 @@ async function migrate() {
     console.log("\n🎉 Freelancer migration complete.\n");
   }
 
-  await mongoClient.close();
+  await legacyClient.close();
+  await newClient.close();
 }
 
 migrate().catch((err) => {

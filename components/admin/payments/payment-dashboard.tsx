@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone } from "@/lib/utils/phone";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { addToast } from "@heroui/toast";
@@ -496,7 +497,7 @@ export default function PaymentDashboard() {
                               {post.guardianName}
                             </p>
                             <p className="text-[11px] text-slate-500">
-                              {post.guardianPhone}
+                              {formatPhone(post.guardianPhone)}
                             </p>
                           </div>
                           <p className="text-[11px] text-slate-500">
@@ -544,7 +545,7 @@ export default function PaymentDashboard() {
                         </div>
                         <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-slate-600">
                           <span>{job.status ?? "Open"}</span>
-                          <span>{job.phoneNumber}</span>
+                          <span>{formatPhone(job.phoneNumber)}</span>
                         </div>
                       </div>
                     ))
@@ -645,7 +646,7 @@ export default function PaymentDashboard() {
                             {post.guardianName}
                           </p>
                           <p className="text-[11px] text-slate-500">
-                            {post.guardianPhone}
+                            {formatPhone(post.guardianPhone)}
                           </p>
                         </div>
                         <p className="text-[11px] text-slate-500">
@@ -694,7 +695,7 @@ export default function PaymentDashboard() {
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-slate-600">
                         <span>{job.status ?? "Open"}</span>
-                        <span>{job.phoneNumber}</span>
+                        <span>{formatPhone(job.phoneNumber)}</span>
                       </div>
                     </div>
                   ))
@@ -756,7 +757,7 @@ export default function PaymentDashboard() {
             kind: "tuition" as const,
             id: post.postId,
             title: post.guardianName,
-            subtitle: post.guardianPhone,
+            subtitle: formatPhone(post.guardianPhone),
             source: post.source,
             createdAt: post.createdAt,
             tuitionFee: post.monthlyBudget,
