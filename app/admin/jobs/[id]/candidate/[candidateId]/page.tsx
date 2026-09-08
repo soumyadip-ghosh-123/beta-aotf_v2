@@ -665,7 +665,7 @@ export default function JobCandidateDetailPage() {
             <Radio value="shortlisted">Shortlisted</Radio>
             <Radio value="approved">Approved</Radio>
             <Radio value="declined">Declined</Radio>
-            <Radio value="withdrawn">Withdrawn</Radio>
+            {/* <Radio value="withdrawn">Withdrawn</Radio> */}
           </RadioGroup>
           <Textarea
             label="Notes"

@@ -70,11 +70,16 @@ const Testimonials = ({
 
   const displayData = useMemo(() => {
     const source = variant === "student" ? cardsData : teacherReviews;
+    if (!source || source.length === 0) return [];
 
-    return source.flatMap((card: any, i: number) => [
-      { ...card, _uid: `${card.id}-a-${i}` },
-      { ...card, _uid: `${card.id}-b-${i}` },
-    ]);
+    // Duplicate array fully to avoid A, A, B, B (instead we want A, B, C, A, B, C)
+    // Repeated 4 times to ensure it fills wide screens even with few reviews.
+    return [
+      ...source.map((card: any, i: number) => ({ ...card, _uid: `${card.id || i}-a-${i}` })),
+      ...source.map((card: any, i: number) => ({ ...card, _uid: `${card.id || i}-b-${i}` })),
+      ...source.map((card: any, i: number) => ({ ...card, _uid: `${card.id || i}-c-${i}` })),
+      ...source.map((card: any, i: number) => ({ ...card, _uid: `${card.id || i}-d-${i}` })),
+    ];
   }, [cardsData, teacherReviews, variant]);
 
   const StudentCard = ({ card }: { card: ReviewCard }) => (
@@ -159,11 +164,11 @@ const Testimonials = ({
           <div className="marquee-row w-full mx-auto max-w-5xl overflow-hidden relative">
             <div className="absolute left-0 top-0 h-full w-20 z-10 pointer-events-none bg-linear-to-r from-white dark:from-black to-transparent"></div>
             <div className="marquee-inner marquee-reverse flex transform-gpu py-5 gap-10">
-              {displayData.map((card: any) =>
+              {[...displayData].reverse().map((card: any) =>
                 variant === "student" ? (
-                  <StudentCard key={`row1-${card._uid}`} card={card} />
+                  <StudentCard key={`row2-${card._uid}`} card={card} />
                 ) : (
-                  <TeacherReviewCard key={`row1-${card._uid}`} card={card} />
+                  <TeacherReviewCard key={`row2-${card._uid}`} card={card} />
                 ),
               )}
             </div>

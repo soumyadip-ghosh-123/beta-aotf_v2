@@ -447,13 +447,13 @@ export default function UsersPage() {
   const tabSummary =
     selectedTab === "teacher"
       ? {
-          total: summary?.teachers ?? 0,
-          active: users.filter((u) => u.statusValue === "active").length,
-        }
+        total: summary?.teachers ?? 0,
+        active: users.filter((u) => u.statusValue === "active").length,
+      }
       : {
-          total: summary?.candidates ?? 0,
-          active: users.filter((u) => u.statusValue === "active").length,
-        };
+        total: summary?.candidates ?? 0,
+        active: users.filter((u) => u.statusValue === "active").length,
+      };
 
   return (
     <div className="w-full space-y-2 px-4">
@@ -686,6 +686,22 @@ export default function UsersPage() {
                 >
                   View Profile
                 </Button>
+                {!user.paymentCompleted && user.statusValue !== "deleted" ? (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    startContent={<CreditCard size={16} />}
+                    isLoading={actioningId === user.id}
+                    onPress={() => {
+                      if (window.confirm(`Recover payment for ${user.name}?`)) {
+                        void handleRecoverPayment(user.id);
+                      }
+                    }}
+                  >
+                    Recover payment
+                  </Button>
+                ) : null}
                 {user.statusValue !== "deleted" ? (
                   <Button
                     size="sm"
@@ -708,22 +724,6 @@ export default function UsersPage() {
                 ) : null}
               </CardFooter>
               <CardFooter className="gap-2 pt-0">
-                {!user.paymentCompleted && user.statusValue !== "deleted" ? (
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    color="primary"
-                    startContent={<CreditCard size={16} />}
-                    isLoading={actioningId === user.id}
-                    onPress={() => {
-                      if (window.confirm(`Recover payment for ${user.name}?`)) {
-                        void handleRecoverPayment(user.id);
-                      }
-                    }}
-                  >
-                    Recover payment
-                  </Button>
-                ) : null}
               </CardFooter>
             </Card>
           ))}

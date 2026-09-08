@@ -208,14 +208,16 @@ const JobPost = ({
           <Chip radius="sm" size="sm" color={statusColor(status)}>
             {formatStatus(status)}
           </Chip>
-          <Chip
-            key={applicationStatus}
-            radius="sm"
-            size="sm"
-            className="bg-default-100 text-sm font-medium"
-          >
-            {applicationStatus}
-          </Chip>
+          {applicationStatus ? (
+            <Chip
+              key={applicationStatus}
+              radius="sm"
+              size="sm"
+              className="bg-default-100 text-sm font-medium"
+            >
+              {applicationStatus}
+            </Chip>
+          ) : null}
         </div>
       </CardHeader>
       {statusFeedback && (
