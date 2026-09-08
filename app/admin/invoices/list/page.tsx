@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
@@ -231,10 +232,10 @@ export default function InvoiceListPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {new Date(invoice.invoiceDate).toLocaleDateString()}
+                        {formatDisplayDate(invoice.invoiceDate)}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {new Date(invoice.paymentDate).toLocaleDateString()}
+                        {formatDisplayDate(invoice.paymentDate)}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium">
                         {formatCurrency(invoice.grandTotal, invoice.currency)}

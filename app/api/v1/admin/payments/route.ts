@@ -26,7 +26,9 @@ async function getClerkMetadata(userId: string) {
     try {
       const client = await clerkClient();
       const clerkUser = await client.users.getUser(userId);
-      metadata = clerkUser.publicMetadata as Record<string, unknown> | undefined;
+      metadata = clerkUser.publicMetadata as
+        | Record<string, unknown>
+        | undefined;
     } catch {
       metadata = undefined;
     }
@@ -66,7 +68,17 @@ export async function GET(_request: NextRequest) {
     }
 
     const [admins, tuitionPosts, jobs] = await Promise.all([
-      Admin.find({}, { clerkId: 1, name: 1, role: 1, isActive: 1, email: 1, payoutPercentage: 1 })
+      Admin.find(
+        {},
+        {
+          clerkId: 1,
+          name: 1,
+          role: 1,
+          isActive: 1,
+          email: 1,
+          payoutPercentage: 1,
+        },
+      )
         .sort({ name: 1 })
         .lean(),
       Post.find(
@@ -97,11 +109,16 @@ export async function GET(_request: NextRequest) {
           clientName: 1,
           phoneNumber: 1,
           source: 1,
+          referralUserName: 1,
           createdAt: 1,
           updatedAt: 1,
           createdByAdminId: 1,
           updatedByAdminId: 1,
           status: 1,
+          companyName: 1,
+          settledAmount: 1,
+          academyCommissionPercentage: 1,
+          invoiceGenerated: 1,
         },
       )
         .sort({ createdAt: -1 })
@@ -124,17 +141,55 @@ export async function GET(_request: NextRequest) {
             referral.referralUserName &&
             tuitionPostIdSet.has(normalizePostKey(referral.postId)),
         )
-        .map((referral) => [normalizePostKey(referral.postId), referral.referralUserName.trim()]),
+        .map((referral) => [
+          normalizePostKey(referral.postId),
+          referral.referralUserName.trim(),
+        ]),
     );
 
-    const invoicePostIdSet = new Set(tuitionPostIds);
-    const invoices = tuitionPostIds.length
-      ? await Invoice.find({ isLatest: true }, { postId: 1, invoiceId: 1, paymentStatus: 1, paymentDate: 1, isLatest: 1 }).lean()
+    const jobIds = jobs
+      .map((job) => normalizePostKey(job.jobId))
+      .filter(Boolean);
+    const jobReferrals = jobIds.length
+      ? await Referral.collection
+          .find(
+            { postId: { $in: jobIds } },
+            { projection: { postId: 1, referralUserName: 1 } },
+          )
+          .toArray()
+      : [];
+
+    const referralByJobId = new Map(
+      jobReferrals
+        .filter((referral) => referral.postId && referral.referralUserName)
+        .map((referral) => [
+          normalizePostKey(referral.postId),
+          referral.referralUserName.trim(),
+        ]),
+    );
+
+    const invoicePostIdSet = new Set([...tuitionPostIds, ...jobIds]);
+    const invoices = invoicePostIdSet.size
+      ? await Invoice.find(
+          { isLatest: true },
+          {
+            postId: 1,
+            invoiceId: 1,
+            paymentStatus: 1,
+            paymentDate: 1,
+            isLatest: 1,
+          },
+        ).lean()
       : [];
 
     const invoiceByPostId = new Map(
       invoices
-        .filter((invoice) => invoice.postId && invoice.invoiceId && invoicePostIdSet.has(invoice.postId))
+        .filter(
+          (invoice) =>
+            invoice.postId &&
+            invoice.invoiceId &&
+            invoicePostIdSet.has(invoice.postId),
+        )
         .map((invoice) => [normalizePostKey(invoice.postId), invoice]),
     );
 
@@ -178,11 +233,23 @@ export async function GET(_request: NextRequest) {
         clientName: job.clientName,
         phoneNumber: job.phoneNumber,
         source: job.source,
+        referralUserName:
+          referralByJobId.get(normalizePostKey(job.jobId)) ??
+          job.referralUserName ??
+          null,
         createdAt: job.createdAt,
         updatedAt: job.updatedAt,
         createdByAdminId: stringifyId(job.createdByAdminId),
         updatedByAdminId: stringifyId(job.updatedByAdminId),
         status: job.status,
+        settledAmount: job.settledAmount,
+        academyCommissionPercentage: job.academyCommissionPercentage,
+        invoiceGenerated: Boolean(job.invoiceGenerated),
+        invoiceId: invoiceByPostId.get(normalizePostKey(job.jobId))?.invoiceId,
+        invoicePaymentStatus: invoiceByPostId.get(normalizePostKey(job.jobId))
+          ?.paymentStatus,
+        invoicePaymentDate: invoiceByPostId.get(normalizePostKey(job.jobId))
+          ?.paymentDate,
       })),
     });
   } catch (error) {

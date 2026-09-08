@@ -41,7 +41,7 @@ function Dot({ color, label }: { color: string; label: string }) {
 
 export function CalendarHeader({ view, events }: IProps) {
   return (
-    <div className="flex flex-col gap-3 border-b p-4">
+    <div className="flex flex-col gap-3 border-b border-default-200 p-4">
       {/* Top row */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
@@ -56,7 +56,7 @@ export function CalendarHeader({ view, events }: IProps) {
                 aria-label="View by day"
                 isIconOnly
                 variant={view === "day" ? "solid" : "flat"}
-                className="rounded-r-none [&_svg]:size-5"
+                className="rounded-r-none [&_svg]:size-5 hidden sm:inline-flex"
               >
                 <Link href="/admin/day-view">
                   <List strokeWidth={1.8} />
@@ -66,7 +66,7 @@ export function CalendarHeader({ view, events }: IProps) {
                 aria-label="View by week"
                 isIconOnly
                 variant={view === "week" ? "solid" : "flat"}
-                className="-ml-px rounded-none [&_svg]:size-5"
+                className="-ml-px rounded-none [&_svg]:size-5 hidden sm:inline-flex"
               >
                 <Link href="/admin/week-view">
                   <Columns strokeWidth={1.8} />
@@ -108,8 +108,8 @@ export function CalendarHeader({ view, events }: IProps) {
             aria-label="Status Legend"
             title="Status Legend"
           >
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:flex sm:flex-wrap sm:gap-x-4 sm:gap-y-1">
-              <p className="col-span-2 text-[11px] font-semibold text-default-400 uppercase tracking-wide sm:hidden mb-0.5">
+            <div className="flex flex-col overflow-x-auto whitespace-nowrap py-1">
+              <p className="text-[11px] font-semibold text-default-400 uppercase tracking-wide mb-0.5 shrink-0">
                 Legend
               </p>
 
@@ -119,27 +119,26 @@ export function CalendarHeader({ view, events }: IProps) {
               <Dot color="orange" label="📚 Guardian Confirmed" />
               <Dot color="green" label="📚 Completed" />
 
-              {/* Divider for sm+ */}
-              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="w-px h-4 bg-default-200 shrink-0" />
 
               {/* Enquiry */}
               <Dot color="orange" label="📋 Pending" />
               <Dot color="green" label="📋 Resolved" />
 
-              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="w-px h-4 bg-default-200 shrink-0" />
 
               {/* Job */}
               <Dot color="orange" label="💼 Job Pending" />
               <Dot color="blue" label="💼 Sent to Company" />
 
-              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="w-px h-4 bg-default-200 shrink-0" />
 
               {/* Feedback */}
               <Dot color="red" label="💬 Needs Review" />
               <Dot color="yellow" label="💬 Under Review" />
               <Dot color="green" label="💬 Resolved" />
 
-              <span className="hidden sm:block w-px h-4 bg-default-200 self-center" />
+              <span className="w-px h-4 bg-default-200 shrink-0" />
 
               {/* Misc */}
               <Dot color="gray" label="Closed / Done" />

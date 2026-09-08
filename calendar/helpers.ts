@@ -12,7 +12,6 @@ import {
   startOfMonth,
   endOfMonth,
   endOfWeek,
-  format,
   parseISO,
   differenceInMinutes,
   eachDayOfInterval,
@@ -28,11 +27,11 @@ import {
 
 import type { ICalendarCell, IEvent } from "@/calendar/interfaces";
 import type { TCalendarView, TVisibleHours, TWorkingHours } from "@/calendar/types";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 
 // ================ Header helper functions ================ //
 
 export function rangeText(view: TCalendarView, date: Date) {
-  const formatString = "MMM d, yyyy";
   let start: Date;
   let end: Date;
 
@@ -54,12 +53,12 @@ export function rangeText(view: TCalendarView, date: Date) {
       end = endOfWeek(date);
       break;
     case "day":
-      return format(date, formatString);
+      return formatDisplayDate(date);
     default:
       return "Error while formatting ";
   }
 
-  return `${format(start, formatString)} - ${format(end, formatString)}`;
+  return `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
 }
 
 export function navigateDate(date: Date, view: TCalendarView, direction: "previous" | "next"): Date {

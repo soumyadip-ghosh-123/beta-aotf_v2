@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDateTime } from "@/lib/utils/display-date";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card, CardBody } from "@heroui/card";
@@ -357,16 +358,7 @@ function VerificationResult({ person }: { person: VerifiedPerson }) {
             <Clock size={10} />
             <span>
               Verified on{" "}
-              {new Date().toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}{" "}
-              at{" "}
-              {new Date().toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatDisplayDateTime(new Date())}
             </span>
           </div>
         </CardBody>

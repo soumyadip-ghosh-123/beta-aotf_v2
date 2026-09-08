@@ -1,5 +1,5 @@
 import React from "react";
-import { format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import BaseTemplate from "./BaseTemplate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { UPIQRCode } from "../UPIQRCode";
@@ -35,21 +35,21 @@ const InvoiceTemplate = ({ data }) => {
             <p>
               <span className="font-semibold">Invoice Date:</span>{" "}
               {invoice.date
-                ? format(new Date(invoice.date), "MMM dd, yyyy")
+                ? formatDisplayDate(invoice.date)
                 : "N/A"}
             </p>
             {paymentStatus === "paid" ? (
               <p>
                 <span className="font-semibold">Payment Date:</span>{" "}
                 {invoice.paymentDate
-                  ? format(new Date(invoice.paymentDate), "MMM dd, yyyy")
+                  ? formatDisplayDate(invoice.paymentDate)
                   : "N/A"}
               </p>
             ) : (
               <p>
                 <span className="font-semibold">Due Date:</span>{" "}
                 {invoice.paymentDate
-                  ? format(new Date(invoice.paymentDate), "MMM dd, yyyy")
+                  ? formatDisplayDate(invoice.paymentDate)
                   : "N/A"}
               </p>
             )}

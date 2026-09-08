@@ -34,6 +34,8 @@ export interface IJob extends Document {
   clientName: string;
   phoneNumber: string;
   source: string;
+  referralUserName?: string;
+  companyName?: string;
   companyType: CompanyType;
   locationType: LocationType;
   location: string;
@@ -41,6 +43,8 @@ export interface IJob extends Document {
   experience?: string;
   gender: GenderPreference;
   salary?: string;
+  skillsRequired?: string;
+  travelRequirements?: string;
   requiredQualification?: string;
   projectType?: ProjectType;
   budget?: string;
@@ -49,6 +53,9 @@ export interface IJob extends Document {
   status: JobStatus;
   commissionBasis: CommissionBasis;
   academyCommissionPercentage: number;
+  settledAmount?: number;
+  invoiceGenerated?: boolean;
+  invoiceId?: string;
   createdByAdminClerkId?: string;
   updatedByAdminClerkId?: string;
   createdByAdminId?: mongoose.Types.ObjectId;
@@ -74,6 +81,8 @@ const JobSchema = new Schema<IJob>(
       enum: sourceLists.map((source) => source.key),
       required: true,
     },
+    referralUserName: { type: String },
+    companyName: { type: String },
     companyType: {
       type: String,
       enum: COMPANY_TYPES,
@@ -93,6 +102,8 @@ const JobSchema = new Schema<IJob>(
       required: true,
     },
     salary: { type: String },
+    skillsRequired: { type: String },
+    travelRequirements: { type: String },
     requiredQualification: { type: String },
     projectType: {
       type: String,
@@ -116,6 +127,13 @@ const JobSchema = new Schema<IJob>(
       type: Number,
       required: true,
     },
+    settledAmount: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    invoiceGenerated: { type: Boolean, default: false },
+    invoiceId: { type: String, default: null },
     createdByAdminClerkId: {
       type: String,
       default: null,
@@ -191,6 +209,30 @@ if (!Job.schema.path("updatedByAdminId")) {
       default: null,
     },
   });
+}
+
+if (!Job.schema.path("companyName")) {
+  Job.schema.add({ companyName: { type: String } });
+}
+
+if (!Job.schema.path("skillsRequired")) {
+  Job.schema.add({ skillsRequired: { type: String } });
+}
+
+if (!Job.schema.path("travelRequirements")) {
+  Job.schema.add({ travelRequirements: { type: String } });
+}
+
+if (!Job.schema.path("settledAmount")) {
+  Job.schema.add({ settledAmount: { type: Number, min: 0, default: null } });
+}
+
+if (!Job.schema.path("invoiceGenerated")) {
+  Job.schema.add({ invoiceGenerated: { type: Boolean, default: false } });
+}
+
+if (!Job.schema.path("invoiceId")) {
+  Job.schema.add({ invoiceId: { type: String, default: null } });
 }
 
 export default Job;

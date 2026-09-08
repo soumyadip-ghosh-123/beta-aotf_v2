@@ -10,8 +10,13 @@ import {
   getAppliedJobsForApplicant,
   getAppliedPostsForApplicant,
 } from "@/lib/services/application.service";
+import {
+  getAdminAuthorsByAdminIds,
+  getAdminAuthorsByClerkIds,
+} from "@/lib/services/admin-author.service";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
+import PostLedger from "@/lib/models/PostLedger";
 
 // Force dynamic rendering to always fetch fresh application data
 export const dynamic = "force-dynamic";
@@ -26,7 +31,7 @@ export default async function DashboardPage({
 
   if (!clerkId) {
     redirect(
-      `/sign-in?redirect_url=${encodeURIComponent(`/u/${username}/dashboard`)}`
+      `/sign-in?redirect_url=${encodeURIComponent(`/u/${username}/dashboard`)}`,
     );
   }
 
@@ -57,6 +62,19 @@ export default async function DashboardPage({
       : Promise.resolve([]),
   ]);
 
+  const adminAuthors = await getAdminAuthorsByClerkIds(
+    appliedPosts
+      .map(({ post }) => post.createdByAdminClerkId)
+      .filter((clerkId): clerkId is string => Boolean(clerkId)),
+  );
+  const jobAdminAuthors = await getAdminAuthorsByAdminIds(
+    appliedJobs
+      .map(({ job }) => job.createdByAdminId)
+      .filter((adminId): adminId is NonNullable<typeof adminId> =>
+        Boolean(adminId),
+      ),
+  );
+
   // Serialize lean Mongoose documents into plain objects for the client component
   const postItems: DashboardPostItem[] = appliedPosts.map(
     ({ post, application, applicantCount }) => ({
@@ -85,6 +103,12 @@ export default async function DashboardPage({
           new Date(post.createdAt).getTime() >
           1000,
       applicantCount,
+      createdByUserId: post.createdByAdminClerkId
+        ? {
+            name: adminAuthors.get(post.createdByAdminClerkId)?.name,
+            avatar: adminAuthors.get(post.createdByAdminClerkId)?.avatarUrl,
+          }
+        : undefined,
       applicationStatus: application.status,
       applicationId: application.applicationId,
       dcDate: application.dcDate
@@ -96,29 +120,57 @@ export default async function DashboardPage({
         ? new Date(application.gcMeta.scheduledDate).toISOString()
         : undefined,
       declineReason: application.declineMeta?.reason,
-    })
+      startingDate: undefined,
+    }),
   );
 
-  const jobItems: DashboardJobItem[] = appliedJobs.map(({ job }) => ({
-    jobId: job.jobId,
-    clientName: job.clientName,
-    companyType: job.companyType,
-    title: job.title,
-    workType: job.workType,
-    experience: job.experience,
-    locationType: job.locationType,
-    location: job.location,
-    gender: job.gender,
-    timing: job.timing,
-    salary: job.salary,
-    requiredQualification: job.requiredQualification,
-    projectType: job.projectType,
-    budget: job.budget,
-    duration: job.duration,
-    brief: job.brief,
-    status: job.status,
-    createdAt: new Date(job.createdAt).toISOString(),
-  }));
+  const ledgerRows = postItems.length
+    ? await PostLedger.find({
+        postId: { $in: postItems.map((item) => item.postId) },
+      })
+        .select("postId startingDate")
+        .lean()
+    : [];
+  const startingDateByPostId = new Map(
+    ledgerRows.map((row) => [row.postId, row.startingDate]),
+  );
+  for (const item of postItems) {
+    item.startingDate = startingDateByPostId.get(item.postId)
+      ? new Date(startingDateByPostId.get(item.postId) as Date).toISOString()
+      : undefined;
+  }
+
+  const jobItems: DashboardJobItem[] = appliedJobs.map(
+    ({ job, application }) => ({
+      jobId: job.jobId,
+      clientName: job.clientName,
+      companyType: job.companyType,
+      title: job.title,
+      workType: job.workType,
+      experience: job.experience,
+      locationType: job.locationType,
+      location: job.location,
+      gender: job.gender,
+      timing: job.timing,
+      salary: job.salary,
+      requiredQualification: job.requiredQualification,
+      projectType: job.projectType,
+      budget: job.budget,
+      duration: job.duration,
+      brief: job.brief,
+      status: job.status,
+      createdAt: new Date(job.createdAt).toISOString(),
+      applicationStatus: application.status,
+      applicationId: application.applicationId,
+      createdByUserId: job.createdByAdminId
+        ? {
+            name: jobAdminAuthors.get(job.createdByAdminId.toString())?.name,
+            avatar: jobAdminAuthors.get(job.createdByAdminId.toString())
+              ?.avatarUrl,
+          }
+        : undefined,
+    }),
+  );
 
   return (
     <div className="w-full">

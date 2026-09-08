@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -17,11 +24,16 @@ import {
   Ban,
   BadgeCheck,
   Trash2,
+  CheckCircle2,
+  XCircle,
+  CreditCard,
+  UserCheck,
 } from "lucide-react";
 import AdminSearchBar from "@/components/admin/ui/AdminSearchBar";
 import { reportClientError } from "@/lib/client-report-error";
 import { formatPhone } from "@/lib/utils/phone";
 import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
 
 type Role = "teacher" | "candidate";
 type Status = "all" | "active" | "blocked" | "deleted";
@@ -40,7 +52,16 @@ type UserData = {
   status?: "active" | "inactive";
   statusValue: "active" | "blocked" | "deleted";
   onboardingCompleted: boolean;
+  detailsCompleted: boolean;
+  paymentCompleted: boolean;
+  whatsappGroupCompleted: boolean;
+  createdByAdmin: boolean;
+  createdByAdminClerkId: string | null;
+  createdByAdminUsername: string | null;
+  hasTuitionAccess: boolean;
+  hasCandidateAccess: boolean;
   avatarUrl?: string | null;
+  lastLogin?: string | null;
   profileUrl: string;
   verifyUrl: string;
   location?: string | null;
@@ -75,7 +96,16 @@ type ApiUser = {
   role: "teacher" | "teacher_candidate";
   status: "active" | "blocked" | "deleted";
   onboardingCompleted: boolean;
+  detailsCompleted: boolean;
+  paymentCompleted: boolean;
+  whatsappGroupCompleted: boolean;
+  createdByAdmin: boolean;
+  createdByAdminClerkId: string | null;
+  createdByAdminUsername: string | null;
+  hasTuitionAccess: boolean;
+  hasCandidateAccess: boolean;
   avatarUrl: string | null;
+  lastLogin: string | null;
   profileUrl: string;
   verifyUrl: string;
   location: string | null;
@@ -133,7 +163,16 @@ function mapUser(user: ApiUser): UserData {
     statusValue: user.status,
     status: user.status === "active" ? "active" : "inactive",
     onboardingCompleted: user.onboardingCompleted,
+    detailsCompleted: user.detailsCompleted ?? false,
+    paymentCompleted: user.paymentCompleted ?? false,
+    whatsappGroupCompleted: user.whatsappGroupCompleted ?? false,
+    createdByAdmin: user.createdByAdmin ?? false,
+    createdByAdminClerkId: user.createdByAdminClerkId ?? null,
+    createdByAdminUsername: user.createdByAdminUsername ?? null,
+    hasTuitionAccess: user.hasTuitionAccess ?? false,
+    hasCandidateAccess: user.hasCandidateAccess ?? false,
     avatarUrl: user.avatarUrl,
+    lastLogin: user.lastLogin,
     profileUrl: user.profileUrl,
     verifyUrl: user.verifyUrl,
     location: user.location,
@@ -151,12 +190,7 @@ function getInitials(name: string) {
     .join("");
 }
 
-function cacheKey(
-  role: Role,
-  page: number,
-  status: Status,
-  search: string,
-) {
+function cacheKey(role: Role, page: number, status: Status, search: string) {
   return `${role}:${page}:${status}:${search}`;
 }
 
@@ -225,7 +259,8 @@ export default function UsersPage() {
         params.set("bundle", "1");
         if (sync) params.set("sync", "1");
         if (statusFilter !== "all") params.set("status", statusFilter);
-        if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+        if (debouncedSearch.trim())
+          params.set("search", debouncedSearch.trim());
 
         const res = await fetch(`/api/admin/app-users?${params.toString()}`);
         const data = (await res.json().catch(() => ({}))) as BundleResponse;
@@ -278,7 +313,8 @@ export default function UsersPage() {
         params.set("page", String(page));
         params.set("limit", String(PAGE_SIZE));
         if (statusFilter !== "all") params.set("status", statusFilter);
-        if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+        if (debouncedSearch.trim())
+          params.set("search", debouncedSearch.trim());
 
         const res = await fetch(`/api/admin/app-users?${params.toString()}`);
         const data = (await res.json().catch(() => ({}))) as PageResponse;
@@ -361,10 +397,47 @@ export default function UsersPage() {
       });
       void loadBundle(false, true);
     } catch (err) {
-      reportClientError(err, { feature: "admin-users", extra: { action: "update-status" } });
+      reportClientError(err, {
+        feature: "admin-users",
+        extra: { action: "update-status" },
+      });
       addToast({
         description:
           err instanceof Error ? err.message : "Failed to update user",
+        color: "danger",
+      });
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleRecoverPayment = async (userId: string) => {
+    setActioningId(userId);
+    try {
+      const res = await fetch(
+        `/api/admin/app-users/${userId}/recover-payment`,
+        { method: "POST" },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to recover payment");
+      }
+
+      addToast({
+        description: "Payment marked as complete",
+        color: "success",
+      });
+      void loadBundle(false, true);
+    } catch (err) {
+      reportClientError(err, {
+        feature: "admin-users",
+        extra: { action: "recover-payment" },
+      });
+      addToast({
+        description:
+          err instanceof Error ? err.message : "Failed to recover payment",
         color: "danger",
       });
     } finally {
@@ -401,7 +474,10 @@ export default function UsersPage() {
         className="w-full justify-center"
       >
         <Tab key="teacher" title={`Teachers (${summary?.teachers ?? 0})`} />
-        <Tab key="candidate" title={`Candidates (${summary?.candidates ?? 0})`} />
+        <Tab
+          key="candidate"
+          title={`Candidates (${summary?.candidates ?? 0})`}
+        />
       </Tabs>
       <AdminSearchBar
         searchValue={searchQuery}
@@ -413,12 +489,12 @@ export default function UsersPage() {
         }}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex justify-between items-center gap-2">
         <Select
           label="Status"
           placeholder="Filter by status"
           selectedKeys={[statusFilter]}
-          className="max-w-56"
+          className="max-w-full"
           size="sm"
           variant="bordered"
           onSelectionChange={(keys) => {
@@ -428,32 +504,27 @@ export default function UsersPage() {
         >
           <SelectItem key="all">All statuses</SelectItem>
           <SelectItem key="active">Active</SelectItem>
-          <SelectItem key="blocked">Blocked</SelectItem>
           <SelectItem key="deleted">Deleted</SelectItem>
         </Select>
         <Button
           isIconOnly
-          size="md"
+          size="lg"
           variant="flat"
           color="primary"
-          startContent={<RefreshCw size={16} />}
-          isLoading={isRefreshing}
+          startContent={isRefreshing ? <Spinner size="sm" /> : <RefreshCw size={16} />}
           onPress={() => void loadBundle(true, true)}
         />
       </div>
 
-      <div className="flex flex-wrap gap-2 text-xs text-default-500">
+      <div className="flex gap-2 text-xs text-default-500 ">
         <span className="rounded-full bg-default-100 px-3 py-1">
           {tabSummary.total} {selectedTab}s
         </span>
         <span className="rounded-full bg-default-100 px-3 py-1">
-          {summary?.active ?? 0} active (all)
+          {summary?.active ?? 0} active
         </span>
         <span className="rounded-full bg-default-100 px-3 py-1">
-          {summary?.blocked ?? 0} blocked (all)
-        </span>
-        <span className="rounded-full bg-default-100 px-3 py-1">
-          {summary?.deleted ?? 0} deleted (all)
+          {summary?.deleted ?? 0} deleted
         </span>
       </div>
 
@@ -467,145 +538,198 @@ export default function UsersPage() {
         <div className="py-16 text-center text-default-500">
           {isRefreshing ? "Loading users…" : "Syncing and loading users…"}
         </div>
-      ) : <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {users.map((user) => (
-          <Card key={user.id} className="w-full border border-default-200">
-            <CardHeader className="flex gap-3">
-              <div className="w-full flex flex-row items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary font-semibold">
-                    {user.avatarUrl ? (
-                      <img
-                        src={user.avatarUrl}
-                        alt={user.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      getInitials(user.name) || (
-                        <User className="text-primary" size={24} />
-                      )
-                    )}
+      ) : (
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          {users.map((user) => (
+            <Card key={user.id} className="w-full border border-default-200">
+              <CardHeader className="flex gap-3">
+                <div className="w-full flex flex-row items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary font-semibold">
+                      {user.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        getInitials(user.name) || (
+                          <User className="text-primary" size={24} />
+                        )
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-md font-semibold">{user.name}</p>
+                      <p className="text-small text-default-500 capitalize">
+                        {user.role}
+                      </p>
+                      <p className="text-tiny text-default-400">
+                        @{user.username}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <p className="text-md font-semibold">{user.name}</p>
-                    <p className="text-small text-default-500 capitalize">
-                      {user.role}
-                    </p>
-                    <p className="text-tiny text-default-400">@{user.username}</p>
-                  </div>
-                </div>
 
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={
-                    user.statusValue === "active"
-                      ? "success"
-                      : user.statusValue === "blocked"
-                        ? "warning"
-                        : "default"
-                  }
-                >
-                  {statusLabels[user.statusValue]}
-                </Chip></div>
-            </CardHeader>
-            <CardBody className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail size={16} className="text-default-400" />
-                <span className="text-default-600">{user.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone size={16} className="text-default-400" />
-                <span className="text-default-600">
-                  {user.phone ? formatPhone(user.phone) : "—"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar size={16} className="text-default-400" />
-                <span className="text-default-600">
-                  Joined: {new Date(user.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Globe size={16} className="text-default-400" />
-                <span className="text-default-600">
-                  {user.onboardingCompleted
-                    ? "Onboarding complete"
-                    : "Onboarding pending"}
-                </span>
-              </div>
-            </CardBody>
-            <CardFooter className="gap-2">
-              <Button
-                size="sm"
-                variant="flat"
-                color="primary"
-                className="flex-1"
-                as="a"
-                href={user.verifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Profile
-              </Button>
-            </CardFooter>
-            <CardFooter className="gap-2 pt-0">
-              {user.statusValue === "active" ? (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="warning"
-                  startContent={<Ban size={16} />}
-                  className="flex-1"
-                  isLoading={actioningId === user.id}
-                  onPress={() => void handleStatusChange(user.id, "blocked")}
-                >
-                  Block
-                </Button>
-              ) : user.statusValue === "blocked" ? (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="success"
-                  startContent={<BadgeCheck size={16} />}
-                  className="flex-1"
-                  isLoading={actioningId === user.id}
-                  onPress={() => void handleStatusChange(user.id, "active")}
-                >
-                  Unblock
-                </Button>
-              ) : (
-                <Button size="sm" variant="flat" className="flex-1" isDisabled>
-                  Deleted
-                </Button>
-              )}
-
-              {user.statusValue !== "deleted" ? (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  color="danger"
-                  startContent={<Trash2 size={16} />}
-                  isLoading={actioningId === user.id}
-                  onPress={() => {
-                    if (
-                      window.confirm(
-                        `Delete ${user.name}? This will mark the account as deleted.`,
-                      )
-                    ) {
-                      void handleStatusChange(user.id, "deleted");
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={
+                      user.statusValue === "active"
+                        ? "success"
+                        : user.statusValue === "blocked"
+                          ? "warning"
+                          : "default"
                     }
-                  }}
+                  >
+                    {statusLabels[user.statusValue]}
+                  </Chip>
+                </div>
+              </CardHeader>
+              <CardBody className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail size={16} className="text-default-400" />
+                  <span className="text-default-600">{user.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone size={16} className="text-default-400" />
+                  <span className="text-default-600">
+                    {user.phone ? formatPhone(user.phone) : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar size={16} className="text-default-400" />
+                  <span className="text-default-600">
+                    Joined: {formatDisplayDate(user.createdAt)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <RefreshCw size={16} className="text-default-400" />
+                  <span className="text-default-600">
+                    Last login:{" "}
+                    {user.lastLogin
+                      ? formatDisplayDateTime(user.lastLogin)
+                      : "Never"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Globe size={16} className="text-default-400" />
+                  <span className="text-default-600">
+                    Onboarding:{" "}
+                    {user.onboardingCompleted ? "Complete" : "Pending"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={user.detailsCompleted ? "success" : "default"}
+                    startContent={
+                      user.detailsCompleted ? (
+                        <CheckCircle2 size={13} />
+                      ) : (
+                        <XCircle size={13} />
+                      )
+                    }
+                  >
+                    Details {user.detailsCompleted ? "complete" : "pending"}
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={user.paymentCompleted ? "success" : "warning"}
+                    startContent={
+                      user.paymentCompleted ? (
+                        <CheckCircle2 size={13} />
+                      ) : (
+                        <XCircle size={13} />
+                      )
+                    }
+                  >
+                    Payment {user.paymentCompleted ? "complete" : "pending"}
+                  </Chip>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={user.whatsappGroupCompleted ? "success" : "default"}
+                    startContent={
+                      user.whatsappGroupCompleted ? (
+                        <CheckCircle2 size={13} />
+                      ) : (
+                        <XCircle size={13} />
+                      )
+                    }
+                  >
+                    WhatsApp{" "}
+                    {user.whatsappGroupCompleted ? "joined" : "pending"}
+                  </Chip>
+                </div>
+                {user.createdByAdmin && (
+                  <div className="flex items-center gap-2 text-sm text-default-500">
+                    <UserCheck size={16} className="text-default-400" />
+                    <span>
+                      Created by admin
+                      {user.createdByAdminUsername
+                        ? `: ${user.createdByAdminUsername}`
+                        : ""}
+                    </span>
+                  </div>
+                )}
+              </CardBody>
+              <CardFooter className="gap-2">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                  className="flex-1"
+                  as="a"
+                  href={user.verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Delete
+                  View Profile
                 </Button>
-              ) : null}
-            </CardFooter>
-          </Card>
-        ))}
-      </div>}
-
-
+                {!user.paymentCompleted && user.statusValue !== "deleted" ? (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="primary"
+                    startContent={<CreditCard size={16} />}
+                    isLoading={actioningId === user.id}
+                    onPress={() => {
+                      if (window.confirm(`Recover payment for ${user.name}?`)) {
+                        void handleRecoverPayment(user.id);
+                      }
+                    }}
+                  >
+                    Recover payment
+                  </Button>
+                ) : null}
+                {user.statusValue !== "deleted" ? (
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    color="danger"
+                    startContent={<Trash2 size={16} />}
+                    isLoading={actioningId === user.id}
+                    onPress={() => {
+                      if (
+                        window.confirm(
+                          `Delete ${user.name}? This will mark the account as deleted.`,
+                        )
+                      ) {
+                        void handleStatusChange(user.id, "deleted");
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                ) : null}
+              </CardFooter>
+              <CardFooter className="gap-2 pt-0">
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {!isLoading && users.length === 0 && (
         <div className="text-center py-12">

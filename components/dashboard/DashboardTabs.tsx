@@ -12,10 +12,13 @@ import JobPost from "@/components/PostCards/JobPost";
 
 export type ApplicationStatus =
   | "applied"
+  | "pending"
+  | "shortlisted"
   | "DC"
   | "GC"
   | "approved"
   | "decline"
+  | "declined"
   | "auto_declined"
   | "withdrawn";
 
@@ -37,11 +40,13 @@ export interface DashboardPostItem {
   updatedAt: string;
   isEdited: boolean;
   applicantCount: number;
+  createdByUserId?: { name?: string; avatar?: string | null };
   applicationStatus?: ApplicationStatus;
   applicationId?: string;
   dcDate?: string;
   gcDate?: string;
   declineReason?: string;
+  startingDate?: string;
 }
 
 export interface DashboardJobItem {
@@ -63,6 +68,9 @@ export interface DashboardJobItem {
   brief?: string;
   status: "open" | "closed" | "hold" | "cancelled";
   createdAt: string;
+  applicationStatus?: ApplicationStatus;
+  applicationId?: string;
+  createdByUserId?: { name?: string; avatar?: string | null };
 }
 
 interface DashboardTabsProps {
@@ -119,11 +127,13 @@ export default function DashboardTabs({
                 createdAt={new Date(item.createdAt)}
                 updatedAt={new Date(item.updatedAt)}
                 isEdited={item.isEdited}
+                createdByUserId={item.createdByUserId}
                 applicationStatus={item.applicationStatus}
                 applicationId={item.applicationId}
                 dcDate={item.dcDate}
                 gcDate={item.gcDate}
                 declineReason={item.declineReason}
+                startingDate={item.startingDate}
                 applicants={Array.from(
                   { length: item.applicantCount },
                   (_, i) => `${item.postId}-${i}`,
@@ -174,7 +184,10 @@ export default function DashboardTabs({
                   duration={item.duration}
                   brief={item.brief}
                   status={item.status}
-                  createdAt={item.createdAt}
+                  createdAt={new Date(item.createdAt)}
+                  applicationStatus={item.applicationStatus}
+                  applicationId={item.applicationId}
+                  createdByUserId={item.createdByUserId}
                   initialApplied={true}
                   isSignedIn={true}
                   canApply={true}

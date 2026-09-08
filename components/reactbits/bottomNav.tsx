@@ -6,7 +6,7 @@ import {
   Home,
   GraduationCap,
   BriefcaseBusiness,
-  User,
+  LayoutDashboard,
   MailQuestionMark,
 } from "lucide-react";
 
@@ -15,7 +15,7 @@ export default function BottomNav() {
   const router = useRouter();
   const { user, isSignedIn } = useUser();
   const username = user?.username?.trim();
-  const profilePath = username ? `/u/${username}` : "/dashboard";
+  const dashboardPath = username ? `/u/${username}/dashboard` : "/";
 
   // ❌ Hide navbar on /admin
   if (pathname.startsWith("/admin")) return null;
@@ -25,15 +25,20 @@ export default function BottomNav() {
     { icon: GraduationCap, label: "Tuitions", path: "/posts" },
     { icon: BriefcaseBusiness, label: "Jobs", path: "/jobs" },
     isSignedIn
-      ? { icon: User, label: "Profile", path: profilePath }
+      ? { icon: LayoutDashboard, label: "Dashboard", path: dashboardPath }
       : { icon: MailQuestionMark, label: "Enquiry", path: "/enquiry" },
   ];
 
-  const activeIndex = items.findIndex((item) => pathname === item.path) || 0;
+  const activeIndex = Math.max(
+    0,
+    items.findIndex((item) =>
+      item.path === "/" ? pathname === "/" : pathname.startsWith(item.path),
+    ),
+  );
 
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[70%] max-w-sm z-50">
-      <div className="bg-white/80 backdrop-blur-lg border border-gray-200 shadow-xl rounded-2xl overflow-hidden">
+      <div className="border border-gray-200 bg-white/80 shadow-xl backdrop-blur-lg rounded-2xl overflow-hidden dark:border-white/10 dark:bg-zinc-950/85">
         <ul className="flex relative">
           <span
             className="absolute top-0 h-full w-[25%] transition-all duration-300"
@@ -47,7 +52,10 @@ export default function BottomNav() {
 
           {items.map((item, index) => {
             const Icon = item.icon;
-            const isActive = pathname === item.path;
+            const isActive =
+              item.path === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.path);
 
             return (
               <li key={index} className="flex-1 relative z-10">
@@ -55,7 +63,9 @@ export default function BottomNav() {
                   type="button"
                   onClick={() => router.push(item.path)}
                   className={`flex w-full flex-col items-center justify-center py-2 transition-all ${
-                    isActive ? "text-pink-500 scale-95" : "text-gray-400"
+                    isActive
+                      ? "text-pink-500 scale-95"
+                      : "text-gray-400 dark:text-gray-500"
                   }`}
                   aria-current={isActive ? "page" : undefined}
                 >

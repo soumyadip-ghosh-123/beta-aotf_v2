@@ -14,6 +14,9 @@ import {
   type JobShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
+import { formatDisplayDate } from "@/lib/utils/display-date";
+import { addToast } from "@heroui/toast";
+import { useState } from "react";
 
 interface JobPostProps {
   jobId: string;
@@ -33,8 +36,11 @@ interface JobPostProps {
   duration?: string;
   brief?: string;
   status: "open" | "closed" | "hold" | "cancelled";
-  createdAt?: string;
+  createdAt: Date;
   initialApplied?: boolean;
+  applicationStatus?: string;
+  applicationId?: string;
+  startingDate?: string;
   isSignedIn?: boolean;
   canApply?: boolean;
   applicantCount?: number;
@@ -55,7 +61,7 @@ const formatStatus = (status: string) =>
   })[status] ?? status;
 
 const statusColor = (
-  status: string
+  status: string,
 ): "success" | "default" | "warning" | "danger" =>
   ({
     open: "success" as const,
@@ -69,6 +75,20 @@ const formatWorkType = (type: string) =>
 
 const formatCompanyType = (type: string) =>
   ({ individual: "Individual", company: "Company" })[type] ?? type;
+
+const getTimeAgo = (date: Date): string => {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  if (diffHours > 0)
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  if (diffMins > 0) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+  return "Just now";
+};
 
 /* ---------- COMPONENT ---------- */
 
@@ -89,12 +109,65 @@ const JobPost = ({
   duration,
   status,
   initialApplied = false,
+  applicationStatus,
+  applicationId,
+  startingDate,
   isSignedIn,
   canApply,
+  createdAt,
   applicantCount = 0,
   createdByUserId = {},
 }: JobPostProps) => {
   const router = useRouter();
+  const [currentStatus, setCurrentStatus] = useState(applicationStatus);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const canWithdraw = Boolean(
+    applicationId &&
+    currentStatus &&
+    ["pending", "shortlisted", "applied"].includes(currentStatus),
+  );
+
+  const handleWithdraw = async () => {
+    if (!applicationId) return;
+    setIsWithdrawing(true);
+    try {
+      const response = await fetch(`/api/v1/me/applications/${applicationId}`, {
+        method: "DELETE",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(data.error || "Failed to withdraw application");
+      setCurrentStatus("withdrawn");
+      addToast({
+        description: "Application withdrawn successfully",
+        color: "success",
+      });
+    } catch (error) {
+      addToast({
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to withdraw application",
+        color: "danger",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  const statusFeedback =
+    currentStatus === "approved"
+      ? `Approved${startingDate ? ` · Starts ${formatDisplayDate(startingDate)}` : ""}`
+      : currentStatus === "shortlisted"
+        ? "Shortlisted for review"
+        : currentStatus === "declined"
+          ? "Your application was not selected"
+          : currentStatus === "withdrawn"
+            ? "You withdrew this application"
+            : currentStatus === "pending" || currentStatus === "applied"
+              ? "Application received"
+              : null;
 
   const handleShare = () => {
     const shareData: JobShareData = {
@@ -127,14 +200,31 @@ const JobPost = ({
             alt: "Admin Avatar",
           }}
           name={createdByUserId.name || "Admin"}
-          description="Posted by admin"
+          description={
+            true ? `${getTimeAgo(createdAt)}` : `${getTimeAgo(createdAt)}`
+          }
         />
         <div className="flex items-center gap-2">
           <Chip radius="sm" size="sm" color={statusColor(status)}>
             {formatStatus(status)}
           </Chip>
+          {applicationStatus ? (
+            <Chip
+              key={applicationStatus}
+              radius="sm"
+              size="sm"
+              className="bg-default-100 text-sm font-medium"
+            >
+              {applicationStatus}
+            </Chip>
+          ) : null}
         </div>
       </CardHeader>
+      {statusFeedback && (
+        <div className="mx-3 mb-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+          {statusFeedback}
+        </div>
+      )}
 
       {/* BODY */}
       <CardBody className="px-3 py-0 text-small text-default-500">
@@ -183,7 +273,10 @@ const JobPost = ({
                 {workType === "job" ? "Salary" : "Budget"}
               </p>
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-snug">
-                {workType === "job" ? salary : budget}
+                <span className="inline-flex items-center gap-1">
+                  <BsCurrencyRupee size={14} />
+                  {workType === "job" ? salary : budget}
+                </span>
                 {workType === "project" && duration && ` (${duration})`}
               </p>
             </div>
@@ -230,16 +323,29 @@ const JobPost = ({
           <Button size="sm" color="secondary" onClick={handleShare}>
             Share <FaShare />
           </Button>
-          <ApplyActionButton
-            target="job"
-            targetId={jobId}
-            initialApplied={initialApplied}
-            isSignedIn={isSignedIn}
-            isEligible={canApply}
-            ineligibleLabel="Candidates Only"
-            size="sm"
-            color="primary"
-          />
+          {canWithdraw ? (
+            <Button
+              size="sm"
+              color="danger"
+              variant="flat"
+              onPress={handleWithdraw}
+              isLoading={isWithdrawing}
+            >
+              Withdraw
+            </Button>
+          ) : (
+            <ApplyActionButton
+              target="job"
+              targetId={jobId}
+              initialApplied={initialApplied && currentStatus !== "withdrawn"}
+              onApplied={() => setCurrentStatus("pending")}
+              isSignedIn={isSignedIn}
+              isEligible={canApply}
+              ineligibleLabel="Candidates Only"
+              size="sm"
+              color="primary"
+            />
+          )}
         </div>
       </CardFooter>
     </Card>

@@ -8,6 +8,7 @@ import {
   parseISO,
   startOfMonth,
 } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import { CalendarX2 } from "lucide-react";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
@@ -202,7 +203,7 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents }: IProps) 
                   <AccordionTrigger className="py-4 no-underline hover:no-underline">
                     <div className="flex w-full items-center justify-between gap-3 pr-2 text-left">
                       <div>
-                        <p className="text-sm font-semibold">{format(day, "EEEE, MMMM d, yyyy")}</p>
+                        <p className="text-sm font-semibold">{formatDisplayDate(day)}</p>
                         <p className="text-xs text-muted-foreground">
                           {isLoading
                             ? "Loading from database..."

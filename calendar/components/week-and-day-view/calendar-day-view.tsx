@@ -1,5 +1,6 @@
 import { Calendar, Clock, User } from "lucide-react";
 import { parseISO, areIntervalsOverlapping, format } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
@@ -174,7 +175,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents }: IProps) {
 
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="size-3.5" />
-                        <span className="text-sm">{format(new Date(), "MMM d, yyyy")}</span>
+                        <span className="text-sm">{formatDisplayDate(new Date())}</span>
                       </div>
 
                       <div className="flex items-center gap-1.5 text-muted-foreground">

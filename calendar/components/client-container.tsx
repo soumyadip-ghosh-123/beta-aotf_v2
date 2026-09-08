@@ -39,7 +39,7 @@ export function ClientContainer({ view }: IProps) {
           23,
           59,
           59,
-          999
+          999,
         );
         const isInSelectedYear =
           eventStartDate <= yearEnd && eventEndDate >= yearStart;
@@ -52,7 +52,7 @@ export function ClientContainer({ view }: IProps) {
         const monthStart = new Date(
           selectedDate.getFullYear(),
           selectedDate.getMonth(),
-          1
+          1,
         );
         const monthEnd = new Date(
           selectedDate.getFullYear(),
@@ -61,7 +61,7 @@ export function ClientContainer({ view }: IProps) {
           23,
           59,
           59,
-          999
+          999,
         );
         const isInSelectedMonth =
           eventStartDate <= monthEnd && eventEndDate >= monthStart;
@@ -95,7 +95,7 @@ export function ClientContainer({ view }: IProps) {
           selectedDate.getDate(),
           0,
           0,
-          0
+          0,
         );
         const dayEnd = new Date(
           selectedDate.getFullYear(),
@@ -103,7 +103,7 @@ export function ClientContainer({ view }: IProps) {
           selectedDate.getDate(),
           23,
           59,
-          59
+          59,
         );
         const isInSelectedDay =
           eventStartDate <= dayEnd && eventEndDate >= dayStart;
@@ -139,7 +139,7 @@ export function ClientContainer({ view }: IProps) {
   }, [filteredEvents]);
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="overflow-hidden rounded-xl border border-default-200 bg-background text-foreground">
       <CalendarHeader view={view} events={filteredEvents} />
 
       <DndProviderWrapper>

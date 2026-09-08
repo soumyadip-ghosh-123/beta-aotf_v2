@@ -132,6 +132,19 @@ export async function createAdmin(params: {
     createdBy: new mongoose.Types.ObjectId(creatorAdminId),
   });
 
+  // Sync initial permissions and metadata to Clerk
+  try {
+    await clerkService.updateAdminMetadata({
+      clerkId: admin.clerkId,
+      role: admin.role,
+      isAdmin: true,
+      requirePasswordChange: true,
+      permissions: admin.permissions,
+    });
+  } catch (err) {
+    console.error("[createAdmin] Failed to sync admin metadata to Clerk:", err);
+  }
+
   // Log action
   await logAction({
     adminId: creatorAdminId,
@@ -278,6 +291,21 @@ export async function updateAdminPermissions(params: {
   admin.permissions = { ...admin.permissions, ...permissions };
   await admin.save();
 
+  // Sync updated permissions to Clerk
+  try {
+    await clerkService.updateAdminMetadata({
+      clerkId: admin.clerkId,
+      role: admin.role,
+      isAdmin: true,
+      permissions: admin.permissions,
+    });
+  } catch (err) {
+    console.error(
+      "[updateAdminPermissions] Failed to sync permissions to Clerk:",
+      err,
+    );
+  }
+
   // Log action
   await logAction({
     adminId: updaterAdminId,
@@ -336,6 +364,16 @@ export async function toggleAdminStatus(params: {
 
   admin.isActive = isActive;
   await admin.save();
+
+  // When deactivating, ban the Clerk user; when reactivating, unban.
+  try {
+    await clerkService.setAdminLockStatus(admin.clerkId, !isActive);
+  } catch (err) {
+    console.error(
+      "[toggleAdminStatus] Failed to update Clerk for admin status change:",
+      err,
+    );
+  }
 
   // Log action
   await logAction({

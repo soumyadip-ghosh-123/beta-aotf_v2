@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import React, { useState, useMemo, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@heroui/button";
@@ -114,22 +115,12 @@ function getRoleIcon(role: string) {
 
 function formatDate(d?: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDisplayDate(d);
 }
 
 function formatDateTime(d?: string): string {
   if (!d) return "Never";
-  return new Date(d).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDisplayDateTime(d);
 }
 
 function getInitials(name: string): string {
@@ -238,7 +229,7 @@ function AdminAccountsSection() {
         if (!mounted) return;
         setMyAdmin(json.admin ?? null);
       } catch (e) {
-      reportClientError(e, { feature: "admin-settings" });
+        reportClientError(e, { feature: "admin-settings" });
         // ignore
       }
     })();
@@ -270,7 +261,7 @@ function AdminAccountsSection() {
           })),
         );
       } catch (err) {
-      reportClientError(err, { feature: "admin-settings" });
+        reportClientError(err, { feature: "admin-settings" });
         if (!mounted) return;
         setRoleError(
           err instanceof Error ? err.message : "Failed to load roles",
@@ -328,7 +319,8 @@ function AdminAccountsSection() {
             role: normalizeAdminRole(row.role),
             status: row.isActive === false ? "inactive" : "active",
             createdAt: String(row.createdAt ?? new Date().toISOString()),
-            lastLogin: undefined,
+            lastLogin:
+              typeof row.lastLogin === "string" ? row.lastLogin : undefined,
             permissions:
               typeof row.permissions === "object" && row.permissions !== null
                 ? (row.permissions as Record<string, boolean>)
@@ -338,7 +330,7 @@ function AdminAccountsSection() {
           })),
         );
       } catch (e) {
-      reportClientError(e, { feature: "admin-settings" });
+        reportClientError(e, { feature: "admin-settings" });
         console.error("Failed to fetch admins:", e);
       } finally {
         if (mounted) setIsLoadingAdmins(false);
@@ -807,18 +799,56 @@ function AdminAccountsSection() {
 
   // ── Toggle Status ──────────────────────────────────────────────────────
 
-  const toggleAdminStatus = (admin: AdminAccount) => {
+  const toggleAdminStatus = async (admin: AdminAccount) => {
+    const isActivating = admin.status !== "active";
+    const endpoint = `/api/v1/admin/admins/${admin.id}/${isActivating ? "reactivate" : "deactivate"}`;
+
+    // Optimistic update
     setAdmins((prev) =>
       prev.map((a) =>
         a.id === admin.id
-          ? { ...a, status: a.status === "active" ? "inactive" : "active" }
+          ? { ...a, status: isActivating ? "active" : "inactive" }
           : a,
       ),
     );
-    addToast({
-      description: `${admin.name} ${admin.status === "active" ? "deactivated" : "activated"}`,
-      color: "success",
-    });
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // Revert on failure
+        setAdmins((prev) =>
+          prev.map((a) =>
+            a.id === admin.id ? { ...a, status: admin.status } : a,
+          ),
+        );
+        addToast({
+          description: json?.error || `Failed to ${isActivating ? "activate" : "deactivate"} admin`,
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        description: `${admin.name} ${isActivating ? "activated" : "deactivated"}`,
+        color: "success",
+      });
+    } catch {
+      // Revert on failure
+      setAdmins((prev) =>
+        prev.map((a) =>
+          a.id === admin.id ? { ...a, status: admin.status } : a,
+        ),
+      );
+      addToast({
+        description: `Failed to ${isActivating ? "activate" : "deactivate"} admin`,
+        color: "danger",
+      });
+    }
   };
 
   const copyId = (id: string) => {
@@ -1478,7 +1508,7 @@ function AdminCard({
                 variant="dot"
                 classNames={{ content: "text-xs" }}
               >
-                {isActive ? "Active" : "Inactive"}
+                {/* {isActive ? "Active" : "Inactive"} */}
               </Chip>
             </div>
             <div className="flex items-center gap-1.5">
@@ -1491,13 +1521,13 @@ function AdminCard({
               >
                 {roleLabel}
               </Chip>
-              <button
+              {/* <button
                 onClick={() => onCopyId(admin.id)}
                 className="flex items-center gap-0.5 text-[11px] text-default-400 hover:text-primary transition-colors"
               >
                 <Copy size={10} />
                 {admin.id}
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -1513,20 +1543,20 @@ function AdminCard({
             <Users size={14} className="text-default-400 shrink-0" />
             <span className="text-default-600">@{admin.username}</span>
           </div>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Clock size={14} className="text-default-400 shrink-0" />
             <span className="text-default-500 text-xs">
               Last login: {formatDateTime(admin.lastLogin)}
             </span>
-          </div>
+          </div> */}
         </div>
         <p className="text-xs text-default-400">
-          Created {formatDate(admin.createdAt)}
+          Joined at {formatDate(admin.createdAt)}
         </p>
       </CardBody>
 
       <CardFooter className="gap-2 pt-0">
-        <Button
+        {/* <Button
           size="sm"
           variant="flat"
           color={isActive ? "warning" : "success"}
@@ -1534,7 +1564,7 @@ function AdminCard({
           className="flex-1"
         >
           {isActive ? "Deactivate" : "Activate"}
-        </Button>
+        </Button> */}
         <Button
           size="sm"
           variant="flat"
@@ -1722,7 +1752,7 @@ function NotificationSettingsSection() {
       {/* Email Notifications */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex justify-between gap-2">
             <div className="p-2 rounded-lg bg-primary/10">
               <Mail size={18} className="text-primary" />
             </div>
