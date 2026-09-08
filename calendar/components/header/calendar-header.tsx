@@ -41,7 +41,7 @@ function Dot({ color, label }: { color: string; label: string }) {
 
 export function CalendarHeader({ view, events }: IProps) {
   return (
-    <div className="flex flex-col gap-3 border-b p-4">
+    <div className="flex flex-col gap-3 border-b border-default-200 p-4">
       {/* Top row */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
