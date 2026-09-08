@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatDisplayDateTime } from "@/lib/utils/display-date";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -474,5 +475,5 @@ function MetaRow({
 
 function formatDate(date?: string) {
   if (!date) return "-";
-  return new Date(date).toLocaleString();
+  return formatDisplayDateTime(date);
 }

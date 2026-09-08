@@ -14,6 +14,7 @@ import { FcPrivacy } from "react-icons/fc";
 import { FaLocationDot } from "react-icons/fa6";
 import { Badge } from "@heroui/badge";
 import { formatPhone } from "@/lib/utils/phone";
+import { formatDisplayMonthYear } from "@/lib/utils/display-date";
 import {
   FaBook,
   FaChalkboardTeacher,
@@ -167,10 +168,7 @@ export default function ProfilePage() {
   const email = clerkUser?.primaryEmailAddress?.emailAddress ?? undefined;
   const phone = profile.phone ? formatPhone(`+91${profile.phone}`) : null;
   const memberSince = new Date(userData.memberSince);
-  const joinMonth = memberSince.toLocaleDateString("en-IN", {
-    month: "short",
-    year: "numeric",
-  });
+  const joinMonth = formatDisplayMonthYear(memberSince);
 
   const isCandidate = userData.plan.hasCandidateAccess;
   const canUpgradeToCandidate =

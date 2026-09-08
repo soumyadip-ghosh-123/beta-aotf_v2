@@ -25,7 +25,7 @@ function buildChips(): { label: string; value: string }[] {
     d.setDate(today.getDate() - i); // past dates
 
     const day = d.getDate();
-    const month = d.toLocaleString("en-IN", { month: "short" });
+    const month = d.toLocaleString("en-IN", { month: "short" }).toLowerCase();
     const value = d.toISOString().slice(0, 10);
 
     let label: string;

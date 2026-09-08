@@ -1,4 +1,5 @@
 import { differenceInDays, format, parseISO, startOfDay } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 
 import { AgendaEventCard } from "@/calendar/components/agenda-view/agenda-event-card";
 
@@ -16,7 +17,7 @@ export function AgendaDayGroup({ date, events, multiDayEvents }: IProps) {
   return (
     <div className="space-y-4">
       <div className="sticky top-0 flex items-center gap-4 bg-background py-2">
-        <p className="text-sm font-semibold">{format(date, "EEEE, MMMM d, yyyy")}</p>
+        <p className="text-sm font-semibold">{formatDisplayDate(date)}</p>
       </div>
 
       <div className="space-y-2">

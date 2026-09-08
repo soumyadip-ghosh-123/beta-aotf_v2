@@ -32,7 +32,7 @@ import {
   type TuitionShareData,
 } from "@/lib/utils/share";
 import ApplyActionButton from "@/components/ApplyActionButton";
-import { formatDisplayDate } from "@/lib/utils/display-date";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 
 export type ApplicationStatus =
   | "applied"
@@ -234,22 +234,8 @@ const TuitionPost = ({
     shareOnWhatsApp(formatTuitionShare(shareData));
   };
 
-  // Helper function to format date with AM/PM
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const dateOptions: Intl.DateTimeFormatOptions = {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    };
-    const timeOptions: Intl.DateTimeFormatOptions = {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    };
-    const formattedDate = date.toLocaleDateString("en-IN", dateOptions);
-    const formattedTime = date.toLocaleTimeString("en-IN", timeOptions);
-    return `${formattedDate} at ${formattedTime}`;
+    return formatDisplayDateTime(dateStr);
   };
 
   // Helper function to get application status display info

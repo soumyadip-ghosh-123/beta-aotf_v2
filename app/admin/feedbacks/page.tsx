@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import { reportClientError } from "@/lib/client-report-error";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
@@ -349,7 +350,7 @@ export default function FeedbackPage() {
               </p>
               <div className="flex items-center gap-2 text-xs text-default-500">
                 <Calendar size={14} />
-                {new Date(feedback.createdAt).toLocaleDateString()}
+                {formatDisplayDate(feedback.createdAt)}
               </div>
             </CardBody>
             <CardFooter className="gap-2">
@@ -440,7 +441,7 @@ export default function FeedbackPage() {
                   <div className="flex items-center gap-2 text-sm text-default-500">
                     <Calendar size={14} />
                     Submitted on{" "}
-                    {new Date(selectedFeedback.createdAt).toLocaleDateString()}
+                    {formatDisplayDate(selectedFeedback.createdAt)}
                   </div>
                 </div>
 
@@ -458,7 +459,7 @@ export default function FeedbackPage() {
                 {selectedFeedback.handledAt && (
                   <div className="text-sm text-default-500">
                     Last handled on{" "}
-                    {new Date(selectedFeedback.handledAt).toLocaleString()}
+                    {formatDisplayDateTime(selectedFeedback.handledAt)}
                   </div>
                 )}
 

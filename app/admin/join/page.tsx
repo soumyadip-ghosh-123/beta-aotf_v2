@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDateTime } from "@/lib/utils/display-date";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { RedirectToSignIn, SignUp, useUser } from "@clerk/nextjs";
@@ -104,7 +105,7 @@ function AdminJoinContent() {
           <strong>{invite.inviterName}</strong>.
         </p>
         <p>Invite email: {invite.email}</p>
-        <p>Expires at: {new Date(invite.expiresAt).toLocaleString()}</p>
+        <p>Expires at: {formatDisplayDateTime(invite.expiresAt)}</p>
         <Button color="primary" onPress={() => setShowSignUp(true)}>
           Accept &amp; Create Account
         </Button>
