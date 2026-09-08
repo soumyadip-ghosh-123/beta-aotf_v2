@@ -1,9 +1,10 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatPhone } from "@/lib/utils/phone";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Accordion, AccordionItem } from "@heroui/accordion";
@@ -31,8 +32,10 @@ import {
   Trash2,
   MousePointerClick,
   X,
+  Phone,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
+import Image from "next/image";
 
 interface JobPostData {
   _id: string;
@@ -76,6 +79,55 @@ export default function ViewJobPostPage({
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const sanitizePhoneNumber = (phoneNumber?: string) => {
+    const trimmed = phoneNumber?.trim() ?? "";
+    if (!trimmed) return { dialer: null, whatsapp: null };
+
+    const dialer = trimmed.replace(/[^\d+]/g, "");
+    const digitsOnly = trimmed.replace(/\D/g, "");
+
+    if (!digitsOnly) {
+      return { dialer: null, whatsapp: null };
+    }
+
+    const whatsapp = digitsOnly.length === 10 ? `91${digitsOnly}` : digitsOnly;
+
+    return {
+      dialer: dialer || null,
+      whatsapp,
+    };
+  };
+
+  const openClientDialer = () => {
+    const phoneTargets = sanitizePhoneNumber(postData?.phoneNumber);
+    if (!phoneTargets.dialer) {
+      addToast({
+        description: "No valid phone number available",
+        color: "danger",
+      });
+      return;
+    }
+
+    window.location.href = `tel:${phoneTargets.dialer}`;
+  };
+
+  const openClientWhatsApp = () => {
+    const phoneTargets = sanitizePhoneNumber(postData?.phoneNumber);
+    if (!phoneTargets.whatsapp) {
+      addToast({
+        description: "No valid WhatsApp number available",
+        color: "danger",
+      });
+      return;
+    }
+
+    window.open(
+      `https://wa.me/${phoneTargets.whatsapp}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
 
   useEffect(() => {
     const fetchJobAndApplications = async () => {
@@ -296,7 +348,7 @@ export default function ViewJobPostPage({
             onPress={() => router.push("/admin/jobs")}
             className="mb-4"
           >
-            Back to Posts
+            Back to Jobs
           </Button>
           <Card className="bg-danger-50">
             <CardBody className="py-10 text-center">
@@ -318,7 +370,7 @@ export default function ViewJobPostPage({
                 startContent={<ArrowLeft size={18} />}
                 onPress={handleBack}
               >
-                Back to Posts
+                Back to Jobs
               </Button>
             </div>
 
@@ -329,7 +381,7 @@ export default function ViewJobPostPage({
                     <div className="flex justify-between">
                       <div>
                         <p className="text-sm text-default-400">
-                          Post ID: {postData.jobId}
+                          Job ID: {postData.jobId}
                         </p>
                         {postData.enquiryReferenceId && (
                           <p className="text-xs text-default-500">
@@ -366,9 +418,6 @@ export default function ViewJobPostPage({
                       <h1 className="text-lg font-bold text-default-900">
                         {postData.title}
                       </h1>
-                      <p className="text-xs text-default-500">
-                        {postData.clientName}
-                      </p>
                     </div>
                   </div>
 
@@ -411,6 +460,51 @@ export default function ViewJobPostPage({
                     </div>
                   </div>
                 </CardHeader>
+
+                <CardFooter className="flex flex-col items-start py-0 pb-2">
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-default-500">Client Name:</span>{" "}
+                    <span className="font-medium text-sm">
+                      {postData.clientName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-default-500">Phone:</span>{" "}
+                    <span className="font-medium text-sm">
+                      {formatPhone(postData.phoneNumber)}
+                    </span>
+                  </div>
+                  <p className="text-md font-bold text-default-500">
+                    {" "}
+                    Contact Client:{" "}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 mt-1 w-full">
+                    <Button
+                      size="sm"
+                      color="primary"
+                      startContent={<Phone size={16} />}
+                      onPress={openClientDialer}
+                    >
+                      Call
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="secondary"
+                      startContent={
+                        <Image
+                          src="/whatsapp.svg"
+                          alt="WhatsApp"
+                          width={16}
+                          height={16}
+                          className="text-green-500"
+                        />
+                      }
+                      onPress={openClientWhatsApp}
+                    >
+                      WhatsApp
+                    </Button>
+                  </div>
+                </CardFooter>
               </Card>
 
               {/* Statistics Cards */}
@@ -616,16 +710,16 @@ export default function ViewJobPostPage({
             <ModalContent>
               <ModalHeader className="flex flex-col gap-1">
                 {selectionMode &&
-                selectedIds.size > 0 &&
-                selectedIds.size < candidates.length
+                  selectedIds.size > 0 &&
+                  selectedIds.size < candidates.length
                   ? "Delete Selected Applications"
                   : "Delete All Applications"}
               </ModalHeader>
               <ModalBody>
                 <p>
                   {selectionMode &&
-                  selectedIds.size > 0 &&
-                  selectedIds.size < candidates.length ? (
+                    selectedIds.size > 0 &&
+                    selectedIds.size < candidates.length ? (
                     <>
                       Are you sure you want to delete{" "}
                       <strong>
@@ -660,8 +754,8 @@ export default function ViewJobPostPage({
                   isLoading={isClearing}
                 >
                   {selectionMode &&
-                  selectedIds.size > 0 &&
-                  selectedIds.size < candidates.length
+                    selectedIds.size > 0 &&
+                    selectedIds.size < candidates.length
                     ? `Delete ${selectedIds.size} Selected`
                     : "Delete All"}
                 </Button>

@@ -118,7 +118,7 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
                   src: candidate.avatar,
                 }}
                 name={candidate.name}
-                description={`${candidate.email}`}
+                description={`${candidate.phone}`}
               />
             </div>
             <Chip
@@ -132,10 +132,6 @@ export const JobCandidateCard: React.FC<JobCandidateCardProps> = ({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 text-sm text-default-600 mb-3">
-              <Phone size={14} />
-              <span>{formatPhone(candidate.phone)}</span>
-            </div>
             <div className="flex flex-wrap gap-2 text-xs text-default-500 mb-3">
               {candidate.board && <span>Board: {candidate.board}</span>}
               {candidate.qualification && (

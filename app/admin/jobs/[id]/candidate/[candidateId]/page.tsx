@@ -636,7 +636,7 @@ export default function JobCandidateDetailPage() {
                       {currentCandidate.statusHistory
                         .filter((h: any) => h.status === checkpoint.status)
                         .map((history: any, idx: number) => (
-                          <p className="text-sm text-default-500">
+                          <p key={idx} className="text-sm text-default-500">
                             {formatDisplayDate(history.date)}
                           </p>
                         ))}

@@ -208,6 +208,14 @@ const JobPost = ({
           <Chip radius="sm" size="sm" color={statusColor(status)}>
             {formatStatus(status)}
           </Chip>
+          <Chip
+            key={applicationStatus}
+            radius="sm"
+            size="sm"
+            className="bg-default-100 text-sm font-medium"
+          >
+            {applicationStatus}
+          </Chip>
         </div>
       </CardHeader>
       {statusFeedback && (
@@ -242,13 +250,6 @@ const JobPost = ({
           <div className="shrink-0 w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-white">
             <FaMapMarkerAlt size={20} />
           </div>
-          {applicationStatus && (
-            <span className="rounded-full bg-default-100 px-2 py-1 text-xs font-medium capitalize">
-              {applicationStatus === "declined"
-                ? "Declined"
-                : applicationStatus}
-            </span>
-          )}
           <div>
             <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Location
