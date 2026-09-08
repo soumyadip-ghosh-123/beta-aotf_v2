@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -113,11 +114,7 @@ const STATUS_CONFIG = {
 
 function fmt(date?: string) {
   if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDisplayDate(date);
 }
 
 function InvoiceCard({

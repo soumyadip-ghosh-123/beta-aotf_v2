@@ -3,6 +3,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import dbConnect from "@/lib/db";
 import Profile from "@/lib/models/Profile";
 import User from "@/lib/models/User";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 
 type Role = "teacher" | "candidate";
 
@@ -149,11 +150,7 @@ export async function GET(
     employeeId: `AOTF-${isCandidateId ? "C" : "T"}-${profile.username.toUpperCase()}`,
     phone: formatMaskedPhone(`${profile.phone}`),
     location: profile.location || profile.address,
-    joinDate: new Date(user.createdAt).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
+    joinDate: formatDisplayDate(user.createdAt),
     expiryDate: "—",
     isVerified: Boolean(user.onboardingCompleted),
     plan: planLabel,

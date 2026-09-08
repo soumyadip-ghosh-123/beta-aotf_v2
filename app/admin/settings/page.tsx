@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import React, { useState, useMemo, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@heroui/button";
@@ -114,22 +115,12 @@ function getRoleIcon(role: string) {
 
 function formatDate(d?: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDisplayDate(d);
 }
 
 function formatDateTime(d?: string): string {
   if (!d) return "Never";
-  return new Date(d).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDisplayDateTime(d);
 }
 
 function getInitials(name: string): string {

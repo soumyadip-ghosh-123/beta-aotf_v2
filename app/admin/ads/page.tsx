@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import { reportClientError } from "@/lib/client-report-error";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Button } from "@heroui/button";
@@ -118,22 +119,12 @@ const placementLabelMap: Record<string, string> = {
 
 function formatDate(d?: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDisplayDate(d);
 }
 
 function formatDateTime(d?: string): string {
   if (!d) return "—";
-  return new Date(d).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDisplayDateTime(d);
 }
 
 function computeCtr(impressions: number, clicks: number): string {

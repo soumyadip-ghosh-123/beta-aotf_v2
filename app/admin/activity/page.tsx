@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -467,7 +468,7 @@ function buildNarrative(log: ActivityLog): React.ReactNode {
           <>
             to{" "}
             <span className="font-semibold text-primary">
-              {format(new Date(meta.startingDate), "MMM d, yyyy")}
+              {formatDisplayDate(meta.startingDate)}
             </span>{" "}
           </>
         ) : (
@@ -895,7 +896,7 @@ export default function SuperadminActivityLogs() {
                           <div className="flex items-center gap-1">
                             <Clock size={13} />
                             <span
-                              title={format(new Date(log.createdAt), "PPpp")}
+                              title={formatDisplayDateTime(log.createdAt)}
                             >
                               {formatDistanceToNow(new Date(log.createdAt), {
                                 addSuffix: true,
@@ -1060,7 +1061,7 @@ export default function SuperadminActivityLogs() {
                               : ""}
                           </p>
                           <p className="text-xs text-default-400">
-                            {format(new Date(selectedLog.createdAt), "PPpp")}
+                            {formatDisplayDateTime(selectedLog.createdAt)}
                           </p>
                         </CardBody>
                       </Card>

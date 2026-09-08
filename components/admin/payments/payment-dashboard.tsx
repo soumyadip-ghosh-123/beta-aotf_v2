@@ -1,6 +1,7 @@
 "use client";
 
 import { reportClientError } from "@/lib/client-report-error";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import { formatPhone } from "@/lib/utils/phone";
 import { shareOnWhatsApp } from "@/lib/utils/share";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -107,11 +108,7 @@ function parseDate(value?: string | Date | null) {
 function formatDate(value?: string | Date | null) {
   const date = parseDate(value);
   if (!date) return "—";
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDisplayDate(date);
 }
 
 function isTuitionPaid(post: TuitionPostRow) {

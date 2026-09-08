@@ -1,6 +1,7 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
+import { formatDisplayDate } from "@/lib/utils/display-date";
 import { Calendar, Clock, FileText, User, ExternalLink, Tag } from "lucide-react";
 import { cloneElement, isValidElement, ReactElement } from "react";
 
@@ -179,7 +180,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
                   <Calendar className="mt-0.5 size-4 shrink-0 text-default-400" />
                   <div>
                     <p className="text-xs text-default-400">Date</p>
-                    <p className="text-sm">{format(startDate, "EEE, MMM d yyyy")}</p>
+                    <p className="text-sm">{formatDisplayDate(startDate)}</p>
                   </div>
                 </div>
 

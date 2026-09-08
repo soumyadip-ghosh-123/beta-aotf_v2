@@ -33,7 +33,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { User } from "@heroui/user";
-import { formatDisplayDate } from "@/lib/utils/display-date";
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 
 type ApplicationStatus =
   | "applied"
@@ -715,18 +715,7 @@ export default function CandidateDetailPage({
                       {checkpoint.date && (
                         <p className="text-sm text-default-500">
                           {checkpoint.id === "DC" || checkpoint.id === "GC"
-                            ? new Date(checkpoint.date).toLocaleString(
-                                "en-IN",
-                                {
-                                  weekday: "short",
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                },
-                              )
+                            ? formatDisplayDateTime(checkpoint.date)
                             : formatDisplayDate(checkpoint.date)}
                         </p>
                       )}

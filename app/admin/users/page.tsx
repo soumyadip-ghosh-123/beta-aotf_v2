@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDisplayDate, formatDisplayDateTime } from "@/lib/utils/display-date";
 import React, {
   useCallback,
   useEffect,
@@ -597,7 +598,7 @@ export default function UsersPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar size={16} className="text-default-400" />
                   <span className="text-default-600">
-                    Joined: {new Date(user.createdAt).toLocaleDateString()}
+                    Joined: {formatDisplayDate(user.createdAt)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -605,7 +606,7 @@ export default function UsersPage() {
                   <span className="text-default-600">
                     Last login:{" "}
                     {user.lastLogin
-                      ? new Date(user.lastLogin).toLocaleString()
+                      ? formatDisplayDateTime(user.lastLogin)
                       : "Never"}
                   </span>
                 </div>
